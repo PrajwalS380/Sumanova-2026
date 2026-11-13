@@ -8,17 +8,14 @@ A real-time social app — camera-first, aurora-themed, installable on Android a
 
 | Phase | Scope | State |
 | --- | --- | --- |
-| 0 | Inspection, planning | ✅ |
-| 1 | Foundation: design system, navigation, auth, profiles, settings, migrations, RLS, PWA | ✅ (account deletion pending migration approval) |
-| 2 | Friends + real-time chat | next |
-| 3 | Voice & video calls (WebRTC) | |
-| 4 | Snaps: editor, delivery, expiry | |
-| 5 | 3D avatar studio | |
-| 6 | Stories, streaks, friendship profiles | |
-| 7 | Memories, Spotlight | |
-| 8 | Map, filters, AR | |
-| 9 | Push notifications, hardening | |
-| 10 | Deployment & live validation | |
+| 0–1 | Inspection, foundation, design system, auth (email codes), profiles, settings, PWA, Android/iOS shells, CI | ✅ |
+| 2 | Friends, real-time 1:1 + group chat, receipts, typing, presence, media, voice notes, disappearing messages | ✅ (block/remove/delete-message functions pending approval) |
+| 3 | 1:1 voice & video calls (WebRTC), call history | ✅ (group calls: not enabled, see docs/CALLS.md) |
+| 4 | Snaps, camera filters, editor, one-time viewing, screenshot protection (Android) | ✅ |
+| 5 | 3D avatar studio, outfits, expressions, poses, duo stickers | ✅ |
+| 6–7 | Stories, highlights, streaks, friendship profiles, Memories, Spotlight | ✅ |
+| 8–9 | Social map, AR face lenses, notifications + web push, hardening | ✅ |
+| 10 | Live validation on real devices | owner testing |
 
 ## Design — "Aurora Glass"
 
@@ -62,3 +59,6 @@ Database migrations live in `supabase/migrations/` and are applied in filename o
 - [Security checklist](docs/SECURITY.md)
 - [Android & iPhone apps](docs/MOBILE.md)
 - [Email setup](docs/EMAIL.md)
+- [Calls](docs/CALLS.md)
+- [Avatars](docs/AVATARS.md)
+- [Owner handbook](docs/OWNER_HANDBOOK.txt)

@@ -170,7 +170,7 @@ export default function SpotlightScreen() {
         {menu && (
           <div className="pb-3">
             {menu.user_id === me ? (
-              <SheetItem danger icon={<Trash2 className="h-4 w-4" />} label="Remove my video" onClick={async () => { const v = menu; setMenu(null); try { await spotlightApi.remove(v.id); setVideos((l) => l?.filter((x) => x.id !== v.id) ?? null); toast('Removed', 'success'); } catch (e) { toast((e as Error).message, 'error'); } }} />
+              <SheetItem danger icon={<Trash2 className="h-4 w-4" />} label="Remove my video" onClick={async () => { const v = menu; setMenu(null); try { await spotlightApi.remove(v.id, [v.media_path, v.poster_path]); setVideos((l) => l?.filter((x) => x.id !== v.id) ?? null); toast('Removed', 'success'); } catch (e) { toast((e as Error).message, 'error'); } }} />
             ) : (
               ['spam', 'inappropriate', 'harassment', 'other'].map((r) => (
                 <SheetItem key={r} danger icon={<Flag className="h-4 w-4" />} label={`Report: ${r}`} onClick={async () => { const v = menu; setMenu(null); try { await spotlightApi.report(v.id, r); setVideos((l) => l?.filter((x) => x.id !== v.id) ?? null); toast('Thanks — we’ll review it', 'success'); } catch (e) { toast((e as Error).message, 'error'); } }} />

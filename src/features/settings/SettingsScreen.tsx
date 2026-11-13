@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Bell } from 'lucide-react';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '@/lib/push';
 import { isNative } from '@/lib/platform';
-import { LogOut, MonitorSmartphone, ShieldCheck, Sparkles } from 'lucide-react';
+import { LogOut, MonitorSmartphone, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
+import { deleteMyAccount } from '@/lib/account';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Toggle } from '@/components/ui/Toggle';
 import { Segmented } from '@/components/ui/Segmented';
@@ -132,6 +133,22 @@ export default function SettingsScreen() {
               }}
             >
               Sign out of all devices
+            </Button>
+            <Button
+              variant="danger"
+              block
+              onClick={async () => {
+                const typed = window.prompt('This permanently deletes your account, chats, snaps, stories, memories and avatar. Type DELETE to confirm.');
+                if (typed !== 'DELETE') return;
+                try {
+                  await deleteMyAccount(session!.user.id);
+                  await signOut(false);
+                } catch (e) {
+                  toast((e as Error).message, 'error');
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" /> Delete my account
             </Button>
           </div>
         </Section>

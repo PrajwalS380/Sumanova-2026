@@ -185,7 +185,11 @@ export const spotlightApi = {
   comment: async (id: string, body: string) => must(await supabase.rpc('add_comment', { p_video: id, p_body: body })) as string,
   removeComment: async (id: string) => must(await supabase.rpc('remove_comment', { p_comment: id })),
   report: async (id: string, reason: string) => must(await supabase.rpc('report_video', { p_video: id, p_reason: reason })),
-  remove: async (id: string) => must(await supabase.rpc('remove_spotlight', { p_id: id })),
+  remove: async (id: string, files: (string | null)[] = []) => {
+    must(await supabase.rpc('remove_spotlight', { p_id: id }));
+    const paths = files.filter(Boolean) as string[];
+    if (paths.length) await supabase.storage.from('spotlight').remove(paths);
+  },
   creator: async (username: string) => (must(await supabase.rpc('creator_profile', { p_username: username })) as Creator[])[0] ?? null,
   byUser: async (userId: string) => must(await supabase.from('spotlight_videos').select('id,media_path,poster_path,caption,like_count,view_count,created_at,status').eq('user_id', userId).neq('status', 'removed').order('created_at', { ascending: false }).limit(60)) as Pick<SpotlightVideo, 'id' | 'media_path' | 'poster_path' | 'caption' | 'like_count' | 'view_count' | 'created_at'>[],
   saved: async () => must(await supabase.from('video_saves').select('video_id').order('created_at', { ascending: false }).limit(60)) as { video_id: string }[],

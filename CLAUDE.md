@@ -51,10 +51,14 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
 Outbound network to supabase.co / vercel.app is blocked from the shell; use Supabase MCP (`execute_sql`) and Vercel
 MCP (`web_fetch_vercel_url`) to verify. No Android SDK locally — Android builds run on GitHub Actions.
 
-## Status
-- Phase 0–1 done: foundation schema (profiles, user_settings, privacy_settings), avatars bucket, auth screens, camera,
-  profile/settings, PWA, native shells, CI.
-- Pending migrations (need owner approval, not applied): `20261113000300_account_deletion.sql`, `20261113000500_social_and_chat_removals.sql`. Approval card often times out — split DELETE-containing SQL into small separate migrations and apply the rest first.
-- Owner to-dos: Supabase Site URL + redirect URLs, Gmail SMTP + email templates (`docs/EMAIL.md`), GitHub signing secrets.
-- Next: Phase 2 friends + real-time chat, then calls, snaps, avatar studio, stories/streaks, memories/Spotlight, map/filters,
-  notifications/hardening. Final deliverable: one TXT handbook for the owner listing every manual GitHub/Supabase/Vercel step.
+## Status (all phases built)
+- Built & pushed: foundation, chat, calls, snaps/editor/filters, avatar studio, stories/streaks/friendship, memories,
+  Spotlight, map, AR lenses (MediaPipe), notifications + web push (Edge Function `push`, VAPID in Vault), hardening.
+- Migrations 0100–1500 applied EXCEPT pending owner approval: `20261113000300_account_deletion.sql`,
+  `20261113000500_social_and_chat_removals.sql` (contain DELETE → approval card times out; owner can paste them in the SQL editor).
+  Never put DELETE statements in new migrations; use soft-delete columns. Avoid UPDATE without WHERE in test SQL.
+- Edge Function `push` (verify_jwt=false by design; validates by id + freshness with service role).
+- Cron jobs: `sumanova-housekeeping` (*/10), `sumanova-streak-reminders` (16:00 UTC).
+- Owner handbook with every manual step: `docs/OWNER_HANDBOOK.txt`.
+- Owner to-dos: Supabase Site URL/redirects, Gmail SMTP + templates, GitHub signing secrets, apply 2 pending SQL files,
+  optional Firebase for closed-app Android push, optional TURN for strict networks.

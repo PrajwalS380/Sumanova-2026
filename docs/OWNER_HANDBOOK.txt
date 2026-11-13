@@ -1,0 +1,295 @@
+====================================================================
+                    SUMANOVA — OWNER HANDBOOK
+     Everything you need to do in GitHub, Supabase, Vercel, Gmail,
+          and on your phone. Keep this file. (Version 1.0)
+====================================================================
+
+QUICK LINKS
+-----------
+App (website / installable)  : https://sumanova.vercel.app
+Android APK downloads        : https://github.com/PrajwalS380/Sumanova-2026/releases
+Code (branch SUM-202601)     : https://github.com/PrajwalS380/Sumanova-2026/tree/SUM-202601
+Supabase dashboard           : https://supabase.com/dashboard/project/wssfbcscijpwfohhkerz
+Supabase SQL editor          : https://supabase.com/dashboard/project/wssfbcscijpwfohhkerz/sql/new
+Vercel project               : https://vercel.com  -> project "sumanova"
+Budget                       : Rs 0. Nothing here needs a credit card.
+
+
+====================================================================
+PART 1 — MUST-DO STEPS (do these in order, ~30 minutes total)
+====================================================================
+
+STEP 1. Add the Android signing key to GitHub  (5 min)
+-------------------------------------------------------
+Why: so every new APK installs as an UPDATE over the old one.
+You received a private file: SUMANOVA-signing-key-PRIVATE.txt
+ 1. Open https://github.com/PrajwalS380/Sumanova-2026/settings/secrets/actions
+ 2. Click "New repository secret" four times and add, exactly as written
+    in that private file:
+       ANDROID_KEY_ALIAS
+       ANDROID_KEYSTORE_PASSWORD
+       ANDROID_KEY_PASSWORD
+       ANDROID_KEYSTORE_BASE64   (one very long line — copy all of it)
+ 3. Save a copy of the private file in Google Drive. If you lose it,
+    future APKs cannot update the installed app.
+ 4. NEVER paste these values into chat, code, or anywhere public.
+ Note: the first APK built after this is signed with the new key, so
+ uninstall the old SUMANOVA app once before installing it. After that,
+ updates install directly.
+
+STEP 2. Supabase sign-in URLs  (2 min)
+--------------------------------------
+ 1. Open https://supabase.com/dashboard/project/wssfbcscijpwfohhkerz/auth/url-configuration
+ 2. Site URL:            https://sumanova.vercel.app
+ 3. Redirect URLs (Add): https://sumanova.vercel.app/**
+ 4. Save.
+
+STEP 3. Reliable emails (sign-up & password-reset codes)  (10 min)
+------------------------------------------------------------------
+Supabase's built-in email sends only a few emails per hour and often
+lands in spam. Use a free Gmail account instead (~500 emails/day).
+ 1. Create a NEW Gmail just for the app, e.g. sumanova.app@gmail.com
+ 2. Turn on 2-Step Verification: https://myaccount.google.com/security
+ 3. Create an App Password: https://myaccount.google.com/apppasswords
+    Name it "Supabase". Copy the 16-letter password.
+ 4. Supabase -> Authentication -> Emails -> SMTP Settings -> enable Custom SMTP:
+       Sender email : (the new Gmail)        Sender name : SUMANOVA
+       Host         : smtp.gmail.com         Port        : 465
+       Username     : (the new Gmail)        Password    : (16-letter app password)
+ 5. Supabase -> Authentication -> Emails -> Templates:
+       "Confirm signup":  Subject  Your SUMANOVA code: {{ .Token }}
+                          Body     paste supabase/templates/confirm-signup.html
+       "Reset Password":  Subject  Your SUMANOVA reset code: {{ .Token }}
+                          Body     paste supabase/templates/reset-password.html
+    (Files are in the repo on branch SUM-202601.)
+ 6. Authentication -> Sign In / Providers -> Email:
+       Confirm email = ON,  Email OTP length = 6
+ 7. Authentication -> Rate Limits -> emails per hour = 100
+ Alternative without Gmail: Brevo free (300/day): host smtp-relay.brevo.com,
+ port 587, login + SMTP key from Brevo -> "SMTP & API".
+
+STEP 4. Apply the 2 pending database files  (3 min)
+---------------------------------------------------
+These contain "delete" statements, so Supabase asks for approval and the
+approval card kept timing out. Paste them yourself — it is safe; they only
+CREATE functions (nothing is deleted when you run them).
+ For EACH file below:
+   a. Open it on GitHub (branch SUM-202601), tap the copy icon.
+   b. Open https://supabase.com/dashboard/project/wssfbcscijpwfohhkerz/sql/new
+   c. Paste -> Run -> if asked "destructive operation?", confirm.
+   d. You should see "Success. No rows returned".
+ Files:
+   supabase/migrations/20261113000300_account_deletion.sql
+       -> enables Settings > "Delete my account"
+   supabase/migrations/20261113000500_social_and_chat_removals.sql
+       -> enables Remove friend, Block/Unblock, Leave group, Delete group,
+          Delete message for everyone
+ Until you do this, those buttons show "still being enabled".
+
+STEP 5. Install on your Android phone  (3 min)
+----------------------------------------------
+ 1. On the phone open https://github.com/PrajwalS380/Sumanova-2026/releases
+ 2. Open the newest "SUMANOVA 0.1.x" release -> tap SUMANOVA.apk
+ 3. Open the download. Allow "Install unknown apps" for Chrome if asked.
+    If Play Protect warns, tap "More details" -> "Install anyway"
+    (it is your own app, not from the Play Store).
+ 4. Open SUMANOVA, create your account, allow Camera / Microphone /
+    Notifications / Location when each feature asks.
+ Updates: every push to the branch builds a new release. Install the new
+ APK over the old one.
+
+STEP 6. iPhone users (friends with iPhones)  (1 min)
+----------------------------------------------------
+ Free option (recommended): open https://sumanova.vercel.app in SAFARI ->
+ Share -> "Add to Home Screen". Opens full-screen with its own icon.
+ Push notifications work on iOS 16.4+ after adding to Home Screen
+ (then Settings inside SUMANOVA -> Push notifications ON).
+ Native iPhone app: needs Apple Developer Program (USD 99/year) for the
+ App Store/TestFlight. Not used (Rs 0 rule). The unsigned .ipa in each
+ release can be side-loaded with SideStore/AltStore using a free Apple ID,
+ but Apple makes it expire every 7 days.
+
+STEP 7. Turn on push notifications (website / installed web app)
+-----------------------------------------------------------------
+ In SUMANOVA -> Profile -> Settings -> Notifications -> Push notifications ON.
+ Allow when the browser asks.
+
+
+====================================================================
+PART 2 — BRANCHES, PULL REQUESTS & RELEASES
+====================================================================
+Branches: main (production), develop (integration), release/1.0.0, SUM-202601 (work).
+All work so far is on SUM-202601.
+
+Create the PR SUM-202601 -> develop:
+ 1. Open https://github.com/PrajwalS380/Sumanova-2026/compare/develop...SUM-202601
+ 2. "Create pull request". Review. "Merge".
+Release flow afterwards: develop -> release/1.0.0 -> main (same compare page,
+change the branch names).
+
+Vercel (website):
+ - Production currently serves branch SUM-202601 (deployed manually).
+ - After you merge into main, Vercel auto-deploys main to sumanova.vercel.app.
+ - Project settings already contain VITE_SUPABASE_URL and
+   VITE_SUPABASE_PUBLISHABLE_KEY (the publishable key is meant to be public).
+ - If you change the production branch: Vercel -> sumanova -> Settings -> Git.
+
+
+====================================================================
+PART 3 — TEST CHECKLIST (use 2 phones / 2 accounts)
+====================================================================
+[ ] Sign up both accounts (6-digit code arrives by email)
+[ ] Forgot password -> code -> new password works
+[ ] Search friend by username -> send request -> accept (notification appears)
+[ ] Chat: text, photo, video, voice note, sticker, reply, react, edit, forward
+[ ] Typing indicator, Online / last seen, Sent / Delivered / Seen
+[ ] Group chat: create, rename, add member, make admin, @mention
+[ ] Disappearing messages (24 h and after-view) in chat details
+[ ] Voice call and video call (try Wi-Fi and mobile data)
+[ ] Snap: photo + text + drawing -> send -> opens once -> replay once
+[ ] Android: screenshot is blocked while viewing a snap
+[ ] Story: post photo/text -> friend views -> reaction + reply -> viewer list
+[ ] Streak: both send a snap today -> fire 1 in chat list
+[ ] Avatar studio: create, save as profile photo, duo sticker to a friend
+[ ] Memories: save from Share sheet -> favourite, album, download, post to story
+[ ] Spotlight: post a short video -> like, comment, follow, save
+[ ] Map: share location 15 min with friends -> friend sees pin -> stop sharing
+[ ] Face lenses in camera (needs internet the first time)
+[ ] Push notification arrives when the web app is closed (website/PWA)
+[ ] Privacy settings change who can message / call / see stories
+
+
+====================================================================
+PART 4 — FREE-TIER LIMITS (what happens if exceeded)
+====================================================================
+Supabase Free : 500 MB database, 1 GB file storage, 5 GB egress/month,
+                50k monthly users, 200 realtime connections, 500k Edge
+                Function calls. PROJECT PAUSES AFTER 7 DAYS WITH NO ACTIVITY
+                -> open the dashboard and click "Restore project".
+Per-user caps : Memories 150 MB / 400 items, Spotlight 10 posts/day,
+                snaps 200/hour, stories 100/day (protects the 1 GB storage).
+Vercel Hobby  : personal/non-commercial use, 100 GB bandwidth/month.
+GitHub        : public repo -> unlimited Actions minutes (APK/IPA builds).
+Gmail SMTP    : ~500 emails/day.
+Map tiles     : CARTO dark basemap, free for light use with attribution.
+Face lenses   : MediaPipe model downloaded from Google's public CDN (free).
+
+
+====================================================================
+PART 5 — STATUS: WHAT WORKS, WHAT IS LIMITED
+====================================================================
+FULLY WORKING (built and tested; real-device testing is your next step)
+ - Sign up / sign in with email codes, reset password, sessions, sign out
+   everywhere, profile, privacy & experience settings
+ - Friends (search, requests, accept/decline/cancel), reports
+ - Real-time 1:1 and group chat: text, photos, videos, voice notes,
+   stickers, replies, reactions, edit, forward, receipts, typing,
+   online/last seen, pinned/favourite/muted chats, themes, disappearing
+   messages, offline outbox with automatic retry
+ - 1:1 voice & video calls (WebRTC), call history, missed calls
+ - Camera: front/rear, flash, zoom, timer, filters, photo + 30 s video,
+   gallery upload; editor with text, drawing, stickers, crop/rotate
+ - Snaps: one-time view, one replay, expiry, status; Android screenshot
+   blocking (FLAG_SECURE) + Android 14+ screenshot reporting
+ - 3D avatar studio (face, skin, eyes, nose, mouth, 11 hairstyles, facial
+   hair, body, 7 outfits, accessories, 10 expressions, 7 animated poses),
+   saved outfits, export, profile photo, duo stickers; 2D fallback
+ - Stories (friends/public), viewers, reactions, replies, highlights,
+   archive; text stories
+ - Streaks (+ reminders + one restore every 30 days), friendship profile,
+   badges, best friends
+ - Memories (private), albums, favourites, archive, month search
+ - Spotlight feed, likes, comments, saves, follows, categories, search,
+   interests, reports with auto-hide, creator profiles
+ - Social map: opt-in, ghost mode, duration, chosen friends, approximate
+   or precise, auto-stop
+ - AR face lenses (6), in-app Activity feed, web push notifications
+ - Android APK + website/PWA; GitHub builds a new APK on every push
+
+PARTIALLY WORKING / NEEDS YOUR ACTION
+ - Block, unblock, remove friend, leave/delete group, delete message,
+   delete account: built — enable with PART 1 STEP 4.
+ - Emails: work now but slow/limited until PART 1 STEP 3.
+ - Android notifications when the APK is FULLY CLOSED: needs Firebase
+   (optional, PART 6). Today the APK notifies while open or in the
+   background; the website/PWA gets full push.
+ - iPhone native app: needs USD 99/yr Apple program (not used). Use the
+   Safari home-screen app instead.
+
+BLOCKED BY FREE INFRASTRUCTURE (honest limitations)
+ - Calls on very strict networks (some offices, colleges, carrier-grade
+   NAT) may fail: they need a TURN relay server, which isn't free to run
+   reliably. The app says "Couldn't connect" instead of faking it.
+   Normal home Wi-Fi and most 4G/5G work. See PART 6 for TURN.
+ - Group voice/video calls: need an SFU server (always-on machine).
+   Group chats show no call button.
+ - Screenshot detection on web/iPhone: browsers expose no reliable
+   signal, so it is not claimed there.
+ - "Nearby public stories" on the map: stories carry no location, so
+   this is not offered.
+ - Files of deleted chat messages / expired snaps stay in storage until a
+   cleanup job is added (rows are hidden by the server immediately).
+ - Messages are encrypted in transit (HTTPS/WSS), NOT end-to-end encrypted.
+
+
+====================================================================
+PART 6 — OPTIONAL UPGRADES (only if you want them)
+====================================================================
+A) Closed-app Android push (free, ~20 min, ask me to wire it):
+   1. https://console.firebase.google.com -> Add project "sumanova"
+   2. Add Android app, package name: com.sumanova.app
+   3. Download google-services.json and send it to me (it is not secret,
+      but don't post it publicly). I'll add FCM to the APK + push function.
+
+B) TURN relay for calls on strict networks:
+   - A hosted TURN service with a free monthly quota (sign-up needed;
+     check current limits), or self-host "coturn" on an always-on VM.
+   - Then set in Vercel env + GitHub workflow:
+       VITE_TURN_URL, VITE_TURN_USERNAME, VITE_TURN_CREDENTIAL
+
+C) Custom domain: not required. Costs money; not done.
+
+
+====================================================================
+PART 7 — TROUBLESHOOTING
+====================================================================
+"No code email arrived"      -> check Spam; do PART 1 STEP 3; wait 60 s
+                                and tap Resend.
+"App says offline"           -> check internet; Supabase project may be
+                                paused (dashboard -> Restore).
+"Camera/mic not working"     -> Android Settings -> Apps -> SUMANOVA ->
+                                Permissions -> allow Camera/Microphone.
+"Call won't connect"         -> try Wi-Fi on both phones; strict networks
+                                need TURN (PART 6 B).
+"APK won't install update"   -> uninstall once (happens only when the
+                                signing key changes), then install.
+"Push not arriving"          -> Settings in app -> Push ON; browser site
+                                settings -> Notifications allowed.
+"Button says still being     -> PART 1 STEP 4.
+ enabled"
+"Lenses not loading"         -> needs internet the first time (downloads
+                                the face-tracking model, then cached).
+
+
+====================================================================
+PART 8 — WHERE THINGS LIVE (for any developer you hire later)
+====================================================================
+src/features/*        screens (camera, chat, calls, snaps, editor, avatar,
+                      stories, memories, spotlight, map, notifications)
+src/lib/*             data access, media, push, privacy, helpers
+src/providers/*       auth, inbox (realtime), calls, notifications
+supabase/migrations/  every database change, in order (apply in order)
+supabase/functions/   Edge Function "push"
+supabase/templates/   email templates
+android/ ios/         native app projects (Capacitor)
+.github/workflows/    builds web + APK + IPA on every push
+docs/                 security checklist, free-tier register, calls,
+                      avatars, mobile, email, this handbook
+CLAUDE.md             project memory for future AI sessions
+
+SECURITY REMINDERS
+ - Never share: the signing key file, Gmail app password, Supabase
+   service-role key (not used by the app anywhere).
+ - Safe to be public: Supabase URL and publishable key (security is
+   enforced by Row Level Security on the server).
+====================================================================

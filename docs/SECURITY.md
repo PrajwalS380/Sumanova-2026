@@ -14,13 +14,17 @@ Status of each control. ✅ done and verified · 🟡 partial · ⏳ planned pha
 | Session revocation | ✅ | "Sign out of all devices" uses `signOut({ scope: 'global' })`. |
 | Password reset | ✅ | PKCE flow with single-use link. |
 | Security headers | ✅ | `vercel.json`: nosniff, frame-deny, strict referrer, permissions policy. |
-| Account deletion | 🟡 | Migration `20261113000300_account_deletion.sql` written but **not yet applied** (needs approval). UI button will be added once applied. |
-| Rate limiting / abuse prevention | ⏳ | Phase 9. Supabase Auth has built-in auth rate limits. |
-| Block / report users | ⏳ | Phase 2 (with friendships). |
+| Account deletion | 🟡 | Settings → Delete my account removes the user's files from every bucket, then calls `delete_my_account()` (all rows cascade). The RPC lives in `20261113000300_account_deletion.sql`, **pending owner approval**; until applied the button explains it's not enabled yet. |
+| Rate limiting / abuse prevention | ✅ | Server-side limits: friend requests 50/h, reports 20/h, snaps 200/h, stories 100/day, Spotlight 10/day, comments 10/min, outfits 20, memories 150 MB/400 items. Spotlight auto-hides after 3 distinct reports. Supabase Auth rate limits on sign-in/OTP. |
+| Block / report users | 🟡 | Report: live. Block/unblock/remove friend: in `20261113000500_social_and_chat_removals.sql`, pending owner approval. Blocks are enforced everywhere (messages, calls, stories, map, Spotlight, search). |
 | Calls | ✅ | Private signalling channels gated by RLS on `realtime.messages`; server enforces privacy, blocks, one active call per user. Media is DTLS-SRTP peer-to-peer. |
 | Chat | ✅ | RLS on conversations/members/messages/reactions; sender and timestamps set by triggers; system messages server-only; members can only change their own prefs (column grants); private `chat-media` bucket with signed URLs. Verified by rolled-back SQL tests. |
 | Snaps | ✅ | Private `snaps` bucket; recipients can fetch the file only while unopened or within a short window after open/replay (`can_read_snap_object`); open/replay/screenshot are server RPCs with server timestamps; one replay within 5 min if allowed; expire after 30 days unopened. |
 | Screenshots | 🟡 | Android app: FLAG_SECURE blocks screenshots & screen recording while a snap is open; Android 14+ also reports attempts → “took a screenshot” notice. Web/PWA and iPhone sideload: no reliable screenshot signal, so nothing is claimed. |
+| Location | ✅ | Opt-in only, ghost mode by default, duration-limited, all/selected friends, approximate (~1 km) unless precise chosen; table is not readable — only `friend_locations()` returns permitted, unexpired, unblocked friends. Foreground-only updates. |
+| Notifications / push | ✅ | Notifications are owner-only (RLS). Push function receives only an id and re-reads data with the service role; only fresh, unsent items are pushed. VAPID private key generated server-side into Vault, never in the app or repo. |
+| Relationship probing | ✅ | `are_friends` / `is_blocked_between` only answer for the caller (advisor finding fixed). Trigger functions not callable via API. |
+| Face lenses | ✅ | MediaPipe runs on-device; camera frames never leave the phone. |
 | End-to-end encryption | ❌ not claimed | Traffic is encrypted **in transit** (HTTPS/WSS/DTLS-SRTP). Messages are **not** end-to-end encrypted; the server can read stored data. |
 
 ## Known advisor warnings (intentional)

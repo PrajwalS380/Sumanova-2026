@@ -15,6 +15,11 @@ Budget: **₹0**. Every service below is used on its free tier with **no credit 
 | Plus Jakarta Sans, Unbounded (@fontsource) | Typography, self-hosted | SIL Open Font License | No | No | — | — |
 | Google STUN (`stun.l.google.com`) | WebRTC peer discovery (Phase 3) | Free, no SLA | No | No | Calls fail to connect behind strict NAT | Self-hosted coturn |
 | TURN relay | Calls on restrictive networks (Phase 3) | **No reliable free public TURN** — see limitations | — | — | — | Self-hosted coturn on an always-free VM (requires a VM, which may need card verification — will ask first) |
-| OpenStreetMap + Leaflet | Map (Phase 8) | OSM tile usage policy: light use, attribution required | No | No | Tiles may be throttled | Self-hosted tiles / MapLibre |
-| MediaPipe | Face tracking (Phase 8) | Apache-2.0, runs on device | No | No | — | — |
-| Web Push (VAPID) | Notifications (Phase 9) | Free browser push services | No | No | — | — |
+| Leaflet + OpenStreetMap data | Social map | BSD-2 library; OSM data ODbL with attribution | No | No | — | MapLibre + self-hosted tiles |
+| CARTO basemaps (dark_all) | Map tiles | Free for light/non-commercial use with attribution (check CARTO terms if usage grows) | No | No | Tiles may be throttled | OSM standard tiles (light use) or self-hosted tiles |
+| MediaPipe Tasks Vision | AR face lenses (on-device) | Apache-2.0; wasm via jsDelivr CDN, model via Google Cloud Storage (public, free) | No | No | Lenses can't load offline the first time | Self-host the wasm + model in /public |
+| Supabase Edge Functions | Web Push sender (`push`) | Free plan: 500k invocations/month | — | No | Pushes stop until next cycle | Self-host the same Deno function |
+| pg_cron + pg_net (Supabase) | Housekeeping, streak reminders, push trigger | Included in Supabase free plan | — | No | — | — |
+| Supabase Vault | Stores the VAPID private key | Included | — | No | — | — |
+| Google Firebase Cloud Messaging (optional) | Android push when the APK is fully closed | Free, needs a Firebase project | Yes | No | — | Keep using in-app/background notifications |
+| Web Push (VAPID) | Notifications for web/PWA (incl. iPhone home-screen app, iOS 16.4+) | Free browser push services (Google/Mozilla/Apple) | No | No | — | — |
