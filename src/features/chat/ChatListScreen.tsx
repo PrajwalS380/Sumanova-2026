@@ -1,7 +1,7 @@
 import { memo, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BellOff, Clock3, Eye, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info } from 'lucide-react';
+import { BellOff, Clock3, Eye, Phone, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info } from 'lucide-react';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Avatar } from '@/components/Avatar';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
@@ -57,6 +57,9 @@ export default function ChatListScreen() {
         title="Chat"
         right={
           <div className="flex gap-2">
+            <Link to="/calls" className="glass grid h-10 w-10 place-items-center rounded-full" aria-label="Call history">
+              <Phone className="h-5 w-5" />
+            </Link>
             <button onClick={() => setNewGroup(true)} className="glass grid h-10 w-10 place-items-center rounded-full" aria-label="New group">
               <Users className="h-5 w-5" />
             </button>

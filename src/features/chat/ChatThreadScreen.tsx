@@ -1,7 +1,8 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronLeft, Copy, CornerUpRight, Flag, Info, Loader2, PencilLine, Reply, Trash2, Users } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Copy, CornerUpRight, Flag, Info, Loader2, PencilLine, Phone, Reply, Trash2, Users, Video } from 'lucide-react';
+import { useCalls } from '@/providers/CallProvider';
 import { Avatar } from '@/components/Avatar';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
@@ -27,6 +28,7 @@ export default function ChatThreadScreen() {
   const toast = useToast();
   const inbox = useInbox();
   const conv = useConversation(id, me);
+  const calls = useCalls();
   const summary = inbox.conversations.find((c) => c.id === id);
   const theme = CHAT_THEMES[summary?.theme ?? 'aurora'];
   const [menu, setMenu] = useState<LocalMessage | null>(null);
@@ -178,9 +180,21 @@ export default function ChatThreadScreen() {
             </AnimatePresence>
           </span>
         </Link>
-        <Link to={`/chat/${id}/info`} className="grid h-10 w-10 place-items-center rounded-full text-ink-soft" aria-label="Chat details">
-          <Info className="h-5 w-5" />
-        </Link>
+        {!isGroup && info && (
+          <>
+            <button onClick={() => void calls.startCall(id, 'voice')} className="grid h-10 w-10 place-items-center rounded-full text-ink-soft active:scale-90" aria-label="Voice call">
+              <Phone className="h-5 w-5" />
+            </button>
+            <button onClick={() => void calls.startCall(id, 'video')} className="grid h-10 w-10 place-items-center rounded-full text-ink-soft active:scale-90" aria-label="Video call">
+              <Video className="h-5 w-5" />
+            </button>
+          </>
+        )}
+        {isGroup && (
+          <Link to={`/chat/${id}/info`} className="grid h-10 w-10 place-items-center rounded-full text-ink-soft" aria-label="Chat details">
+            <Info className="h-5 w-5" />
+          </Link>
+        )}
       </header>
 
       {/* Messages */}

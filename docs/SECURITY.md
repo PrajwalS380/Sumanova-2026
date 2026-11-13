@@ -17,6 +17,8 @@ Status of each control. ✅ done and verified · 🟡 partial · ⏳ planned pha
 | Account deletion | 🟡 | Migration `20261113000300_account_deletion.sql` written but **not yet applied** (needs approval). UI button will be added once applied. |
 | Rate limiting / abuse prevention | ⏳ | Phase 9. Supabase Auth has built-in auth rate limits. |
 | Block / report users | ⏳ | Phase 2 (with friendships). |
+| Calls | ✅ | Private signalling channels gated by RLS on `realtime.messages`; server enforces privacy, blocks, one active call per user. Media is DTLS-SRTP peer-to-peer. |
+| Chat | ✅ | RLS on conversations/members/messages/reactions; sender and timestamps set by triggers; system messages server-only; members can only change their own prefs (column grants); private `chat-media` bucket with signed URLs. Verified by rolled-back SQL tests. |
 | End-to-end encryption | ❌ not claimed | Traffic is encrypted **in transit** (HTTPS/WSS/DTLS-SRTP). Messages are **not** end-to-end encrypted; the server can read stored data. |
 
 ## Known advisor warnings (intentional)

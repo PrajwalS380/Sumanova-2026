@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { initNative } from '@/lib/nativeInit';
 import { InboxProvider } from '@/providers/InboxProvider';
+import { CallProvider } from '@/providers/CallProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { AppShell } from '@/components/AppShell';
 import { ScreenLoader } from '@/components/ScreenLoader';
@@ -22,6 +23,7 @@ const ChatListScreen = lazy(() => import('@/features/chat/ChatListScreen'));
 const ChatThreadScreen = lazy(() => import('@/features/chat/ChatThreadScreen'));
 const ChatInfoScreen = lazy(() => import('@/features/chat/ChatInfoScreen'));
 const FriendsScreen = lazy(() => import('@/features/friends/FriendsScreen'));
+const CallsScreen = lazy(() => import('@/features/calls/CallsScreen'));
 const StoriesScreen = lazy(() => placeholders().then((m) => ({ default: m.StoriesScreen })));
 const MapScreen = lazy(() => placeholders().then((m) => ({ default: m.MapScreen })));
 const SpotlightScreen = lazy(() => placeholders().then((m) => ({ default: m.SpotlightScreen })));
@@ -80,12 +82,13 @@ export default function App() {
           <Route path="/auth/sign-up" element={<GuestOnly><SignUpPage /></GuestOnly>} />
           <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
           <Route path="/auth/reset" element={<ResetPasswordPage />} />
-          <Route element={<RequireAuth><InboxProvider><AppShell /></InboxProvider></RequireAuth>}>
+          <Route element={<RequireAuth><InboxProvider><CallProvider><AppShell /></CallProvider></InboxProvider></RequireAuth>}>
             <Route index element={<CameraScreen />} />
             <Route path="chat" element={<ChatListScreen />} />
             <Route path="chat/:id" element={<ChatThreadScreen />} />
             <Route path="chat/:id/info" element={<ChatInfoScreen />} />
             <Route path="friends" element={<FriendsScreen />} />
+            <Route path="calls" element={<CallsScreen />} />
             <Route path="stories" element={<StoriesScreen />} />
             <Route path="map" element={<MapScreen />} />
             <Route path="spotlight" element={<SpotlightScreen />} />
