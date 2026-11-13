@@ -8,7 +8,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // CI passes these; local builds fall back to 1 / package.json version.
-        versionCode (System.getenv("SUMANOVA_VERSION_CODE") ?: "1").toInteger()
+        versionCode Integer.parseInt(System.getenv("SUMANOVA_VERSION_CODE") ?: "1")
         versionName System.getenv("SUMANOVA_VERSION_NAME") ?: "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
