@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { initNative } from '@/lib/nativeInit';
 import { InboxProvider } from '@/providers/InboxProvider';
 import { CallProvider } from '@/providers/CallProvider';
+import { NotificationsProvider } from '@/providers/NotificationsProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { AppShell } from '@/components/AppShell';
 import { ScreenLoader } from '@/components/ScreenLoader';
@@ -18,17 +19,17 @@ const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage')
 const ProfileScreen = lazy(() => import('@/features/profile/ProfileScreen'));
 const EditProfileScreen = lazy(() => import('@/features/profile/EditProfileScreen'));
 const SettingsScreen = lazy(() => import('@/features/settings/SettingsScreen'));
-const placeholders = () => import('@/features/placeholder/screens');
 const ChatListScreen = lazy(() => import('@/features/chat/ChatListScreen'));
 const ChatThreadScreen = lazy(() => import('@/features/chat/ChatThreadScreen'));
 const ChatInfoScreen = lazy(() => import('@/features/chat/ChatInfoScreen'));
 const FriendsScreen = lazy(() => import('@/features/friends/FriendsScreen'));
 const CallsScreen = lazy(() => import('@/features/calls/CallsScreen'));
+const NotificationsScreen = lazy(() => import('@/features/notifications/NotificationsScreen'));
 const AvatarStudio = lazy(() => import('@/features/avatar/AvatarStudio'));
 const DuoStudio = lazy(() => import('@/features/avatar/DuoStudio'));
 const StoriesScreen = lazy(() => import('@/features/stories/StoriesScreen'));
 const StoryArchiveScreen = lazy(() => import('@/features/stories/StoryArchiveScreen'));
-const MapScreen = lazy(() => placeholders().then((m) => ({ default: m.MapScreen })));
+const MapScreen = lazy(() => import('@/features/map/MapScreen'));
 const SpotlightScreen = lazy(() => import('@/features/spotlight/SpotlightScreen'));
 const MemoriesScreen = lazy(() => import('@/features/memories/MemoriesScreen'));
 const PersonScreen = lazy(() => import('@/features/people/PersonScreen'));
@@ -86,13 +87,14 @@ export default function App() {
           <Route path="/auth/sign-up" element={<GuestOnly><SignUpPage /></GuestOnly>} />
           <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
           <Route path="/auth/reset" element={<ResetPasswordPage />} />
-          <Route element={<RequireAuth><InboxProvider><CallProvider><AppShell /></CallProvider></InboxProvider></RequireAuth>}>
+          <Route element={<RequireAuth><InboxProvider><NotificationsProvider><CallProvider><AppShell /></CallProvider></NotificationsProvider></InboxProvider></RequireAuth>}>
             <Route index element={<CameraScreen />} />
             <Route path="chat" element={<ChatListScreen />} />
             <Route path="chat/:id" element={<ChatThreadScreen />} />
             <Route path="chat/:id/info" element={<ChatInfoScreen />} />
             <Route path="friends" element={<FriendsScreen />} />
             <Route path="calls" element={<CallsScreen />} />
+            <Route path="notifications" element={<NotificationsScreen />} />
             <Route path="avatar" element={<AvatarStudio />} />
             <Route path="avatar/duo" element={<DuoStudio />} />
             <Route path="stories" element={<StoriesScreen />} />

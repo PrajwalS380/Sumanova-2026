@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CameraOff, Images, ImagePlus, RefreshCw, Settings2, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
+import { Bell, CameraOff, Images, ImagePlus, RefreshCw, Settings2, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
+import { useNotificationsOptional } from '@/providers/NotificationsProvider';
 import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
@@ -28,6 +29,7 @@ export default function CameraScreen() {
   const cam = useCamera(videoRef);
   const recorder = useRecorder(cam.stream);
   const { profile } = useAuth();
+  const unreadActivity = useNotificationsOptional()?.unread ?? 0;
   const toast = useToast();
   const [captured, setCaptured] = useState<Captured | null>(null);
   const [flashFx, setFlashFx] = useState(false);
@@ -160,9 +162,15 @@ export default function CameraScreen() {
 
       {/* Top bar */}
       <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between bg-gradient-to-b from-black/50 to-transparent px-4 pb-10 pt-safe">
-        <Link to="/profile" aria-label="Your profile" className="active:scale-95">
-          <Avatar name={profile?.display_name ?? '?'} url={profile?.avatar_url} aura={profile?.aura_color} size={44} />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/profile" aria-label="Your profile" className="active:scale-95">
+            <Avatar name={profile?.display_name ?? '?'} url={profile?.avatar_url} aura={profile?.aura_color} size={44} />
+          </Link>
+          <Link to="/notifications" aria-label={`Activity${unreadActivity ? `, ${unreadActivity} new` : ''}`} className="relative grid h-11 w-11 place-items-center rounded-full bg-black/25 text-white ring-1 ring-white/10 backdrop-blur-md active:scale-90">
+            <Bell className="h-5 w-5" />
+            {unreadActivity > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-aurora-coral px-1 text-[10px] font-bold">{unreadActivity > 9 ? '9+' : unreadActivity}</span>}
+          </Link>
+        </div>
         <div className="flex flex-col gap-2 rounded-full bg-black/25 p-1.5 ring-1 ring-white/10 backdrop-blur-md">
           {cam.hasMultiple && (
             <CamButton label="Switch camera" onClick={cam.flip} disabled={recorder.recording}>

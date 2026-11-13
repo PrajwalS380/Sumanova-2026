@@ -1,4 +1,7 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Bell } from 'lucide-react';
+import { currentSubscription, disablePush, enablePush, pushSupported } from '@/lib/push';
+import { isNative } from '@/lib/platform';
 import { LogOut, MonitorSmartphone, ShieldCheck, Sparkles } from 'lucide-react';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Toggle } from '@/components/ui/Toggle';
@@ -26,6 +29,26 @@ export default function SettingsScreen() {
   const { session, privacy, settings, setPrivacy, setSettings, signOut } = useAuth();
   const toast = useToast();
   const [busy, setBusy] = useState<'local' | 'global' | null>(null);
+  const [push, setPush] = useState(false);
+  useEffect(() => {
+    void currentSubscription().then((s) => setPush(!!s)).catch(() => undefined);
+  }, []);
+  async function togglePush(on: boolean) {
+    try {
+      if (on) {
+        const r = await enablePush(session!.user.id);
+        if (r === 'denied') return toast('Notifications are blocked — allow them in your browser’s site settings', 'error');
+        if (r === 'unsupported') return toast('Push isn’t supported in this browser', 'error');
+        setPush(true);
+        toast('Push notifications on', 'success');
+      } else {
+        await disablePush();
+        setPush(false);
+      }
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
 
   /** Optimistic update with rollback if the server rejects it. */
   async function updatePrivacy(patch: Partial<PrivacySettings>) {
@@ -63,6 +86,16 @@ export default function SettingsScreen() {
             <Toggle label="Ghost mode" description="Hide your location on the map (on by default)" checked={privacy.ghost_mode} onChange={(v) => updatePrivacy({ ghost_mode: v })} />
           </Section>
         )}
+
+        <Section title="Notifications" icon={<Bell className="h-3.5 w-3.5" />}>
+          {isNative ? (
+            <p className="px-4 py-3.5 text-sm text-ink-mute">The Android app shows notifications while SUMANOVA is open or in the background. Notifications when the app is fully closed need the optional Firebase setup described in the owner handbook.</p>
+          ) : pushSupported() ? (
+            <Toggle label="Push notifications" description="Messages, calls, snaps and friend activity — even when SUMANOVA is closed" checked={push} onChange={(v) => void togglePush(v)} />
+          ) : (
+            <p className="px-4 py-3.5 text-sm text-ink-mute">This browser doesn’t support push. On iPhone, add SUMANOVA to your Home Screen first (iOS 16.4+).</p>
+          )}
+        </Section>
 
         {settings && (
           <Section title="Experience" icon={<Sparkles className="h-3.5 w-3.5" />}>

@@ -39,6 +39,7 @@ export default defineConfig({
         // Never cache Supabase API / auth / realtime traffic.
         navigateFallbackDenylist: [/^\/auth\/v1/, /^\/rest\/v1/],
         cleanupOutdatedCaches: true,
+        importScripts: ['/push-sw.js'],
       },
     }),
   ],
