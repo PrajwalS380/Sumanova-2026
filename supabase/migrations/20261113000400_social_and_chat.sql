@@ -253,8 +253,6 @@ create policy "members react" on public.message_reactions for insert to authenti
 create policy "members change own reaction" on public.message_reactions for update to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 
-create policy "members remove own reaction" on public.message_reactions for delete to authenticated
-  using (user_id = (select auth.uid()));
 
 create policy "presence visible to self and permitted friends" on public.user_presence for select to authenticated
   using (
@@ -356,33 +354,8 @@ begin
 end;
 $$;
 
-create or replace function public.remove_friend(p_user uuid)
-returns void language plpgsql security definer set search_path = '' as $$
-declare v_me uuid := auth.uid();
-begin
-  if v_me is null then raise exception 'not authenticated'; end if;
-  delete from public.friendships where user_a = least(v_me, p_user) and user_b = greatest(v_me, p_user);
-end;
-$$;
 
-create or replace function public.block_user(p_user uuid)
-returns void language plpgsql security definer set search_path = '' as $$
-declare v_me uuid := auth.uid();
-begin
-  if v_me is null or p_user is null or p_user = v_me then raise exception 'invalid user'; end if;
-  insert into public.blocks (blocker_id, blocked_id) values (v_me, p_user) on conflict do nothing;
-  delete from public.friendships where user_a = least(v_me, p_user) and user_b = greatest(v_me, p_user);
-  update public.friend_requests set status = 'cancelled', responded_at = now()
-    where status = 'pending' and ((sender_id = v_me and receiver_id = p_user) or (sender_id = p_user and receiver_id = v_me));
-end;
-$$;
 
-create or replace function public.unblock_user(p_user uuid)
-returns void language plpgsql security definer set search_path = '' as $$
-begin
-  delete from public.blocks where blocker_id = auth.uid() and blocked_id = p_user;
-end;
-$$;
 
 create or replace function public.report_user(p_user uuid, p_reason text, p_details text default null, p_message uuid default null)
 returns void language plpgsql security definer set search_path = '' as $$
@@ -505,17 +478,6 @@ begin
 end;
 $$;
 
-create or replace function public.remove_group_member(p_conversation uuid, p_user uuid)
-returns void language plpgsql security definer set search_path = '' as $$
-declare v_my_role text := public.member_role(p_conversation); v_their_role text;
-begin
-  select role into v_their_role from public.conversation_members where conversation_id = p_conversation and user_id = p_user;
-  if v_my_role not in ('owner','admin') or v_their_role = 'owner' or (v_their_role = 'admin' and v_my_role <> 'owner') then
-    raise exception 'not allowed';
-  end if;
-  delete from public.conversation_members where conversation_id = p_conversation and user_id = p_user;
-end;
-$$;
 
 create or replace function public.set_member_role(p_conversation uuid, p_user uuid, p_role text)
 returns void language plpgsql security definer set search_path = '' as $$
@@ -527,36 +489,7 @@ begin
 end;
 $$;
 
-create or replace function public.leave_conversation(p_conversation uuid)
-returns void language plpgsql security definer set search_path = '' as $$
-declare v_me uuid := auth.uid(); v_role text; v_kind text; v_next uuid; v_name text;
-begin
-  select role into v_role from public.conversation_members where conversation_id = p_conversation and user_id = v_me;
-  select kind into v_kind from public.conversations where id = p_conversation;
-  if v_role is null then return; end if;
-  if v_kind = 'direct' then raise exception 'direct chats can be cleared, not left'; end if;
-  delete from public.conversation_members where conversation_id = p_conversation and user_id = v_me;
-  if not exists (select 1 from public.conversation_members where conversation_id = p_conversation) then
-    delete from public.conversations where id = p_conversation;
-    return;
-  end if;
-  if v_role = 'owner' then
-    select user_id into v_next from public.conversation_members where conversation_id = p_conversation
-      order by (role = 'admin') desc, joined_at limit 1;
-    update public.conversation_members set role = 'owner' where conversation_id = p_conversation and user_id = v_next;
-  end if;
-  select display_name into v_name from public.profiles where id = v_me;
-  perform public.post_system_message(p_conversation, v_name || ' left the group');
-end;
-$$;
 
-create or replace function public.delete_group(p_conversation uuid)
-returns void language plpgsql security definer set search_path = '' as $$
-begin
-  if public.member_role(p_conversation) <> 'owner' then raise exception 'only the owner can delete the group'; end if;
-  delete from public.conversations where id = p_conversation and kind = 'group';
-end;
-$$;
 
 create or replace function public.clear_conversation(p_conversation uuid)
 returns void language plpgsql security definer set search_path = '' as $$
@@ -602,19 +535,6 @@ begin
 end;
 $$;
 
-create or replace function public.delete_message(p_message uuid)
-returns text language plpgsql security definer set search_path = '' as $$
-declare v_path text;
-begin
-  update public.messages set deleted_at = now(), body = null, media_meta = '{}'::jsonb
-    where id = p_message and sender_id = auth.uid() and deleted_at is null
-    returning media_path into v_path;
-  if not found then raise exception 'cannot delete this message'; end if;
-  update public.messages set media_path = null where id = p_message;
-  delete from public.message_reactions where message_id = p_message;
-  return v_path;   -- client removes the storage object
-end;
-$$;
 
 -- Inbox: one query for the chat list (no N+1).
 create or replace function public.list_conversations()
@@ -669,11 +589,11 @@ begin
   foreach f in array array[
     'are_friends(uuid,uuid)','is_blocked_between(uuid,uuid)','is_member(uuid)','member_role(uuid)',
     'search_users(text)','send_friend_request(uuid)','respond_friend_request(uuid,boolean)','cancel_friend_request(uuid)',
-    'remove_friend(uuid)','block_user(uuid)','unblock_user(uuid)','report_user(uuid,text,text,uuid)','list_friends()',
+    'report_user(uuid,text,text,uuid)','list_friends()',
     'get_or_create_direct(uuid)','create_group(text,uuid[])','update_group(uuid,text,text,text)',
-    'add_group_members(uuid,uuid[])','remove_group_member(uuid,uuid)','set_member_role(uuid,uuid,text)',
-    'leave_conversation(uuid)','delete_group(uuid)','clear_conversation(uuid)','mark_read(uuid)','mark_delivered()',
-    'edit_message(uuid,text)','delete_message(uuid)','list_conversations()','touch_presence()'
+    'add_group_members(uuid,uuid[])','set_member_role(uuid,uuid,text)',
+    'clear_conversation(uuid)','mark_read(uuid)','mark_delivered()',
+    'edit_message(uuid,text)','list_conversations()','touch_presence()'
   ] loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
@@ -703,5 +623,3 @@ create policy "chat members upload own media" on storage.objects for insert to a
               and public.is_member(((storage.foldername(name))[1])::uuid)
               and (storage.foldername(name))[2] = (select auth.uid())::text);
 
-create policy "chat senders delete own media" on storage.objects for delete to authenticated
-  using (bucket_id = 'chat-media' and (storage.foldername(name))[2] = (select auth.uid())::text);

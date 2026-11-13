@@ -54,7 +54,7 @@ MCP (`web_fetch_vercel_url`) to verify. No Android SDK locally — Android build
 ## Status
 - Phase 0–1 done: foundation schema (profiles, user_settings, privacy_settings), avatars bucket, auth screens, camera,
   profile/settings, PWA, native shells, CI.
-- Pending migration: `20261113000300_account_deletion.sql` (not applied; needs owner approval).
+- Pending migrations (need owner approval, not applied): `20261113000300_account_deletion.sql`, `20261113000500_social_and_chat_removals.sql`. Approval card often times out — split DELETE-containing SQL into small separate migrations and apply the rest first.
 - Owner to-dos: Supabase Site URL + redirect URLs, Gmail SMTP + email templates (`docs/EMAIL.md`), GitHub signing secrets.
 - Next: Phase 2 friends + real-time chat, then calls, snaps, avatar studio, stories/streaks, memories/Spotlight, map/filters,
   notifications/hardening. Final deliverable: one TXT handbook for the owner listing every manual GitHub/Supabase/Vercel step.
