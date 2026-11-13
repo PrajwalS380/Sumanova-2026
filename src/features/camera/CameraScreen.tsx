@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, CameraOff, Images, ImagePlus, RefreshCw, Settings2, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
+import { Bell, CameraOff, Images, ImagePlus, Loader2, RefreshCw, ScanFace, Settings2, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
+import { LENSES } from './lenses';
+import { useLens } from './useLens';
 import { useNotificationsOptional } from '@/providers/NotificationsProvider';
 import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/providers/AuthProvider';
@@ -26,8 +28,17 @@ export interface Captured {
 
 export default function CameraScreen() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
   const cam = useCamera(videoRef);
-  const recorder = useRecorder(cam.stream);
+  const [lensId, setLensId] = useState<string | null>(null);
+  const [lensTray, setLensTray] = useState(false);
+  const lens = useLens(videoRef, overlayRef, lensId, cam.facing === 'user');
+  const recorder = useRecorder(() => {
+    const raw = cam.stream();
+    if (!lensId || lens.state !== 'ready' || !raw) return raw;
+    // Record the lens composite; keep the original audio-less video track out.
+    return lens.recordingStream();
+  });
   const { profile } = useAuth();
   const unreadActivity = useNotificationsOptional()?.unread ?? 0;
   const toast = useToast();
@@ -82,7 +93,7 @@ export default function CameraScreen() {
     haptic([12, 30, 8]);
     setFlashFx(true);
     setTimeout(() => setFlashFx(false), 180);
-    const blob = await captureFrame(video, mirror, filter.css, (ctx, w, h) => paintTint(ctx, filter, w, h));
+    const blob = await captureFrame(video, mirror, filter.css, (ctx, w, h) => paintTint(ctx, filter, w, h), lensId ? overlayRef.current : null);
     if (!blob) return toast('Couldn’t capture — try again', 'error');
     setCaptured({ blob, kind: 'image', filter: 'none' });
   }
@@ -138,7 +149,11 @@ export default function CameraScreen() {
         className={cn('absolute inset-0 h-full w-full object-cover transition-opacity duration-500', cam.status === 'live' ? 'opacity-100' : 'opacity-0', mirror && '-scale-x-100')}
         style={{ filter: filter.css }}
       />
+      <canvas ref={overlayRef} className={cn('pointer-events-none absolute inset-0 h-full w-full object-cover', mirror && '-scale-x-100', !lensId && 'hidden')} />
       {filter.tint && <div className="pointer-events-none absolute inset-0" style={{ background: filter.tint }} />}
+      {lensId && lens.state === 'loading' && <div className="absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 text-sm text-white backdrop-blur-md"><Loader2 className="h-4 w-4 animate-spin" /> Loading face tracking…</span></div>}
+      {lensId && lens.state === 'error' && <div className="absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-full bg-black/60 px-4 py-2 text-sm text-white">Lenses need an internet connection the first time</span></div>}
+      {lensId && lens.state === 'ready' && lens.faces === 0 && <div className="pointer-events-none absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-full bg-black/40 px-4 py-2 text-sm text-white/90 backdrop-blur-md">Point the camera at a face</span></div>}
 
       {cam.status !== 'live' && <CameraState status={cam.status} onRetry={cam.retry} />}
 
@@ -201,6 +216,18 @@ export default function CameraScreen() {
         </div>
       )}
 
+      {/* Lens tray */}
+      <AnimatePresence>
+        {lensTray && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="no-scrollbar absolute inset-x-0 bottom-[13.5rem] z-10 flex gap-2 overflow-x-auto px-4" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+            <button onClick={() => setLensId(null)} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-full text-xs font-semibold text-white ring-2 backdrop-blur-md', !lensId ? 'bg-white/30 ring-white' : 'bg-black/30 ring-white/20')}>Off</button>
+            {LENSES.map((l) => (
+              <button key={l.id} onClick={() => { haptic(6); setLensId(l.id); }} aria-label={l.name} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl ring-2 backdrop-blur-md transition-transform', lensId === l.id ? 'scale-110 bg-white/30 ring-white' : 'bg-black/30 ring-white/20')}>{l.emoji}</button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Filter dots */}
       <div className="absolute inset-x-0 bottom-[11.5rem] z-10 flex justify-center gap-1.5" aria-hidden>
         {FILTERS.map((f, i) => (
@@ -210,9 +237,11 @@ export default function CameraScreen() {
 
       {/* Capture row */}
       <div className="absolute inset-x-0 bottom-28 z-10 flex items-center justify-center gap-10">
-        <Link to="/memories" aria-label="Memories" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
-          <Images className="h-5 w-5" />
-        </Link>
+        <div className="flex flex-col gap-2">
+          <Link to="/memories" aria-label="Memories" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
+            <Images className="h-5 w-5" />
+          </Link>
+        </div>
         <button
           onPointerDown={(e) => { e.stopPropagation(); onShutterDown(); }}
           onPointerUp={(e) => { e.stopPropagation(); onShutterUp(); }}
@@ -232,9 +261,14 @@ export default function CameraScreen() {
           <span className="absolute inset-[4px] rounded-full bg-black/40 backdrop-blur-sm" />
           <motion.span animate={{ scale: recorder.recording ? 0.55 : 1, borderRadius: recorder.recording ? '30%' : '50%' }} className={cn('absolute inset-[9px]', recorder.recording ? 'bg-aurora-coral' : 'bg-white')} />
         </button>
-        <button onClick={() => gallery.current?.click()} aria-label="Upload from gallery" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
-          <ImagePlus className="h-5 w-5" />
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setLensTray((v) => !v)} aria-label="Face lenses" aria-pressed={lensTray} className={cn('grid h-12 w-12 place-items-center rounded-2xl text-white ring-1 backdrop-blur-md active:scale-90', lensTray || lensId ? 'bg-aurora-gradient ring-transparent' : 'bg-black/30 ring-white/15')}>
+            <ScanFace className="h-5 w-5" />
+          </button>
+          <button onClick={() => gallery.current?.click()} aria-label="Upload from gallery" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
+            <ImagePlus className="h-5 w-5" />
+          </button>
+        </div>
         <input ref={gallery} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => { onPick(e.target.files?.[0]); e.target.value = ''; }} />
       </div>
 

@@ -108,7 +108,7 @@ export function useCamera(videoRef: React.RefObject<HTMLVideoElement>) {
 }
 
 /** Draws the current video frame to a JPEG blob (mirrored for the front camera, filter baked in). */
-export async function captureFrame(video: HTMLVideoElement, mirror: boolean, filterCss = 'none', tint?: (ctx: CanvasRenderingContext2D, w: number, h: number) => void): Promise<Blob | null> {
+export async function captureFrame(video: HTMLVideoElement, mirror: boolean, filterCss = 'none', tint?: (ctx: CanvasRenderingContext2D, w: number, h: number) => void, overlay?: HTMLCanvasElement | null): Promise<Blob | null> {
   const w = video.videoWidth;
   const h = video.videoHeight;
   if (!w || !h) return null;
@@ -124,6 +124,7 @@ export async function captureFrame(video: HTMLVideoElement, mirror: boolean, fil
   if (filterCss !== 'none' && 'filter' in ctx) ctx.filter = filterCss;
   ctx.drawImage(video, 0, 0, w, h);
   ctx.filter = 'none';
+  if (overlay && overlay.width) ctx.drawImage(overlay, 0, 0, w, h);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   tint?.(ctx, w, h);
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.9));
