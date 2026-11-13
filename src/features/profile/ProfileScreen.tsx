@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CalendarHeart, PencilLine, Settings, Share2 } from 'lucide-react';
+import { CalendarHeart, ChevronRight, PencilLine, Settings, Share2, Users } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/providers/AuthProvider';
@@ -60,13 +60,20 @@ export default function ProfileScreen() {
         </motion.div>
 
         <div className="mx-auto mt-6 max-w-sm space-y-3">
+          <Link to="/friends" className="glass flex items-center gap-3 rounded-3xl p-4 active:scale-[0.99]">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/5">
+              <Users className="h-5 w-5 text-aurora-iris" />
+            </span>
+            <span className="flex-1 text-sm font-medium">Friends & requests</span>
+            <ChevronRight className="h-4 w-4 text-ink-mute" />
+          </Link>
           <div className="glass flex items-center gap-3 rounded-3xl p-4">
             <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/5">
               <CalendarHeart className="h-5 w-5 text-aurora-peach" />
             </span>
             <div>
               <p className="text-sm font-medium">Joined {joined}</p>
-              <p className="text-xs text-ink-mute">Friends, streaks and avatar arrive in upcoming releases.</p>
+              <p className="text-xs text-ink-mute">Your SUMANOVA journey started here ✦</p>
             </div>
           </div>
         </div>

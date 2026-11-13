@@ -19,7 +19,8 @@ describe('NovaDock', () => {
 
   it('maps paths to dock indexes', () => {
     expect(navIndex('/')).toBe(2);
-    expect(navIndex('/chat/123')).toBe(1);
+    expect(navIndex('/chat')).toBe(1);
+    expect(navIndex('/chat/123')).toBe(-1);
     expect(navIndex('/settings')).toBe(-1);
   });
 });

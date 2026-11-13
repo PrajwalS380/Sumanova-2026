@@ -1,9 +1,6 @@
-import { Clapperboard, Images, Map, MessageCircle, Sparkles } from 'lucide-react';
+import { Clapperboard, Images, Map, Sparkles } from 'lucide-react';
 import { ComingSoon } from './ComingSoon';
 
-export const ChatScreen = () => (
-  <ComingSoon title="Chat" icon={MessageCircle} headline="Real-time chat is next" phase="Phase 2 — in progress next" points={['Add friends by username', 'Instant 1:1 and group messages', 'Typing, delivered and read indicators', 'Photos, voice notes and reactions', 'Disappearing messages']} />
-);
 export const StoriesScreen = () => (
   <ComingSoon title="Stories" icon={Sparkles} headline="24-hour stories" phase="Phase 6" points={['Photo, video and text stories', 'Friends-only, public or custom audiences', 'Viewer lists and replies', 'Highlights that never expire']} />
 );

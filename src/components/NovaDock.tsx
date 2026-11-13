@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
 import { NAV_ITEMS } from './nav';
+import { useInboxOptional } from '@/providers/InboxProvider';
 
 /**
  * Floating glass "pill" dock. The camera lives in a raised aurora orb in the
@@ -10,6 +11,7 @@ import { NAV_ITEMS } from './nav';
  */
 export function NovaDock({ overCamera = false }: { overCamera?: boolean }) {
   const { pathname } = useLocation();
+  const unread = useInboxOptional()?.unreadTotal ?? 0;
   return (
     <nav
       aria-label="Main"
@@ -50,7 +52,7 @@ export function NovaDock({ overCamera = false }: { overCamera?: boolean }) {
             <NavLink
               key={item.to}
               to={item.to}
-              aria-label={item.label}
+              aria-label={item.to === '/chat' && unread ? `${item.label}, ${unread} unread` : item.label}
               aria-current={active ? 'page' : undefined}
               onClick={() => haptic(6)}
               className="relative grid h-12 w-12 place-items-center rounded-full"
@@ -67,6 +69,11 @@ export function NovaDock({ overCamera = false }: { overCamera?: boolean }) {
                 className={cn('relative h-[22px] w-[22px] transition-colors duration-200', active ? 'text-white' : 'text-ink-mute')}
                 strokeWidth={active ? 2.4 : 2}
               />
+              {item.to === '/chat' && unread > 0 && (
+                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-aurora-coral px-1 text-[10px] font-bold text-white ring-2 ring-night" aria-label={`${unread} unread`}>
+                  {unread > 99 ? '99+' : unread}
+                </motion.span>
+              )}
               {active && (
                 <motion.span
                   layoutId="dock-dot"

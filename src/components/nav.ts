@@ -15,7 +15,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/spotlight', label: 'Spotlight', icon: Clapperboard },
 ];
 
+/** Index of the dock tab for this path, or -1 for screens that hide the dock (threads, settings…). */
 export function navIndex(pathname: string): number {
-  const i = NAV_ITEMS.findIndex((n) => (n.to === '/' ? pathname === '/' : pathname.startsWith(n.to)));
-  return i;
+  const clean = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
+  return NAV_ITEMS.findIndex((n) => n.to === clean);
 }

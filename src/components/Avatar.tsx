@@ -34,10 +34,7 @@ export const Avatar = memo(function Avatar({ name, url, aura = 'violet', size = 
         {url ? (
           <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <span
-            className="font-display font-semibold text-white"
-            style={{ fontSize: size * 0.34, background: `linear-gradient(135deg, ${a.from}, ${a.to})`, WebkitBackgroundClip: 'text', color: 'transparent' }}
-          >
+          <span className="font-display font-semibold" style={{ fontSize: size * 0.34, color: a.to }}>
             {initials || '✦'}
           </span>
         )}
