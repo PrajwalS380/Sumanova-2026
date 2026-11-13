@@ -122,6 +122,7 @@ export default function ChatInfoScreen() {
           </h2>
           <p className="text-sm text-ink-mute">{isGroup ? `${members.length} members` : `@${otherP?.username ?? ''}`}</p>
           {!isGroup && since && <p className="mt-1 text-xs text-ink-faint">Chatting since {since}</p>}
+          {!isGroup && otherP && <button onClick={() => navigate(`/u/${otherP.username}`)} className="mt-3 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">View profile & friendship</button>}
         </div>
 
         <section className="glass divide-y divide-white/5 overflow-hidden rounded-3xl">

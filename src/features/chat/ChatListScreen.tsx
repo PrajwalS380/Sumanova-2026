@@ -1,4 +1,5 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { streaksApi, type StreakInfo } from '@/lib/social/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BellOff, Clock3, Eye, Phone, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info } from 'lucide-react';
@@ -24,6 +25,10 @@ export default function ChatListScreen() {
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<ConversationSummary | null>(null);
   const [newGroup, setNewGroup] = useState(false);
+  const [streaks, setStreaks] = useState<Record<string, StreakInfo>>({});
+  useEffect(() => {
+    void streaksApi.mine().then((list) => setStreaks(Object.fromEntries(list.map((x) => [x.friend_id, x])))).catch(() => undefined);
+  }, [conversations.length]);
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -100,7 +105,7 @@ export default function ChatListScreen() {
           {loading && conversations.length === 0
             ? [0, 1, 2, 3].map((i) => <li key={i} className="h-[72px] animate-pulse rounded-3xl bg-white/[0.04]" />)
             : filtered.rest.map((c, i) => (
-                <ChatRow key={c.id} c={c} me={me} index={i} online={c.other_user_id ? online.has(c.other_user_id) : false} onOpen={() => navigate(`/chat/${c.id}`)} onMenu={() => setMenu(c)} />
+                <ChatRow key={c.id} c={c} me={me} index={i} streak={c.other_user_id ? streaks[c.other_user_id] : undefined} online={c.other_user_id ? online.has(c.other_user_id) : false} onOpen={() => navigate(`/chat/${c.id}`)} onMenu={() => setMenu(c)} />
               ))}
         </ul>
 
@@ -130,7 +135,7 @@ export default function ChatListScreen() {
   );
 }
 
-const ChatRow = memo(function ChatRow({ c, me, index, online, onOpen, onMenu }: { c: ConversationSummary; me: string; index: number; online: boolean; onOpen: () => void; onMenu: () => void }) {
+const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, onMenu }: { c: ConversationSummary; me: string; index: number; online: boolean; streak?: StreakInfo; onOpen: () => void; onMenu: () => void }) {
   const press = useLongPress(() => {
     haptic(12);
     onMenu();
@@ -164,7 +169,10 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, onOpen, onMenu }: 
           <span className={cn('mt-0.5 block truncate text-[13px]', unread ? 'text-ink' : 'text-ink-mute')}>{previewText(c, me)}</span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1.5">
-          <span className={cn('text-[11px]', unread ? 'text-aurora-mint' : 'text-ink-faint')}>{shortTime(c.last_created_at ?? c.last_message_at)}</span>
+          <span className="flex items-center gap-1.5">
+            {streak && streak.count > 0 && <span className="text-[11px] font-semibold text-aurora-peach" aria-label={`${streak.count} day streak`}>🔥{streak.count}{streak.expiring && '⏳'}</span>}
+            <span className={cn('text-[11px]', unread ? 'text-aurora-mint' : 'text-ink-faint')}>{shortTime(c.last_created_at ?? c.last_message_at)}</span>
+          </span>
           {unread ? (
             <span className="grid h-5 min-w-5 place-items-center rounded-full bg-aurora-gradient px-1.5 text-[11px] font-bold text-white">{c.unread_count > 99 ? '99+' : c.unread_count}</span>
           ) : (

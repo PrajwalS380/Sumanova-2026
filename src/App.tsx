@@ -26,10 +26,12 @@ const FriendsScreen = lazy(() => import('@/features/friends/FriendsScreen'));
 const CallsScreen = lazy(() => import('@/features/calls/CallsScreen'));
 const AvatarStudio = lazy(() => import('@/features/avatar/AvatarStudio'));
 const DuoStudio = lazy(() => import('@/features/avatar/DuoStudio'));
-const StoriesScreen = lazy(() => placeholders().then((m) => ({ default: m.StoriesScreen })));
+const StoriesScreen = lazy(() => import('@/features/stories/StoriesScreen'));
+const StoryArchiveScreen = lazy(() => import('@/features/stories/StoryArchiveScreen'));
 const MapScreen = lazy(() => placeholders().then((m) => ({ default: m.MapScreen })));
-const SpotlightScreen = lazy(() => placeholders().then((m) => ({ default: m.SpotlightScreen })));
-const MemoriesScreen = lazy(() => placeholders().then((m) => ({ default: m.MemoriesScreen })));
+const SpotlightScreen = lazy(() => import('@/features/spotlight/SpotlightScreen'));
+const MemoriesScreen = lazy(() => import('@/features/memories/MemoriesScreen'));
+const PersonScreen = lazy(() => import('@/features/people/PersonScreen'));
 
 /** Hooks the native shell (status bar, splash, Android back button) into routing. */
 function NativeBridge() {
@@ -94,6 +96,8 @@ export default function App() {
             <Route path="avatar" element={<AvatarStudio />} />
             <Route path="avatar/duo" element={<DuoStudio />} />
             <Route path="stories" element={<StoriesScreen />} />
+            <Route path="stories/archive" element={<StoryArchiveScreen />} />
+            <Route path="u/:username" element={<PersonScreen />} />
             <Route path="map" element={<MapScreen />} />
             <Route path="spotlight" element={<SpotlightScreen />} />
             <Route path="memories" element={<MemoriesScreen />} />

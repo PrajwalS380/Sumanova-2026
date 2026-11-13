@@ -113,7 +113,7 @@ export default function FriendsScreen() {
               {!searching && results.length === 0 && <p className="py-10 text-center text-sm text-ink-mute">No one found. Try their exact username.</p>}
               <ul className="space-y-2">
                 {results.map((p) => (
-                  <PersonRow key={p.id} person={p}>
+                  <PersonRow key={p.id} person={p} onClick={() => navigate(`/u/${p.username}`)}>
                     {p.relation === 'friend' ? (
                       <RowButton onClick={() => openChat(p.id)} icon={<MessageCircle className="h-4 w-4" />} label="Chat" />
                     ) : p.relation === 'outgoing' ? (
@@ -156,7 +156,7 @@ export default function FriendsScreen() {
                   </div>
                 ) : (
                   friends.map((f) => (
-                    <PersonRow key={f.id} person={f} onClick={() => openChat(f.id)}>
+                    <PersonRow key={f.id} person={f} onClick={() => navigate(`/u/${f.username}`)}>
                       <RowButton onClick={() => openChat(f.id)} icon={<MessageCircle className="h-4 w-4" />} label="Chat" />
                     </PersonRow>
                   ))

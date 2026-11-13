@@ -18,6 +18,7 @@ export interface UserSettings {
   haptics: boolean;
   default_snap_seconds: number;
   chat_wallpaper: string;
+  interests?: string[];
 }
 
 export type Audience = 'everyone' | 'friends';
