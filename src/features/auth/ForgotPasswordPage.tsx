@@ -1,48 +1,93 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { MailCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AuthLayout } from './AuthLayout';
 import { Field } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
-import { emailSchema, friendlyAuthError } from '@/lib/validation';
+import { emailSchema, friendlyAuthError, passwordSchema } from '@/lib/validation';
+import { useAuth } from '@/providers/AuthProvider';
+import { useToast } from '@/providers/ToastProvider';
+import { OtpField, OTP_LENGTH } from './OtpField';
+import { useCooldown } from './useCooldown';
 
+/**
+ * Password reset with an emailed 6-digit code. Works identically on the web,
+ * the Android app and the iPhone app (no deep links required).
+ */
 export default function ForgotPasswordPage() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { clearRecovering } = useAuth();
+  const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+  const [code, setCode] = useState('');
+  const [pw, setPw] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
+  const cooldown = useCooldown();
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
+  async function sendCode(e?: FormEvent) {
+    e?.preventDefault();
     const parsed = emailSchema.safeParse(email);
-    if (!parsed.success) return setError(parsed.error.issues[0].message);
+    if (!parsed.success) return setErrors({ email: parsed.error.issues[0].message });
     setBusy(true);
-    const { error: err } = await supabase.auth.resetPasswordForEmail(parsed.data, {
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
       redirectTo: `${window.location.origin}/auth/reset`,
     });
     setBusy(false);
-    if (err) return setError(friendlyAuthError(err.message));
-    setSent(true);
+    if (error) return setErrors({ email: friendlyAuthError(error.message) });
+    setErrors({});
+    cooldown.start(60);
+    setStep('code');
+  }
+
+  async function reset(e: FormEvent) {
+    e.preventDefault();
+    if (code.length !== OTP_LENGTH) return setErrors({ code: `Enter the ${OTP_LENGTH}-digit code` });
+    const parsed = passwordSchema.safeParse(pw);
+    if (!parsed.success) return setErrors({ pw: parsed.error.issues[0].message });
+    setBusy(true);
+    const { error: vErr } = await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'recovery' });
+    if (vErr) {
+      setBusy(false);
+      setCode('');
+      return setErrors({ code: friendlyAuthError(vErr.message) });
+    }
+    const { error: uErr } = await supabase.auth.updateUser({ password: pw });
+    setBusy(false);
+    clearRecovering();
+    if (uErr) return setErrors({ pw: friendlyAuthError(uErr.message) });
+    toast('Password updated — you’re signed in', 'success');
+    navigate('/', { replace: true });
   }
 
   return (
-    <AuthLayout title="Reset password" subtitle={sent ? undefined : 'We’ll email you a secure reset link.'}>
-      {sent ? (
-        <div className="flex flex-col items-center text-center">
-          <div className="grid h-16 w-16 place-items-center rounded-3xl bg-aurora-teal/15 text-aurora-mint">
-            <MailCheck className="h-8 w-8" />
-          </div>
-          <p className="mt-4 text-sm text-ink-soft">If an account exists for {email}, a reset link is on its way.</p>
-        </div>
-      ) : (
-        <form onSubmit={submit} className="space-y-3" noValidate>
-          <Field label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={error} />
-          <Button type="submit" block size="lg" loading={busy}>
-            Send reset link
-          </Button>
-        </form>
-      )}
+    <AuthLayout title="Reset password" subtitle={step === 'email' ? 'We’ll email you a 6-digit code.' : `Enter the code sent to ${email}`}>
+      <AnimatePresence mode="wait" initial={false}>
+        {step === 'email' ? (
+          <motion.form key="email" onSubmit={sendCode} className="space-y-3" noValidate initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <Field label="Email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
+            <Button type="submit" block size="lg" loading={busy}>
+              Send code
+            </Button>
+          </motion.form>
+        ) : (
+          <motion.form key="code" onSubmit={reset} className="space-y-4" noValidate initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+            <OtpField value={code} onChange={(v) => { setCode(v); setErrors((er) => ({ ...er, code: '' })); }} error={errors.code} disabled={busy} />
+            <Field label="New password" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} error={errors.pw} />
+            <Button type="submit" block size="lg" loading={busy}>
+              Update password
+            </Button>
+            <div className="flex justify-between text-sm">
+              <button type="button" onClick={() => setStep('email')} className="text-ink-mute hover:text-ink">Change email</button>
+              <button type="button" onClick={() => void sendCode()} disabled={cooldown.left > 0} className="font-semibold text-aurora-iris disabled:text-ink-faint">
+                {cooldown.left > 0 ? `Resend in ${cooldown.left}s` : 'Resend code'}
+              </button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
       <p className="mt-6 text-center text-sm">
         <Link to="/auth/sign-in" className="font-semibold text-aurora-iris">
           Back to sign in

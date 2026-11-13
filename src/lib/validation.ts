@@ -76,9 +76,11 @@ export function firstError(result: z.SafeParseReturnType<unknown, unknown>): Rec
 /** Turns Supabase auth error messages into friendly copy. */
 export function friendlyAuthError(message: string | undefined): string {
   const m = (message ?? '').toLowerCase();
+  if (m.includes('token has expired') || m.includes('otp') && m.includes('invalid') || m.includes('token') && m.includes('invalid')) return 'That code is wrong or has expired. Try again or resend.';
   if (m.includes('invalid login')) return 'That email and password don’t match.';
   if (m.includes('email not confirmed')) return 'Please confirm your email first — check your inbox.';
   if (m.includes('already registered') || m.includes('already been registered')) return 'An account with this email already exists.';
+  if (m.includes('for security purposes')) return 'Please wait a few seconds before requesting another code.';
   if (m.includes('rate limit') || m.includes('too many')) return 'Too many attempts. Please wait a minute and try again.';
   if (m.includes('database error saving new user')) return 'That username was just taken. Try another.';
   if (m.includes('network') || m.includes('fetch')) return 'Can’t reach the server. Check your connection.';

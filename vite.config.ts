@@ -12,6 +12,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // registered manually in main.tsx (web only)
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'SUMANOVA',

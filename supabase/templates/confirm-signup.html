@@ -1,0 +1,11 @@
+<!-- Supabase Dashboard → Authentication → Emails → Templates → "Confirm signup"
+     Subject: Your SUMANOVA code: {{ .Token }} -->
+<div style="margin:0;padding:32px 16px;background:#070814;font-family:Segoe UI,Helvetica,Arial,sans-serif;color:#f5f3ff">
+  <div style="max-width:440px;margin:0 auto;background:#0d0f22;border:1px solid #23264a;border-radius:28px;padding:32px;text-align:center">
+    <div style="width:56px;height:56px;margin:0 auto 16px;border-radius:18px;background:linear-gradient(135deg,#8b5cf6,#2dd4bf,#fb7185);line-height:56px;font-size:28px;color:#fff">&#10022;</div>
+    <h1 style="margin:0 0 8px;font-size:22px;letter-spacing:.12em">SUMANOVA</h1>
+    <p style="margin:0 0 24px;color:#c4c1e0;font-size:15px">Enter this code in the app to verify your email.</p>
+    <div style="display:inline-block;padding:16px 24px;border-radius:18px;background:#141733;border:1px solid #3b3f72;font-size:34px;font-weight:700;letter-spacing:10px;color:#ffffff">{{ .Token }}</div>
+    <p style="margin:24px 0 0;color:#8a87ab;font-size:13px">The code expires in 1 hour. If you didn’t sign up, you can ignore this email.</p>
+  </div>
+</div>

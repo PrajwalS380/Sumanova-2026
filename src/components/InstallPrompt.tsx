@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Download, X } from 'lucide-react';
 import { LogoMark } from './Logo';
 import { brand } from '@/config/brand';
+import { isNative } from '@/lib/platform';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -15,6 +16,7 @@ const DISMISS_KEY = 'sumanova:install-dismissed';
 export function InstallPrompt() {
   const [evt, setEvt] = useState<BeforeInstallPromptEvent | null>(null);
   useEffect(() => {
+    if (isNative) return;
     let dismissed = false;
     try {
       dismissed = localStorage.getItem(DISMISS_KEY) === '1';

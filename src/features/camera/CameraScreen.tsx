@@ -8,6 +8,7 @@ import { useToast } from '@/providers/ToastProvider';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
 import { captureFrame, useCamera } from './useCamera';
+import { saveMedia } from '@/lib/saveMedia';
 
 const TIMER_STEPS = [0, 3, 10] as const;
 
@@ -45,13 +46,14 @@ export default function CameraScreen() {
     setShot({ blob, url: URL.createObjectURL(blob) });
   }
 
-  function save() {
+  async function save() {
     if (!shot) return;
-    const a = document.createElement('a');
-    a.href = shot.url;
-    a.download = `sumanova-${Date.now()}.jpg`;
-    a.click();
-    toast('Saved to your device', 'success');
+    try {
+      const result = await saveMedia(shot.blob, `sumanova-${Date.now()}.jpg`);
+      if (result === 'saved') toast('Saved to your device', 'success');
+    } catch {
+      toast('Couldn’t save the photo', 'error');
+    }
   }
 
   return (

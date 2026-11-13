@@ -2,6 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AtSign, Check, Loader2, MailCheck, X } from 'lucide-react';
+import { OtpField, OTP_LENGTH } from './OtpField';
+import { useCooldown } from './useCooldown';
+import { useToast } from '@/providers/ToastProvider';
 import { AuthLayout } from './AuthLayout';
 import { Field } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
@@ -65,23 +68,7 @@ export default function SignUpPage() {
     if (!data.session) setSentTo(form.email.trim());
   }
 
-  if (sentTo) {
-    return (
-      <AuthLayout title="Check your inbox" subtitle="One tap and you’re in.">
-        <div className="flex flex-col items-center text-center">
-          <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="grid h-16 w-16 place-items-center rounded-3xl bg-aurora-teal/15 text-aurora-mint">
-            <MailCheck className="h-8 w-8" />
-          </motion.div>
-          <p className="mt-4 text-sm text-ink-soft">
-            We sent a confirmation link to <span className="font-semibold text-ink">{sentTo}</span>. Open it on this device to finish creating your account.
-          </p>
-          <Link to="/auth/sign-in" className="mt-6 text-sm font-semibold text-aurora-iris">
-            Back to sign in
-          </Link>
-        </div>
-      </AuthLayout>
-    );
-  }
+  if (sentTo) return <VerifyEmailStep email={sentTo} onBack={() => setSentTo(null)} />;
 
   const max = new Date();
   max.setFullYear(max.getFullYear() - 13);
@@ -172,6 +159,56 @@ export default function SignUpPage() {
           Sign in
         </Link>
       </p>
+    </AuthLayout>
+  );
+}
+
+/** Step 3: enter the 6-digit code from the confirmation email. */
+function VerifyEmailStep({ email, onBack }: { email: string; onBack: () => void }) {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const cooldown = useCooldown(60);
+  const toast = useToast();
+
+  async function verify(token = code) {
+    if (token.length !== OTP_LENGTH) return setError(`Enter the ${OTP_LENGTH}-digit code`);
+    setBusy(true);
+    setError('');
+    const { error: err } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
+    setBusy(false);
+    if (err) {
+      setError(friendlyAuthError(err.message));
+      setCode('');
+    }
+    // On success the auth listener signs the user in and routes to the camera.
+  }
+
+  async function resend() {
+    const { error: err } = await supabase.auth.resend({ type: 'signup', email });
+    if (err) return toast(friendlyAuthError(err.message), 'error');
+    cooldown.start(60);
+    toast('New code sent', 'success');
+  }
+
+  return (
+    <AuthLayout title="Verify your email" subtitle={`We sent a ${OTP_LENGTH}-digit code to ${email}`}>
+      <div className="mb-5 flex justify-center">
+        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="grid h-14 w-14 place-items-center rounded-3xl bg-aurora-teal/15 text-aurora-mint">
+          <MailCheck className="h-7 w-7" />
+        </motion.div>
+      </div>
+      <OtpField value={code} onChange={(v) => { setCode(v); setError(''); }} onComplete={(v) => void verify(v)} error={error} disabled={busy} />
+      <Button block size="lg" className="mt-5" loading={busy} onClick={() => void verify()}>
+        Verify & continue
+      </Button>
+      <div className="mt-5 flex items-center justify-between text-sm">
+        <button onClick={onBack} className="text-ink-mute hover:text-ink">Change email</button>
+        <button onClick={resend} disabled={cooldown.left > 0} className="font-semibold text-aurora-iris disabled:text-ink-faint">
+          {cooldown.left > 0 ? `Resend in ${cooldown.left}s` : 'Resend code'}
+        </button>
+      </div>
+      <p className="mt-4 text-center text-xs text-ink-faint">Can’t find it? Check Spam or Promotions.</p>
     </AuthLayout>
   );
 }

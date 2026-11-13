@@ -2,7 +2,7 @@
 
 A real-time social app — camera-first, aurora-themed, installable on Android as a PWA, and built entirely on free tiers.
 
-**Stack:** React 18 · TypeScript · Vite · Tailwind CSS · Framer Motion · Lucide · Supabase (Postgres, Auth, Realtime, Storage) · vite-plugin-pwa · Vitest
+**Stack:** React 18 · TypeScript · Vite · Tailwind CSS · Framer Motion · Lucide · Supabase (Postgres, Auth, Realtime, Storage) · Capacitor 8 (Android & iOS) · vite-plugin-pwa · Vitest
 
 ## Status
 
@@ -50,14 +50,15 @@ Database migrations live in `supabase/migrations/` and are applied in filename o
 | `release/1.0.0` | Stabilisation for the 1.0.0 release |
 | `SUM-202601` | Current feature work (merges into `develop`) |
 
-## Install on Android
+## Get the app
 
-1. Open the deployed URL in **Chrome** on your phone.
-2. Tap **Install** on the in-app card, or Chrome menu ⋮ → **Add to Home screen / Install app**.
-3. Launch SUMANOVA from the home screen — it opens full-screen like a native app.
-4. Allow camera access when prompted (Chrome ⋮ → Settings → Site settings if you denied it earlier).
+- **Android:** download `SUMANOVA.apk` from the latest [release](../../releases) — see [docs/MOBILE.md](docs/MOBILE.md).
+- **iPhone:** open https://sumanova.vercel.app in Safari → Share → Add to Home Screen (native options in docs/MOBILE.md).
+- **Web:** https://sumanova.vercel.app
 
 ## Docs
 
 - [Zero-cost dependency register](docs/ZERO_COST_REGISTER.md)
 - [Security checklist](docs/SECURITY.md)
+- [Android & iPhone apps](docs/MOBILE.md)
+- [Email setup](docs/EMAIL.md)

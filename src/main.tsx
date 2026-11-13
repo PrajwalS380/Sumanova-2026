@@ -9,6 +9,13 @@ import App from './App';
 import { AuthProvider } from './providers/AuthProvider';
 import { ToastProvider } from './providers/ToastProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { isNative } from './lib/platform';
+
+// The service worker is for the website/PWA only. Inside the native app the
+// files ship in the APK/IPA, so a SW cache would only risk serving stale code.
+if (!isNative && 'serviceWorker' in navigator) {
+  void import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }));
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,5 +1,6 @@
-import { lazy, Suspense, type ReactNode } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { initNative } from '@/lib/nativeInit';
 import { useAuth } from '@/providers/AuthProvider';
 import { AppShell } from '@/components/AppShell';
 import { ScreenLoader } from '@/components/ScreenLoader';
@@ -21,6 +22,24 @@ const StoriesScreen = lazy(() => placeholders().then((m) => ({ default: m.Storie
 const MapScreen = lazy(() => placeholders().then((m) => ({ default: m.MapScreen })));
 const SpotlightScreen = lazy(() => placeholders().then((m) => ({ default: m.SpotlightScreen })));
 const MemoriesScreen = lazy(() => placeholders().then((m) => ({ default: m.MemoriesScreen })));
+
+/** Hooks the native shell (status bar, splash, Android back button) into routing. */
+function NativeBridge() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const path = useRef(location.pathname);
+  path.current = location.pathname;
+  useEffect(() => {
+    void initNative(() => {
+      const p = path.current;
+      if (p === '/' || p === '/auth/sign-in') return false;
+      if (['/chat', '/stories', '/map', '/spotlight'].includes(p)) navigate('/');
+      else navigate(-1);
+      return true;
+    });
+  }, [navigate]);
+  return null;
+}
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading, recovering } = useAuth();
@@ -48,12 +67,13 @@ export default function App() {
   }
   return (
     <>
+      <NativeBridge />
       <NetworkBanner />
       <Suspense fallback={<ScreenLoader />}>
         <Routes>
           <Route path="/auth/sign-in" element={<GuestOnly><SignInPage /></GuestOnly>} />
           <Route path="/auth/sign-up" element={<GuestOnly><SignUpPage /></GuestOnly>} />
-          <Route path="/auth/forgot" element={<GuestOnly><ForgotPasswordPage /></GuestOnly>} />
+          <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
           <Route path="/auth/reset" element={<ResetPasswordPage />} />
           <Route element={<RequireAuth><AppShell /></RequireAuth>}>
             <Route index element={<CameraScreen />} />

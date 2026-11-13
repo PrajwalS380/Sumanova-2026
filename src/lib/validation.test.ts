@@ -61,3 +61,10 @@ describe('friendlyAuthError', () => {
     expect(friendlyAuthError('Email rate limit exceeded')).toMatch(/Too many/);
   });
 });
+
+describe('friendlyAuthError (codes)', () => {
+  it('explains wrong or expired codes', () => {
+    expect(friendlyAuthError('Token has expired or is invalid')).toMatch(/code is wrong or has expired/);
+    expect(friendlyAuthError('For security purposes, you can only request this after 42 seconds.')).toMatch(/wait a few seconds/);
+  });
+});

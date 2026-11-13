@@ -10,3 +10,9 @@ coverage/
 .vercel
 playwright-report/
 test-results/
+# Signing material — never commit
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+keystore.b64
