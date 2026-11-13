@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CalendarHeart, ChevronRight, PencilLine, Settings, Share2, Users } from 'lucide-react';
+import { CalendarHeart, ChevronRight, PencilLine, Settings, Share2, Sparkles, Users } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/providers/AuthProvider';
@@ -60,6 +60,16 @@ export default function ProfileScreen() {
         </motion.div>
 
         <div className="mx-auto mt-6 max-w-sm space-y-3">
+          <Link to="/avatar" className="relative flex items-center gap-3 overflow-hidden rounded-3xl bg-gradient-to-br from-aurora-violet/40 via-aurora-teal/20 to-aurora-coral/30 p-4 ring-1 ring-white/10 active:scale-[0.99]">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15">
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Avatar studio</span>
+              <span className="block text-xs text-ink-soft">Design your 3D look, outfits & duo stickers</span>
+            </span>
+            <ChevronRight className="h-4 w-4 text-ink-soft" />
+          </Link>
           <Link to="/friends" className="glass flex items-center gap-3 rounded-3xl p-4 active:scale-[0.99]">
             <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/5">
               <Users className="h-5 w-5 text-aurora-iris" />

@@ -24,6 +24,8 @@ const ChatThreadScreen = lazy(() => import('@/features/chat/ChatThreadScreen'));
 const ChatInfoScreen = lazy(() => import('@/features/chat/ChatInfoScreen'));
 const FriendsScreen = lazy(() => import('@/features/friends/FriendsScreen'));
 const CallsScreen = lazy(() => import('@/features/calls/CallsScreen'));
+const AvatarStudio = lazy(() => import('@/features/avatar/AvatarStudio'));
+const DuoStudio = lazy(() => import('@/features/avatar/DuoStudio'));
 const StoriesScreen = lazy(() => placeholders().then((m) => ({ default: m.StoriesScreen })));
 const MapScreen = lazy(() => placeholders().then((m) => ({ default: m.MapScreen })));
 const SpotlightScreen = lazy(() => placeholders().then((m) => ({ default: m.SpotlightScreen })));
@@ -89,6 +91,8 @@ export default function App() {
             <Route path="chat/:id/info" element={<ChatInfoScreen />} />
             <Route path="friends" element={<FriendsScreen />} />
             <Route path="calls" element={<CallsScreen />} />
+            <Route path="avatar" element={<AvatarStudio />} />
+            <Route path="avatar/duo" element={<DuoStudio />} />
             <Route path="stories" element={<StoriesScreen />} />
             <Route path="map" element={<MapScreen />} />
             <Route path="spotlight" element={<SpotlightScreen />} />
