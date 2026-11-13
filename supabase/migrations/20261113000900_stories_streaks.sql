@@ -332,13 +332,13 @@ begin
   select count(*) into v_msgs from public.messages m join public.conversations c on c.id = m.conversation_id
     where c.direct_key = least(v_me, p_friend)::text || ':' || greatest(v_me, p_friend)::text and m.kind <> 'system';
   select exists (select 1 from public.best_friends() bf where bf.friend_id = p_friend) into v_best_friend;
-  if coalesce(v_streak, 0) >= 3 then v_badges := v_badges || '🔥 Streak keeper'; end if;
-  if coalesce(v_best, 0) >= 30 then v_badges := v_badges || '🏆 30-day legends'; end if;
-  if coalesce(v_best, 0) >= 100 then v_badges := v_badges || '💯 Century club'; end if;
-  if v_snaps >= 50 then v_badges := v_badges || '📸 Snap squad'; end if;
-  if v_msgs >= 500 then v_badges := v_badges || '💬 Chatterboxes'; end if;
-  if v_best_friend then v_badges := v_badges || '💜 Best friends'; end if;
-  if v_since < now() - interval '1 year' then v_badges := v_badges || '🎂 One year+'; end if;
+  if coalesce(v_streak, 0) >= 3 then v_badges := array_append(v_badges, '🔥 Streak keeper'::text); end if;
+  if coalesce(v_best, 0) >= 30 then v_badges := array_append(v_badges, '🏆 30-day legends'::text); end if;
+  if coalesce(v_best, 0) >= 100 then v_badges := array_append(v_badges, '💯 Century club'::text); end if;
+  if v_snaps >= 50 then v_badges := array_append(v_badges, '📸 Snap squad'::text); end if;
+  if v_msgs >= 500 then v_badges := array_append(v_badges, '💬 Chatterboxes'::text); end if;
+  if v_best_friend then v_badges := array_append(v_badges, '💜 Best friends'::text); end if;
+  if v_since < now() - interval '1 year' then v_badges := array_append(v_badges, '🎂 One year+'::text); end if;
   return query select v_since, coalesce(v_streak, 0), coalesce(v_best, 0), coalesce(v_exp, false), v_snaps, v_msgs, v_best_friend,
     (extract(month from v_since) = extract(month from now()) and extract(day from v_since) = extract(day from now()) and v_since < now() - interval '300 days'),
     v_badges;
