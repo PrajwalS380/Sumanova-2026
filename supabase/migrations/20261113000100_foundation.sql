@@ -1,6 +1,7 @@
 -- SUMANOVA Phase 1: foundation schema
 -- Profiles (public identity), user_settings and privacy_settings (owner-only),
--- profile bootstrap on sign-up, username availability check and account deletion.
+-- profile bootstrap on sign-up and username availability check.
+-- Account deletion lives in its own migration (20261113000300).
 
 create extension if not exists citext with schema extensions;
 
@@ -203,30 +204,5 @@ $$;
 
 revoke all on function public.is_username_available(text) from public;
 grant execute on function public.is_username_available(text) to anon, authenticated;
-
--- ---------------------------------------------------------------------------
--- RPC: delete my account. Removes the auth user; every user-owned row
--- cascades from auth.users.
--- ---------------------------------------------------------------------------
-create or replace function public.delete_my_account()
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_uid uuid := auth.uid();
-begin
-  if v_uid is null then
-    raise exception 'not authenticated';
-  end if;
-  -- Storage files are removed by the client through the Storage API first
-  -- (direct SQL deletes on storage.objects are not allowed).
-  delete from auth.users where id = v_uid;
-end;
-$$;
-
-revoke all on function public.delete_my_account() from public, anon;
-grant execute on function public.delete_my_account() to authenticated;
 
 revoke execute on function public.handle_new_user() from public, anon, authenticated;

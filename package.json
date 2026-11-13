@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.1.1",
+    "@fontsource-variable/unbounded": "^5.1.1",
     "@supabase/supabase-js": "^2.46.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

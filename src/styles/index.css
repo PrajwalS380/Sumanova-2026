@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-night text-ink font-sans antialiased;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: rgba(139, 92, 246, 0.45); }
+  button, a { touch-action: manipulation; }
+  input, textarea, select { font-size: 16px; } /* prevents iOS zoom */
+  :focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+}
+
+@layer components {
+  /* Frosted glass surface. Blur is kept modest for mid-range Android GPUs. */
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.08);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    @apply shadow-glass;
+  }
+  .glass-strong {
+    background: linear-gradient(180deg, rgba(20,23,51,0.82), rgba(13,15,34,0.78));
+    border: 1px solid rgba(255,255,255,0.09);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    @apply shadow-glass;
+  }
+  .text-aurora {
+    background: linear-gradient(100deg, #c4b5fd 0%, #5eead4 45%, #fda4af 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .ring-aurora {
+    background: conic-gradient(from 200deg, #8b5cf6, #2dd4bf, #fb7185, #fbbf24, #8b5cf6);
+  }
+  .pt-safe { padding-top: max(var(--safe-top), 0.75rem); }
+  .pb-safe { padding-bottom: max(var(--safe-bottom), 0.75rem); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+}
