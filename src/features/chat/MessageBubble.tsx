@@ -8,6 +8,7 @@ import { haptic } from '@/lib/haptics';
 import { Avatar } from '@/components/Avatar';
 import { ImageView, VideoView, VoiceView } from './MediaView';
 import { useLongPress } from './useLongPress';
+import { SnapTile, type SnapTileState } from '@/features/snaps/SnapTile';
 
 export type Receipt = 'sending' | 'failed' | 'sent' | 'delivered' | 'seen' | null;
 
@@ -28,6 +29,7 @@ interface Props {
   onRetry: (clientId: string) => void;
   onOpenImage: (url: string) => void;
   onQuickReact: (m: LocalMessage) => void;
+  snap?: { state: SnapTileState; screenshot: boolean; onOpen: () => void };
 }
 
 export const MessageBubble = memo(function MessageBubble(p: Props) {
@@ -47,7 +49,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
   }
 
   const isMedia = m.kind === 'image' || m.kind === 'video';
-  const isSticker = m.kind === 'sticker';
+  const isSticker = m.kind === 'sticker' || m.kind === 'snap';
   const deleted = !!m.deleted_at;
   const counts = p.reactions.reduce<Record<string, number>>((acc, r) => ((acc[r.emoji] = (acc[r.emoji] ?? 0) + 1), acc), {});
   const r = 'rounded-[1.4rem]';
@@ -93,6 +95,8 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
             <span className="text-sm">Message deleted</span>
           ) : m.kind === 'text' ? (
             <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">{m.body}</p>
+          ) : m.kind === 'snap' ? (
+            p.snap ? <SnapTile kind={m.body ?? 'image'} state={p.snap.state} screenshot={p.snap.screenshot} mine={mine} onOpen={p.snap.onOpen} /> : null
           ) : m.kind === 'sticker' ? (
             <span className="block pb-1 text-[64px] leading-none drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker">{m.body}</span>
           ) : m.kind === 'image' ? (

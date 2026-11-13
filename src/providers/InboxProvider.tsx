@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { chatApi } from '@/lib/chat/api';
+import { snapsApi } from '@/lib/snaps/api';
 import type { ConversationSummary } from '@/lib/chat/types';
 import { useAuth } from './AuthProvider';
 
@@ -69,6 +70,7 @@ export function InboxProvider({ children }: { children: ReactNode }) {
     void refresh();
     void refreshRequests();
     void chatApi.markDelivered();
+    void snapsApi.markDelivered();
     void chatApi.touchPresence();
 
     const channel: RealtimeChannel = supabase
@@ -78,6 +80,7 @@ export function InboxProvider({ children }: { children: ReactNode }) {
         if (payload.eventType === 'INSERT') {
           const m = payload.new as { conversation_id: string; sender_id: string | null };
           if (m.sender_id !== me && active.current !== m.conversation_id) void chatApi.markDelivered();
+          if (m.sender_id !== me && (m as { kind?: string }).kind === 'snap') void snapsApi.markDelivered();
         }
         scheduleRefresh();
       })

@@ -19,6 +19,8 @@ Status of each control. ✅ done and verified · 🟡 partial · ⏳ planned pha
 | Block / report users | ⏳ | Phase 2 (with friendships). |
 | Calls | ✅ | Private signalling channels gated by RLS on `realtime.messages`; server enforces privacy, blocks, one active call per user. Media is DTLS-SRTP peer-to-peer. |
 | Chat | ✅ | RLS on conversations/members/messages/reactions; sender and timestamps set by triggers; system messages server-only; members can only change their own prefs (column grants); private `chat-media` bucket with signed URLs. Verified by rolled-back SQL tests. |
+| Snaps | ✅ | Private `snaps` bucket; recipients can fetch the file only while unopened or within a short window after open/replay (`can_read_snap_object`); open/replay/screenshot are server RPCs with server timestamps; one replay within 5 min if allowed; expire after 30 days unopened. |
+| Screenshots | 🟡 | Android app: FLAG_SECURE blocks screenshots & screen recording while a snap is open; Android 14+ also reports attempts → “took a screenshot” notice. Web/PWA and iPhone sideload: no reliable screenshot signal, so nothing is claimed. |
 | End-to-end encryption | ❌ not claimed | Traffic is encrypted **in transit** (HTTPS/WSS/DTLS-SRTP). Messages are **not** end-to-end encrypted; the server can read stored data. |
 
 ## Known advisor warnings (intentional)

@@ -19,6 +19,9 @@ import { Composer } from './Composer';
 import { MessageBubble, type Receipt } from './MessageBubble';
 import { CHAT_THEMES, QUICK_REACTIONS } from './themes';
 import { useConversation } from './useConversation';
+import { useSnapStatuses } from '@/features/snaps/useSnapStatuses';
+import { snapTileState } from '@/features/snaps/SnapTile';
+import { SnapViewer } from '@/features/snaps/SnapViewer';
 
 export default function ChatThreadScreen() {
   const { id = '' } = useParams();
@@ -36,6 +39,7 @@ export default function ChatThreadScreen() {
   const [editing, setEditing] = useState<LocalMessage | null>(null);
   const [forwarding, setForwarding] = useState<LocalMessage | null>(null);
   const [viewer, setViewer] = useState<string | null>(null);
+  const [snapView, setSnapView] = useState<{ id: string; mode: 'open' | 'replay' | 'own' } | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
@@ -70,6 +74,9 @@ export default function ChatThreadScreen() {
     io.observe(el);
     return () => io.disconnect();
   }, [conv, loadingOlder]);
+
+  const snapIds = useMemo(() => conv.messages.filter((m) => m.kind === 'snap').map((m) => (m.media_meta as { snap_id?: string }).snap_id ?? '').filter(Boolean), [conv.messages]);
+  const snapStatus = useSnapStatuses(snapIds);
 
   const byId = useMemo(() => new Map(conv.messages.map((m) => [m.id, m])), [conv.messages]);
   const reactionsBy = useMemo(() => {
@@ -238,6 +245,12 @@ export default function ChatThreadScreen() {
                     onRetry={conv.retry}
                     onOpenImage={setViewer}
                     onQuickReact={(m) => { haptic(10); void safe(() => conv.react(m.id, '❤️')); }}
+                    snap={r.m!.kind === 'snap' ? (() => {
+                      const sid = (r.m!.media_meta as { snap_id?: string }).snap_id ?? '';
+                      const mineSnap = r.m!.sender_id === me;
+                      const st = snapTileState(mineSnap, snapStatus.rows.filter((x) => x.snap_id === sid), snapStatus.snaps[sid], me);
+                      return { ...st, onOpen: () => setSnapView({ id: sid, mode: mineSnap ? 'own' : st.state === 'replayable' ? 'replay' : 'open' }) };
+                    })() : undefined}
                   />
                 </Fragment>
               ),
@@ -292,7 +305,7 @@ export default function ChatThreadScreen() {
             </div>
             <SheetItem icon={<Reply className="h-4 w-4" />} label="Reply" onClick={() => { setReplyTo(menu); setMenu(null); }} />
             {menu.body && menu.kind === 'text' && <SheetItem icon={<Copy className="h-4 w-4" />} label="Copy text" onClick={() => { void navigator.clipboard?.writeText(menu.body ?? ''); toast('Copied', 'success'); setMenu(null); }} />}
-            <SheetItem icon={<CornerUpRight className="h-4 w-4" />} label="Forward" onClick={() => { setForwarding(menu); setMenu(null); }} />
+            {menu.kind !== 'snap' && <SheetItem icon={<CornerUpRight className="h-4 w-4" />} label="Forward" onClick={() => { setForwarding(menu); setMenu(null); }} />}
             {menu.sender_id === me && menu.kind === 'text' && Date.now() - new Date(menu.created_at).getTime() < 86_400_000 && (
               <SheetItem icon={<PencilLine className="h-4 w-4" />} label="Edit" onClick={() => { setEditing(menu); setMenu(null); }} />
             )}
@@ -320,6 +333,8 @@ export default function ChatThreadScreen() {
           {inbox.conversations.length <= 1 && <p className="py-6 text-center text-sm text-ink-mute">No other chats yet.</p>}
         </ul>
       </Sheet>
+
+      {snapView && <SnapViewer snapId={snapView.id} mode={snapView.mode} onClose={() => setSnapView(null)} />}
 
       {/* Image viewer */}
       <AnimatePresence>

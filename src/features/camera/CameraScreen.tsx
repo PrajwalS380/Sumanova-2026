@@ -1,33 +1,72 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CameraOff, Download, Images, RefreshCw, Settings2, SwitchCamera, Timer, X, Zap, ZapOff } from 'lucide-react';
+import { CameraOff, Images, ImagePlus, RefreshCw, Settings2, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
+import { FILTERS, paintTint } from '@/lib/snaps/filters';
+import { MAX_VIDEO_BYTES } from '@/lib/chat/media';
 import { captureFrame, useCamera } from './useCamera';
-import { saveMedia } from '@/lib/saveMedia';
+import { MAX_RECORD_SECONDS, useRecorder } from './useRecorder';
 
+const MediaEditor = lazy(() => import('@/features/editor/MediaEditor'));
 const TIMER_STEPS = [0, 3, 10] as const;
+const HOLD_MS = 280;
+
+export interface Captured {
+  blob: Blob;
+  kind: 'image' | 'video';
+  filter: string;
+  duration?: number;
+}
 
 export default function CameraScreen() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const cam = useCamera(videoRef);
+  const recorder = useRecorder(cam.stream);
   const { profile } = useAuth();
   const toast = useToast();
-  const [shot, setShot] = useState<{ blob: Blob; url: string } | null>(null);
+  const [captured, setCaptured] = useState<Captured | null>(null);
   const [flashFx, setFlashFx] = useState(false);
   const [timer, setTimer] = useState<(typeof TIMER_STEPS)[number]>(0);
   const [countdown, setCountdown] = useState(0);
+  const [filterIdx, setFilterIdx] = useState(0);
+  const [showFilterName, setShowFilterName] = useState(false);
+  const [recProgress, setRecProgress] = useState(0);
+  const holdTimer = useRef<ReturnType<typeof setTimeout>>();
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const gallery = useRef<HTMLInputElement>(null);
   const mirror = cam.facing === 'user';
+  const filter = FILTERS[filterIdx];
 
-  useEffect(() => () => {
-    if (shot) URL.revokeObjectURL(shot.url);
-  }, [shot]);
+  useEffect(() => {
+    if (!showFilterName) return;
+    const t = setTimeout(() => setShowFilterName(false), 900);
+    return () => clearTimeout(t);
+  }, [showFilterName, filterIdx]);
 
-  async function take() {
+  // Recording progress ring + auto-stop at the limit.
+  useEffect(() => {
+    if (!recorder.recording) return setRecProgress(0);
+    const t = setInterval(() => {
+      const e = recorder.elapsed();
+      setRecProgress(Math.min(1, e / MAX_RECORD_SECONDS));
+      if (e >= MAX_RECORD_SECONDS) void finishRecording();
+    }, 100);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorder.recording]);
+
+  function changeFilter(dir: 1 | -1) {
+    haptic(5);
+    setFilterIdx((i) => (i + dir + FILTERS.length) % FILTERS.length);
+    setShowFilterName(true);
+  }
+
+  async function takePhoto() {
     const video = videoRef.current;
     if (!video || cam.status !== 'live') return;
     if (timer && !countdown) {
@@ -41,38 +80,76 @@ export default function CameraScreen() {
     haptic([12, 30, 8]);
     setFlashFx(true);
     setTimeout(() => setFlashFx(false), 180);
-    const blob = await captureFrame(video, mirror);
+    const blob = await captureFrame(video, mirror, filter.css, (ctx, w, h) => paintTint(ctx, filter, w, h));
     if (!blob) return toast('Couldn’t capture — try again', 'error');
-    setShot({ blob, url: URL.createObjectURL(blob) });
+    setCaptured({ blob, kind: 'image', filter: 'none' });
   }
 
-  async function save() {
-    if (!shot) return;
-    try {
-      const result = await saveMedia(shot.blob, `sumanova-${Date.now()}.jpg`);
-      if (result === 'saved') toast('Saved to your device', 'success');
-    } catch {
-      toast('Couldn’t save the photo', 'error');
-    }
+  async function finishRecording() {
+    const out = await recorder.stop();
+    if (!out) return;
+    haptic(10);
+    setCaptured({ blob: out.blob, kind: 'video', filter: filter.id, duration: out.duration });
+  }
+
+  function onShutterDown() {
+    if (cam.status !== 'live' || countdown) return;
+    holdTimer.current = setTimeout(async () => {
+      haptic(14);
+      const ok = await recorder.start();
+      if (!ok) toast('Recording isn’t supported here', 'error');
+    }, HOLD_MS);
+  }
+  function onShutterUp() {
+    clearTimeout(holdTimer.current);
+    if (recorder.recording) void finishRecording();
+    else void takePhoto();
+  }
+
+  function onPick(file: File | undefined) {
+    if (!file) return;
+    if (file.type.startsWith('video/')) {
+      if (file.size > MAX_VIDEO_BYTES) return toast('Videos must be under 25 MB', 'error');
+      setCaptured({ blob: file, kind: 'video', filter: 'none' });
+    } else if (file.type.startsWith('image/')) {
+      setCaptured({ blob: file, kind: 'image', filter: 'none' });
+    } else toast('Pick a photo or video', 'error');
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-black">
-      {/* Live preview */}
+    <div
+      className="relative h-full w-full overflow-hidden bg-black"
+      onPointerDown={(e) => (swipe.current = { x: e.clientX, y: e.clientY })}
+      onPointerUp={(e) => {
+        const s = swipe.current;
+        swipe.current = null;
+        if (!s || recorder.recording) return;
+        const dx = e.clientX - s.x;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(e.clientY - s.y) * 1.5) changeFilter(dx < 0 ? 1 : -1);
+      }}
+    >
       <video
         ref={videoRef}
         playsInline
         muted
         autoPlay
         className={cn('absolute inset-0 h-full w-full object-cover transition-opacity duration-500', cam.status === 'live' ? 'opacity-100' : 'opacity-0', mirror && '-scale-x-100')}
+        style={{ filter: filter.css }}
       />
+      {filter.tint && <div className="pointer-events-none absolute inset-0" style={{ background: filter.tint }} />}
 
       {cam.status !== 'live' && <CameraState status={cam.status} onRetry={cam.retry} />}
 
-      {/* Shutter flash */}
       <AnimatePresence>{flashFx && <motion.div initial={{ opacity: 0.9 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }} className="absolute inset-0 z-30 bg-white" />}</AnimatePresence>
 
-      {/* Countdown */}
+      <AnimatePresence>
+        {showFilterName && (
+          <motion.div key={filter.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-x-0 top-1/3 z-20 text-center">
+            <span className="font-display text-3xl font-semibold text-white drop-shadow-[0_2px_20px_rgba(0,0,0,.6)]">{filter.name}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {countdown > 0 && (
           <motion.div key={countdown} initial={{ scale: 1.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} className="absolute inset-0 z-20 grid place-items-center">
@@ -88,7 +165,7 @@ export default function CameraScreen() {
         </Link>
         <div className="flex flex-col gap-2 rounded-full bg-black/25 p-1.5 ring-1 ring-white/10 backdrop-blur-md">
           {cam.hasMultiple && (
-            <CamButton label="Switch camera" onClick={cam.flip}>
+            <CamButton label="Switch camera" onClick={cam.flip} disabled={recorder.recording}>
               <SwitchCamera className="h-5 w-5" />
             </CamButton>
           )}
@@ -111,19 +188,17 @@ export default function CameraScreen() {
 
       {/* Zoom */}
       {cam.caps.zoom && cam.status === 'live' && (
-        <div className="absolute inset-x-0 bottom-44 z-10 flex justify-center">
-          <input
-            type="range"
-            aria-label="Zoom"
-            min={cam.caps.zoom.min}
-            max={Math.min(cam.caps.zoom.max, 8)}
-            step={cam.caps.zoom.step || 0.1}
-            value={cam.zoom}
-            onChange={(e) => cam.setZoom(Number(e.target.value))}
-            className="w-48 accent-aurora-iris"
-          />
+        <div className="absolute inset-x-0 bottom-48 z-10 flex justify-center">
+          <input type="range" aria-label="Zoom" min={cam.caps.zoom.min} max={Math.min(cam.caps.zoom.max, 8)} step={cam.caps.zoom.step || 0.1} value={cam.zoom} onChange={(e) => cam.setZoom(Number(e.target.value))} className="w-48 accent-aurora-iris" />
         </div>
       )}
+
+      {/* Filter dots */}
+      <div className="absolute inset-x-0 bottom-[11.5rem] z-10 flex justify-center gap-1.5" aria-hidden>
+        {FILTERS.map((f, i) => (
+          <span key={f.id} className={cn('h-1.5 rounded-full transition-all duration-300', i === filterIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/40')} />
+        ))}
+      </div>
 
       {/* Capture row */}
       <div className="absolute inset-x-0 bottom-28 z-10 flex items-center justify-center gap-10">
@@ -131,52 +206,44 @@ export default function CameraScreen() {
           <Images className="h-5 w-5" />
         </Link>
         <button
-          onClick={take}
+          onPointerDown={(e) => { e.stopPropagation(); onShutterDown(); }}
+          onPointerUp={(e) => { e.stopPropagation(); onShutterUp(); }}
+          onPointerLeave={() => recorder.recording && void finishRecording()}
+          onContextMenu={(e) => e.preventDefault()}
           disabled={cam.status !== 'live' || countdown > 0}
-          aria-label="Take photo"
-          className="group relative grid h-20 w-20 place-items-center rounded-full disabled:opacity-40"
+          aria-label="Tap for photo, hold for video"
+          className="group relative grid h-20 w-20 touch-none select-none place-items-center rounded-full disabled:opacity-40"
         >
-          <span className="absolute inset-0 rounded-full ring-aurora opacity-90" />
+          <motion.span animate={{ scale: recorder.recording ? 1.25 : 1 }} className={cn('absolute inset-0 rounded-full', recorder.recording ? '' : 'ring-aurora opacity-90')} />
+          {recorder.recording && (
+            <svg className="absolute inset-[-10px] h-[calc(100%+20px)] w-[calc(100%+20px)] -rotate-90" viewBox="0 0 100 100" aria-hidden>
+              <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="5" />
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#fb7185" strokeWidth="5" strokeLinecap="round" strokeDasharray={289} strokeDashoffset={289 * (1 - recProgress)} />
+            </svg>
+          )}
           <span className="absolute inset-[4px] rounded-full bg-black/40 backdrop-blur-sm" />
-          <span className="absolute inset-[9px] rounded-full bg-white transition-transform duration-150 group-active:scale-90" />
+          <motion.span animate={{ scale: recorder.recording ? 0.55 : 1, borderRadius: recorder.recording ? '30%' : '50%' }} className={cn('absolute inset-[9px]', recorder.recording ? 'bg-aurora-coral' : 'bg-white')} />
         </button>
-        <span className="h-12 w-12" aria-hidden />
+        <button onClick={() => gallery.current?.click()} aria-label="Upload from gallery" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
+          <ImagePlus className="h-5 w-5" />
+        </button>
+        <input ref={gallery} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => { onPick(e.target.files?.[0]); e.target.value = ''; }} />
       </div>
 
-      {/* Captured preview */}
       <AnimatePresence>
-        {shot && (
-          <motion.div initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.22 }} className="absolute inset-0 z-50 bg-black">
-            <img src={shot.url} alt="Captured" className="h-full w-full object-cover" />
-            <div className="absolute inset-x-0 top-0 flex justify-between px-4 pt-safe">
-              <button onClick={() => setShot(null)} aria-label="Discard" className="grid h-11 w-11 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md">
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-gradient-to-t from-black/70 to-transparent px-5 pb-safe pt-16">
-              <button onClick={save} className="flex h-12 items-center gap-2 rounded-2xl bg-white/15 px-4 text-sm font-semibold text-white ring-1 ring-white/20 backdrop-blur-md">
-                <Download className="h-5 w-5" /> Save
-              </button>
-              <p className="text-right text-xs text-white/70">Sending snaps to friends arrives with chat.</p>
-            </div>
-          </motion.div>
+        {captured && (
+          <Suspense fallback={<div className="absolute inset-0 z-50 bg-black" />}>
+            <MediaEditor captured={captured} onClose={() => setCaptured(null)} />
+          </Suspense>
         )}
       </AnimatePresence>
     </div>
   );
 }
 
-function CamButton({ children, label, onClick, active }: { children: React.ReactNode; label: string; onClick: () => void; active?: boolean }) {
+function CamButton({ children, label, onClick, active, disabled }: { children: React.ReactNode; label: string; onClick: () => void; active?: boolean; disabled?: boolean }) {
   return (
-    <button
-      onClick={() => {
-        haptic(6);
-        onClick();
-      }}
-      aria-label={label}
-      aria-pressed={active}
-      className={cn('grid h-10 w-10 place-items-center rounded-full text-white transition-colors active:scale-90', active && 'bg-white/20')}
-    >
+    <button onClick={() => { haptic(6); onClick(); }} disabled={disabled} aria-label={label} aria-pressed={active} className={cn('grid h-10 w-10 place-items-center rounded-full text-white transition-colors active:scale-90 disabled:opacity-40', active && 'bg-white/20')}>
       {children}
     </button>
   );
@@ -186,8 +253,8 @@ function CameraState({ status, onRetry }: { status: string; onRetry: () => void 
   const copy: Record<string, { title: string; body: string }> = {
     idle: { title: 'Starting camera…', body: '' },
     starting: { title: 'Starting camera…', body: '' },
-    denied: { title: 'Camera access is off', body: 'Allow camera access in your browser’s site settings (tap the lock icon in the address bar), then retry.' },
-    unavailable: { title: 'No camera found', body: 'This device or browser doesn’t expose a camera. Gallery uploads will still work.' },
+    denied: { title: 'Camera access is off', body: 'Allow camera access in your browser’s site settings (or the app’s permissions), then retry. You can still upload from your gallery.' },
+    unavailable: { title: 'No camera found', body: 'This device doesn’t expose a camera. Use the gallery button to upload a photo or video.' },
     error: { title: 'Camera is busy', body: 'Another app may be using it. Close it and retry.' },
   };
   const c = copy[status] ?? copy.error;

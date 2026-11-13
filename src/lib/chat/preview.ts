@@ -7,7 +7,7 @@ const KIND_LABEL: Record<MessageKind, string> = {
   voice: '🎙️ Voice note',
   sticker: 'Sticker',
   system: '',
-  snap: '✦ Snap',
+  snap: '✦ New snap',
 };
 
 /** One-line preview for the chat list. */
