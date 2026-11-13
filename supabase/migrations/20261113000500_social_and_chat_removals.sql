@@ -87,11 +87,7 @@ begin
 end;
 $$;
 
-create policy "members remove own reaction" on public.message_reactions for delete to authenticated
-  using (user_id = (select auth.uid()));
 
-create policy "chat senders delete own media" on storage.objects for delete to authenticated
-  using (bucket_id = 'chat-media' and (storage.foldername(name))[2] = (select auth.uid())::text);
 
 do $$
 declare f text;
