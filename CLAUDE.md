@@ -37,11 +37,15 @@ Android (APK) and iPhone.
 ## Stack & conventions
 React 18 + TS + Vite 5 + Tailwind 3 + Framer Motion + Lucide + Zod, Supabase JS v2, vite-plugin-pwa (web only),
 Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path alias `@/` → `src/`.
-- Design system **"Ember Noir"** (owner-approved, replaced "Aurora Glass"): warm near-black `noir.*`, light `ember.*`
-  (flame/amber/rose/gold/cream…), cream `ink.*`; `.glass` = matte card (no blur), `.glass-strong` = sheets/dock (small blur),
-  `.text-ember`, `.ring-ember`, `.eyebrow`, `.grain`; `bg-ember-gradient` always with `text-noir`. Fonts Fraunces (display
-  serif, italics for accents) + Manrope. `ScreenHeader` takes a `kicker`. Dock = cream capsule tabs + ember orb camera.
-  Stories render as tilted cream "print" cards. Components in `src/components/ui`.
+- Design system **"Pearl"** + **"Widgets" structure** (owner-approved from 5 wireframe options; canvas
+  https://claude.ai/artifact/QeBwqyGdk5sy2xz7PHFneG). Light theme: milky glass over blue/pink/mint pearl sheen, navy
+  ink, indigo accent, Instrument Serif display + Manrope. Token names are legacy: `noir.*` = light surfaces,
+  `ink.*` = navy text, `ember.*` = accents (`ember-flame` indigo, `ember-cream` = navy active capsule with `text-noir`),
+  `bg-ember-gradient` = indigo→violet (white text). Media screens (camera, editor, story/snap viewers, call, Spotlight
+  player) keep white-on-dark overlays; everything else uses `ink/…` overlays, never `white/…`.
+  Navigation: NO tab bar. Home `/` = widget dashboard (`features/home/HomeScreen.tsx`, reorder/hide saved per device);
+  side drawer (`components/Drawer.tsx`, menu button in `ScreenHeader`/`MenuButton`, left-edge swipe); camera at `/camera`.
+  Spotlight lands on a ranked list, tap opens the full-screen player. Must not copy Snapchat's layout/IA.
 - Avatar v2 (owner wants Snapchat-level depth, ~100 variants per category, all original & free, no brands):
   `features/avatar/look/` = data (`config.ts` Look v2 + v1 migration, `face.ts`/`hair.ts`/`fashion.ts`/`extras.ts`
   100-variant catalogues as families × params, `palettes.ts`, `tube.ts` tapered-strand builder);

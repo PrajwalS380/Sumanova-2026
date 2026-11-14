@@ -209,27 +209,37 @@ export default function MapScreen() {
         </div>
       </div>
 
-      {friendsOnMap.length > 0 && (
-        <div className="no-scrollbar absolute inset-x-0 bottom-48 z-[500] flex gap-2 overflow-x-auto px-4">
-          {friendsOnMap.map((f) => (
-            <button key={f.user_id} onClick={() => { map.current?.flyTo([f.lat, f.lng], 15, { duration: 0.8 }); setSelected(f); }} className="glass-strong flex shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3">
-              <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={30} ring={false} />
-              <span className="text-xs font-semibold">{f.display_name.split(' ')[0]}</span>
-            </button>
-          ))}
+      {/* Floating widget card: who's out + your sharing control */}
+      <div className="absolute inset-x-3 bottom-[max(1rem,var(--safe-bottom))] z-[500]">
+        <div className="glass-strong rounded-[26px] p-4">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Out right now · {friendsOnMap.length}</p>
+            {sharing && <span className="text-xs font-bold text-ember-sage">You · {left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left</span>}
+          </div>
+          {friendsOnMap.length > 0 ? (
+            <div className="no-scrollbar -mx-1 mt-3 flex gap-2 overflow-x-auto px-1">
+              {friendsOnMap.map((f) => (
+                <button key={f.user_id} onClick={() => { map.current?.flyTo([f.lat, f.lng], 15, { duration: 0.8 }); setSelected(f); }} className="flex shrink-0 items-center gap-2 rounded-full bg-ink/[0.05] py-1.5 pl-1.5 pr-3 active:scale-95">
+                  <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={30} ring={false} />
+                  <span className="text-xs font-bold">{f.display_name.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-ink-mute">No friends are sharing right now.</p>
+          )}
+          <div className="mt-3">
+            {sharing ? (
+              <button onClick={() => void stop()} disabled={busy} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ink/[0.06] font-bold">
+                {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Ghost className="h-5 w-5" /> Stop sharing</>}
+              </button>
+            ) : (
+              <button onClick={() => setSheet(true)} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ember-gradient font-bold text-white shadow-glow">
+                <MapPin className="h-5 w-5" /> Share my location
+              </button>
+            )}
+          </div>
         </div>
-      )}
-
-      <div className="absolute inset-x-0 bottom-28 z-[500] flex justify-center px-4">
-        {sharing ? (
-          <button onClick={() => void stop()} disabled={busy} className="glass-strong flex h-14 items-center gap-2 rounded-full px-6 font-semibold">
-            {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Ghost className="h-5 w-5" /> Stop sharing</>}
-          </button>
-        ) : (
-          <button onClick={() => setSheet(true)} className="flex h-14 items-center gap-2 rounded-full bg-ember-gradient text-noir px-6 font-semibold shadow-glow">
-            <MapPin className="h-5 w-5" /> Share my location
-          </button>
-        )}
       </div>
 
       <Sheet open={sheet} onClose={() => setSheet(false)} title="Share location">

@@ -88,6 +88,20 @@ export default function MemoriesScreen() {
     }
     return out;
   }, [items]);
+  /** Months present in what's loaded, newest first, for the right-edge scrubber. */
+  const months = useMemo(() => {
+    const seen: { key: string; label: string; year: string }[] = [];
+    for (const m of items ?? []) {
+      const d = new Date(m.taken_at);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!seen.some((x) => x.key === key)) seen.push({ key, label: d.toLocaleDateString(undefined, { month: 'short' }), year: String(d.getFullYear()).slice(2) });
+    }
+    return seen;
+  }, [items]);
+  const monthOf = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${d.getMonth()}`;
+  };
 
   const selecting = selected.size > 0;
   const toggle = (id: string) => setSelected((s) => {
@@ -162,7 +176,7 @@ export default function MemoriesScreen() {
           </div>
         ) : (
           groups.map((g) => (
-            <section key={g.label} className="mb-4">
+            <section key={g.label} id={`mem-${monthOf(g.items[0].taken_at)}`} className="mb-4 scroll-mt-28">
               <h3 className="mb-2 px-1 text-xs font-semibold text-ink-mute">{g.label}</h3>
               <div className="grid grid-cols-3 gap-1.5">
                 {g.items.map((m) => (
@@ -174,6 +188,21 @@ export default function MemoriesScreen() {
         )}
         <div ref={sentinel} className="h-4" />
       </div>
+
+      {months.length > 1 && (
+        <nav aria-label="Jump to month" className="glass fixed right-1.5 top-1/2 z-20 flex max-h-[60vh] -translate-y-1/2 flex-col items-center gap-0.5 overflow-y-auto rounded-full px-1 py-2 no-scrollbar">
+          {months.map((m, i) => (
+            <button
+              key={m.key}
+              onClick={() => document.getElementById(`mem-${m.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="flex w-9 flex-col items-center rounded-full py-1 text-[10px] font-bold text-ink-soft active:bg-ember-flame/10"
+            >
+              {(i === 0 || months[i - 1].year !== m.year) && <span className="text-[9px] text-ember-flame">’{m.year}</span>}
+              {m.label}
+            </button>
+          ))}
+        </nav>
+      )}
 
       {/* Selection bar */}
       <AnimatePresence>

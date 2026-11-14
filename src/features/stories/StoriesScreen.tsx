@@ -75,7 +75,7 @@ export default function StoriesScreen() {
           ) : friends.length === 0 ? (
             <p className="glass rounded-3xl p-6 text-center text-sm text-ink-mute">No new stories from friends right now.</p>
           ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-5 px-1 pt-1">
+            <div className="grid grid-cols-3 gap-2.5">
               {friends.map((r, i) => (
                 <RingTile key={r.user_id} r={r} delay={i} onClick={() => setOpen({ list: friends, index: i })} />
               ))}
@@ -85,7 +85,7 @@ export default function StoriesScreen() {
 
         {discover.length > 0 && (
           <Section title="Discover">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-5 px-1 pt-1">
+            <div className="grid grid-cols-3 gap-2.5">
               {discover.map((r, i) => (
                 <RingTile key={r.user_id} r={r} delay={i} onClick={() => setOpen({ list: discover, index: i })} />
               ))}
@@ -109,32 +109,32 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-/** A story as a tilted "print": cream-bordered card lit by the friend's aura. */
+/** A story tile: tall pearl card, iridescent outline while unseen. */
 function RingTile({ r, onClick, delay }: { r: StoryRing; onClick: () => void; delay: number }) {
   const a = AURA[r.aura_color] ?? AURA.gold;
-  const tilt = [-2.2, 1.6, -1.2, 2.4][delay % 4];
   return (
     <motion.button
-      initial={{ opacity: 0, y: 14, rotate: 0 }}
-      animate={{ opacity: 1, y: 0, rotate: tilt }}
-      whileTap={{ scale: 0.96, rotate: 0 }}
-      transition={{ delay: Math.min(delay, 9) * 0.04, type: 'spring', stiffness: 260, damping: 24 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ delay: Math.min(delay, 9) * 0.035, type: 'spring', stiffness: 300, damping: 28 }}
       onClick={onClick}
-      className="relative rounded-[18px] bg-ember-cream p-2 pb-3 text-left shadow-[0_18px_40px_-18px_rgba(0,0,0,.9)]"
+      className={cn('relative rounded-[22px] p-[2.5px] text-left', r.unseen ? 'ring-ember' : 'bg-ink/[0.06]')}
     >
-      <span className="relative block aspect-[4/5] overflow-hidden rounded-[12px]" style={{ background: `radial-gradient(120% 90% at 30% 15%, ${a.to}, ${a.from} 55%, #1e1916 100%)` }}>
-        <span className="absolute inset-0 grid place-items-center">
-          <Avatar name={r.display_name} url={r.avatar_url} aura={r.aura_color} size={84} ring={false} />
+      <span className="relative block aspect-[3/4] overflow-hidden rounded-[20px]" style={{ background: `linear-gradient(170deg, #FFFFFF 0%, ${a.to} 70%, ${a.from} 130%)` }}>
+        <span className="absolute inset-x-0 top-[22%] grid place-items-center">
+          <Avatar name={r.display_name} url={r.avatar_url} aura={r.aura_color} size={58} />
         </span>
-        {r.unseen && <span className="absolute left-2 top-2 rounded-full bg-noir/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ember-amber">New</span>}
-        {r.story_count > 1 && <span className="absolute right-2 top-2 rounded-full bg-noir/70 px-1.5 py-0.5 text-[10px] font-bold text-ink">{r.story_count}</span>}
+        {r.story_count > 1 && <span className="absolute right-2 top-2 rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-bold text-ink">{r.story_count}</span>}
+        <span className="absolute inset-x-2 bottom-2">
+          <span className="block truncate text-[13px] font-bold text-ink">{r.display_name.split(' ')[0]}</span>
+          <span className="block text-[10px] font-semibold text-ink-mute">{shortTime(r.latest_at)}</span>
+        </span>
       </span>
-      <span className="mt-2 block truncate px-0.5 font-display text-[17px] italic leading-tight text-noir">{r.display_name.split(' ')[0]}</span>
-      <span className="block px-0.5 text-[11px] font-medium text-noir/55">{shortTime(r.latest_at)}</span>
     </motion.button>
   );
 }
 
 function Skeleton() {
-  return <div className="grid grid-cols-2 gap-4">{[0, 1].map((i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-[18px] bg-ink/[0.04]" />)}</div>;
+  return <div className="grid grid-cols-3 gap-2.5">{[0, 1, 2].map((i) => <div key={i} className="aspect-[3/4] animate-pulse rounded-[22px] bg-ink/[0.04]" />)}</div>;
 }

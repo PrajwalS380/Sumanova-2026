@@ -1,8 +1,9 @@
 import { MenuButton } from '@/components/MenuButton';
+import { AppBackground } from '@/components/AppBackground';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bookmark, Flag, Heart, Loader2, MessageCircle, MoreHorizontal, Plus, Search, Send, Share2, SlidersHorizontal, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { Bookmark, ChevronLeft, Play, Flag, Heart, Loader2, MessageCircle, MoreHorizontal, Plus, Search, Send, Share2, SlidersHorizontal, Trash2, Volume2, VolumeX, X } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
@@ -34,6 +35,8 @@ export default function SpotlightScreen() {
   const [menu, setMenu] = useState<SpotlightVideo | null>(null);
   const [upload, setUpload] = useState(false);
   const [interests, setInterests] = useState(false);
+  /** null = ranked list view; a number = full-screen player opened at that index */
+  const [playing, setPlaying] = useState<number | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const loadingMore = useRef(false);
 
@@ -136,7 +139,7 @@ export default function SpotlightScreen() {
           </div>
         ) : (
           videos.map((v, i) => (
-            <Card key={v.id} v={v} me={me} active={i === active} near={Math.abs(i - active) <= 1} muted={muted} onMute={() => setMuted((m) => !m)} onLike={(f) => void toggleLike(v, f)} onSave={() => void toggleSave(v)} onFollow={() => void toggleFollow(v)} onComments={() => setComments(v)} onShare={() => void share(v)} onMenu={() => setMenu(v)} />
+            <Card key={v.id} v={v} me={me} active={playing !== null && i === active} near={Math.abs(i - active) <= 1} muted={muted} onMute={() => setMuted((m) => !m)} onLike={(f) => void toggleLike(v, f)} onSave={() => void toggleSave(v)} onFollow={() => void toggleFollow(v)} onComments={() => setComments(v)} onShare={() => void share(v)} onMenu={() => setMenu(v)} />
           ))
         )}
       </div>
@@ -152,7 +155,7 @@ export default function SpotlightScreen() {
             </label>
           ) : (
             <>
-              <MenuButton dark />
+              <button onClick={() => setPlaying(null)} aria-label="Back to the list" className="grid h-10 w-10 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md"><ChevronLeft className="h-5 w-5" /></button>
               <h1 className="flex-1 font-display text-[30px] italic text-white drop-shadow">Spotlight</h1>
               <TopBtn label="Interests" onClick={() => setInterests(true)}><SlidersHorizontal className="h-5 w-5" /></TopBtn>
               <TopBtn label="Search" onClick={() => setSearching(true)}><Search className="h-5 w-5" /></TopBtn>
@@ -166,6 +169,23 @@ export default function SpotlightScreen() {
           ))}
         </div>
       </div>
+
+      {playing === null && (
+        <ChartList
+          videos={videos}
+          category={category}
+          setCategory={setCategory}
+          query={query}
+          setQuery={setQuery}
+          onOpen={(i) => {
+            setPlaying(i);
+            setActive(i);
+            requestAnimationFrame(() => scroller.current?.scrollTo({ top: i * (scroller.current?.clientHeight ?? 0) }));
+          }}
+          onInterests={() => setInterests(true)}
+          onUpload={() => setUpload(true)}
+        />
+      )}
 
       <CommentsSheet video={comments} me={me} onClose={() => setComments(null)} onCount={(id, d) => setVideos((v) => v?.map((x) => (x.id === id ? { ...x, comment_count: x.comment_count + d } : x)) ?? null)} />
       <Sheet open={!!menu} onClose={() => setMenu(null)}>
@@ -190,13 +210,69 @@ export default function SpotlightScreen() {
                 const next = on ? (settings?.interests ?? []).filter((x) => x !== c) : [...(settings?.interests ?? []), c];
                 if (settings) setSettings({ ...settings, interests: next });
                 await spotlightApi.setInterests(me, next).catch((e) => toast((e as Error).message, 'error'));
-              }} className={cn('rounded-full px-4 py-2 text-sm capitalize', on ? 'bg-ember-gradient text-noir font-semibold' : 'bg-white/5 ring-1 ring-white/10')}>{c}</button>
+              }} className={cn('rounded-full px-4 py-2 text-sm capitalize', on ? 'bg-ember-gradient text-noir font-semibold' : 'bg-ink/[0.05] ring-1 ring-ink/10')}>{c}</button>
             );
           })}
           <p className="mt-2 w-full text-xs text-ink-mute">“For you” ranks videos by likes, comments, saves and views, how recent they are, creators you follow and these interests. It’s a simple, transparent formula — not an AI model.</p>
         </div>
       </Sheet>
       <AnimatePresence>{upload && <UploadSheet onClose={() => setUpload(false)} onPosted={() => { setUpload(false); void load(); }} />}</AnimatePresence>
+    </div>
+  );
+}
+
+/** Ranked chart of videos (the Spotlight landing view). */
+function ChartList({ videos, category, setCategory, query, setQuery, onOpen, onInterests, onUpload }: { videos: SpotlightVideo[] | null; category: Category | null; setCategory: (c: Category | null) => void; query: string; setQuery: (q: string) => void; onOpen: (i: number) => void; onInterests: () => void; onUpload: () => void }) {
+  return (
+    <div className="absolute inset-0 z-20 overflow-y-auto bg-noir">
+      <AppBackground />
+      <div className="sticky top-0 z-10 bg-gradient-to-b from-noir via-noir/90 to-transparent px-4 pb-3 pt-safe">
+        <div className="flex items-center gap-2.5">
+          <MenuButton />
+          <h1 className="flex-1 font-display text-[32px] leading-tight">Spotlight</h1>
+          <button onClick={onInterests} aria-label="Interests" className="glass grid h-10 w-10 place-items-center rounded-2xl"><SlidersHorizontal className="h-5 w-5" /></button>
+          <button onClick={onUpload} aria-label="Post a video" className="grid h-10 w-10 place-items-center rounded-2xl bg-ember-gradient text-white shadow-glow"><Plus className="h-5 w-5" /></button>
+        </div>
+        <label className="glass mt-3 flex h-11 items-center gap-2 rounded-2xl px-4">
+          <Search className="h-4 w-4 text-ink-mute" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search videos or creators" className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search Spotlight" />
+        </label>
+        <div className="no-scrollbar -mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4">
+          {[null, ...CATEGORIES].map((c) => (
+            <button key={c ?? 'all'} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold capitalize', category === c ? 'bg-ember-cream text-noir' : 'glass text-ink-soft')}>{c ?? 'Trending'}</button>
+          ))}
+        </div>
+      </div>
+      <div className="px-4 pb-16">
+        {videos === null ? (
+          <div className="space-y-2.5">{[0, 1, 2, 3].map((i) => <div key={i} className="h-[112px] animate-pulse rounded-3xl bg-ink/[0.05]" />)}</div>
+        ) : videos.length === 0 ? (
+          <div className="glass mt-4 rounded-4xl p-8 text-center">
+            <p className="font-display text-[26px]">{query ? 'No results' : 'Spotlight is warming up'}</p>
+            <p className="mt-2 text-sm text-ink-mute">{query ? 'Try another word or creator.' : 'Be the first to post a short video for everyone on SUMANOVA.'}</p>
+            <button onClick={onUpload} className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-ember-gradient px-5 text-sm font-bold text-white shadow-glow"><Plus className="h-4 w-4" /> Post a video</button>
+          </div>
+        ) : (
+          <ol className="space-y-2.5">
+            {videos.map((v, i) => (
+              <li key={v.id}>
+                <button onClick={() => onOpen(i)} className="glass flex w-full items-center gap-3 rounded-3xl p-2.5 text-left active:scale-[0.98]">
+                  <span className="w-7 shrink-0 text-center font-display text-[28px] italic text-ember-flame">{i + 1}</span>
+                  <span className="relative h-[92px] w-[68px] shrink-0 overflow-hidden rounded-2xl bg-pearl-lilac">
+                    {v.poster_path && <img src={publicUrl('spotlight', v.poster_path)} alt="" loading="lazy" className="h-full w-full object-cover" />}
+                    <Play className="absolute bottom-1.5 left-1.5 h-4 w-4 fill-white text-white drop-shadow" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="line-clamp-2 text-[15px] font-bold leading-snug">{v.caption || 'Untitled clip'}</span>
+                    <span className="mt-1 flex items-center gap-1.5 text-xs text-ink-mute"><Avatar name={v.display_name} url={v.avatar_url} aura={v.aura_color} size={18} ring={false} /> @{v.username}</span>
+                    <span className="mt-1 block text-[11px] font-semibold text-ink-faint">{v.view_count} views · {v.like_count} likes · <span className="capitalize">{v.category}</span></span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
     </div>
   );
 }
@@ -362,8 +438,8 @@ function CommentsSheet({ video, me, onClose, onCount }: { video: SpotlightVideo 
             );
           })}
         </ul>
-        <form onSubmit={(e) => { e.preventDefault(); void post(); }} className="flex gap-2 border-t border-white/5 px-4 py-3">
-          <input value={text} onChange={(e) => setText(e.target.value.slice(0, 500))} placeholder="Add a comment…" className="h-11 flex-1 rounded-full bg-white/5 px-4 text-[15px] outline-none ring-1 ring-white/10 focus:ring-ember-amber/60" />
+        <form onSubmit={(e) => { e.preventDefault(); void post(); }} className="flex gap-2 border-t border-ink/5 px-4 py-3">
+          <input value={text} onChange={(e) => setText(e.target.value.slice(0, 500))} placeholder="Add a comment…" className="h-11 flex-1 rounded-full bg-ink/[0.05] px-4 text-[15px] outline-none ring-1 ring-ink/10 focus:ring-ember-amber/60" />
           <button type="submit" disabled={!text.trim() || busy} aria-label="Post comment" className="grid h-11 w-11 place-items-center rounded-full bg-ember-gradient text-noir disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button>
         </form>
       </div>

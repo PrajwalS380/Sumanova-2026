@@ -22,6 +22,7 @@ import { useConversation } from './useConversation';
 import { useSnapStatuses } from '@/features/snaps/useSnapStatuses';
 import { snapTileState } from '@/features/snaps/SnapTile';
 import { SnapViewer } from '@/features/snaps/SnapViewer';
+import { streaksApi, type FriendshipProfile } from '@/lib/social/api';
 
 export default function ChatThreadScreen() {
   const { id = '' } = useParams();
@@ -203,6 +204,7 @@ export default function ChatThreadScreen() {
           </Link>
         )}
       </header>
+      {!isGroup && summary?.other_user_id && <InfoStrip friendId={summary.other_user_id} />}
 
       {/* Messages */}
       <div
@@ -356,5 +358,26 @@ function TypingDots() {
         <motion.span key={i} className="h-1.5 w-1.5 rounded-full bg-current" animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }} />
       ))}
     </span>
+  );
+}
+
+/** Slim strip under the header: streak, snaps shared and how long you've been friends. */
+function InfoStrip({ friendId }: { friendId: string }) {
+  const [f, setF] = useState<FriendshipProfile | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void streaksApi.friendship(friendId).then((p) => alive && setF(p)).catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [friendId]);
+  if (!f) return null;
+  const since = new Date(f.friends_since).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+  return (
+    <div className="mx-3 mt-2 flex items-center justify-around rounded-2xl bg-white/70 px-3 py-1.5 text-[11px] font-bold text-ink-soft ring-1 ring-ink/[0.06]">
+      <span className={cn(f.streak_expiring && 'text-ember-rose')}>🔥 {f.streak} streak{f.streak_expiring ? ' · ending' : ''}</span>
+      <span>{f.snaps_exchanged} snaps</span>
+      <span>Friends since {since}</span>
+    </div>
   );
 }

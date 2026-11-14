@@ -59,7 +59,7 @@ export default function ChatListScreen() {
   return (
     <div className="pb-36">
       <ScreenHeader
-        title="Chat"
+        title="Chats"
         kicker={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
         right={
           <div className="flex gap-2">
@@ -83,14 +83,13 @@ export default function ChatListScreen() {
         </label>
 
         {filtered.favourites.length > 0 && (
-          <div className="no-scrollbar -mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-1">
+          <div className="no-scrollbar -mx-4 mt-4 flex gap-2.5 overflow-x-auto px-4 pb-1">
             {filtered.favourites.map((c) => (
-              <Link key={c.id} to={`/chat/${c.id}`} className="flex w-16 shrink-0 flex-col items-center gap-1.5 active:scale-95">
-                <span className="relative">
-                  <Avatar name={conversationName(c)} url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} aura={c.other_aura ?? 'violet'} size={58} />
-                  {c.unread_count > 0 && <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-ember-sage ring-2 ring-noir" />}
-                </span>
-                <span className="w-full truncate text-center text-[11px] text-ink-soft">{conversationName(c).split(' ')[0]}</span>
+              <Link key={c.id} to={`/chat/${c.id}`} className="glass relative flex w-[92px] shrink-0 flex-col items-center gap-1.5 rounded-[22px] px-2 pb-2.5 pt-3 active:scale-95">
+                <Avatar name={conversationName(c)} url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} aura={c.other_aura ?? 'violet'} size={50} />
+                <span className="w-full truncate text-center text-xs font-bold">{conversationName(c).split(' ')[0]}</span>
+                {c.other_user_id && streaks[c.other_user_id]?.count ? <span className="text-[10px] font-bold text-ember-gold">🔥 {streaks[c.other_user_id].count}</span> : <span className="text-[10px] text-ink-faint">{c.unread_count ? `${c.unread_count} new` : 'Pinned'}</span>}
+                {c.unread_count > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-ember-rose" />}
               </Link>
             ))}
           </div>
