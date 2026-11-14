@@ -198,8 +198,8 @@ export const BEARDS = build<BeardP>('beard', [
   { name: 'Moustache', n: 14, make: (i) => ({ ...B0, tache: 1 + (i % 7), tacheW: i >= 7 ? 1.15 : 0.95, tacheT: 1 + (i % 3) * 0.2, curl: i % 7 === 4 ? 1 : 0 }) },
   { name: 'Goatee', n: 14, make: (i) => ({ ...B0, beard: 0.05, chinOnly: 1, chinW: step(i % 7, 7, 0.16, 0.34), drop: i >= 7 ? 0.05 : 0, tache: i % 2 ? 2 : 0, soul: i % 7 === 0 ? 1 : 0 }) },
   { name: 'Chinstrap', n: 10, make: (i) => ({ ...B0, beard: 0.03, cheekLine: 0.05, sides: 1, tache: i >= 5 ? 1 : 0, chinW: 0.2, drop: 0, stubble: (i % 5) * 0.08 }) },
-  { name: 'Short beard', n: 16, make: (i) => ({ ...B0, beard: step(i % 4, 4, 0.03, 0.06), cheekLine: step(Math.floor(i / 4), 4, 0.18, 0.36), tache: 1 + (i % 3), stubble: 0.3 }) },
-  { name: 'Full beard', n: 16, make: (i) => ({ ...B0, beard: step(i % 4, 4, 0.07, 0.12), cheekLine: step(Math.floor(i / 4), 4, 0.24, 0.4), drop: step(i % 4, 4, 0.02, 0.1), tache: 3, stubble: 0.3 }) },
-  { name: 'Long beard', n: 10, make: (i) => ({ ...B0, beard: 0.12, cheekLine: 0.32, drop: step(i % 5, 5, 0.14, 0.32), tache: 3 + (i % 2), curl: i >= 5 ? 0.6 : 0 }) },
+  { name: 'Short beard', n: 16, make: (i) => ({ ...B0, beard: step(i % 4, 4, 0.03, 0.06), cheekLine: step(Math.floor(i / 4), 4, 0.12, 0.26), tache: 1 + (i % 3), stubble: 0.3 }) },
+  { name: 'Full beard', n: 16, make: (i) => ({ ...B0, beard: step(i % 4, 4, 0.06, 0.1), cheekLine: step(Math.floor(i / 4), 4, 0.16, 0.28), drop: step(i % 4, 4, 0.02, 0.1), tache: 3, stubble: 0.3 }) },
+  { name: 'Long beard', n: 10, make: (i) => ({ ...B0, beard: 0.1, cheekLine: 0.24, drop: step(i % 5, 5, 0.14, 0.32), tache: 3 + (i % 2), curl: i >= 5 ? 0.6 : 0 }) },
   { name: 'Mutton chops', n: 8, make: (i) => ({ ...B0, beard: 0.06, cheekLine: 0.32, sides: 1.3, chinOnly: -1, tache: i % 2 ? 1 : 0 }) },
 ]);
