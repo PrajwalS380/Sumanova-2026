@@ -9,7 +9,8 @@ import { prepareMedia, uploadMedia } from '@/lib/chat/media';
 import type { Friend } from '@/lib/chat/types';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
-import { hasWebGL, type AvatarConfig, type Expression, type Pose } from './config';
+import { hasWebGL } from './config';
+import type { Expression, Look, Pose } from './look/config';
 import { AvatarStage, type AvatarStageHandle } from './AvatarStage';
 import { avatarApi } from './api';
 
@@ -31,10 +32,10 @@ export default function DuoStudio() {
   const toast = useToast();
   const navigate = useNavigate();
   const stage = useRef<AvatarStageHandle>(null);
-  const [mine, setMine] = useState<AvatarConfig | null | undefined>(undefined);
+  const [mine, setMine] = useState<Look | null | undefined>(undefined);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friend, setFriend] = useState<Friend | null>(null);
-  const [theirs, setTheirs] = useState<AvatarConfig | null | undefined>(undefined);
+  const [theirs, setTheirs] = useState<Look | null | undefined>(undefined);
   const [scene, setScene] = useState(SCENES[0]);
   const [sending, setSending] = useState(false);
   const gl = useMemo(hasWebGL, []);
@@ -52,7 +53,7 @@ export default function DuoStudio() {
 
   const configs = useMemo(() => {
     if (!mine) return [];
-    const withMood = (c: AvatarConfig) => ({ ...c, expression: scene.mood });
+    const withMood = (c: Look) => ({ ...c, expression: scene.mood });
     return friend && theirs ? [withMood(mine), withMood(theirs)] : [withMood(mine)];
   }, [mine, theirs, friend, scene]);
 

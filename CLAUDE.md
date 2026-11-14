@@ -42,9 +42,15 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   `.text-ember`, `.ring-ember`, `.eyebrow`, `.grain`; `bg-ember-gradient` always with `text-noir`. Fonts Fraunces (display
   serif, italics for accents) + Manrope. `ScreenHeader` takes a `kicker`. Dock = cream capsule tabs + ember orb camera.
   Stories render as tilted cream "print" cards. Components in `src/components/ui`.
-- Avatar: sculpted procedural 3D (owner chose "Better 3D"): `features/avatar/sculpt.ts` (deformed head + shell technique for
-  hair/beard/hat), `AvatarHead.tsx` (blinking eyes, lids, mouths), `AvatarFigure.tsx` (lathed body/clothes). Visual check:
-  `npx vite --config vite.avatar-test.config.ts` (port 5199, `?i=N`, `?bust=N`).
+- Avatar v2 (owner wants Snapchat-level depth, ~100 variants per category, all original & free, no brands):
+  `features/avatar/look/` = data (`config.ts` Look v2 + v1 migration, `face.ts`/`hair.ts`/`fashion.ts`/`extras.ts`
+  100-variant catalogues as families × params, `palettes.ts`, `tube.ts` tapered-strand builder);
+  `render/` = `Figure` (body/poses), `Face` (eyes/lids/lashes/brows/nose/lips/ears/beard/makeup), `Hair` (scalp cap +
+  hundreds of tapered locks, ombré tips), `Clothes` (lathed garments, `patterns.ts` canvas fabrics), `Accessories`
+  (glasses/hats/head add-ons), `Jewelry` (piercings). Editor `AvatarStudio.tsx` (Style / Face & body / Saved tabs,
+  lazy variant thumbnails via one hidden GL canvas in `editor/thumbs.tsx`, colour rail, undo/redo).
+  Visual check: `npx vite --config vite.avatar-test.config.ts` (port 5199, `?slot=hair&ids=1,2&frame=head`, `?random=8`).
+  Keep ≤8 canvases per harness page (swiftshader). Python/sed multi-file edits get blocked by the sandbox classifier — use Edit.
 - Features live in `src/features/<feature>`. Shared libs in `src/lib`. Auth state in `src/providers/AuthProvider.tsx`.
 - Auth uses **6-digit email OTP** (`verifyOtp` types `signup`/`recovery`) so it works in APK/iOS/web without deep links.
 - DB: migrations in `supabase/migrations/` (timestamped). Apply via Supabase MCP `apply_migration` with the same SQL.
