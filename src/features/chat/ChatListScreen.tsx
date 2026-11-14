@@ -104,7 +104,7 @@ export default function ChatListScreen() {
 
         <ul className="mt-4 space-y-1.5">
           {loading && conversations.length === 0
-            ? [0, 1, 2, 3].map((i) => <li key={i} className="h-[72px] animate-pulse rounded-3xl bg-white/[0.04]" />)
+            ? [0, 1, 2, 3].map((i) => <li key={i} className="h-[72px] animate-pulse rounded-3xl bg-ink/[0.04]" />)
             : filtered.rest.map((c, i) => (
                 <ChatRow key={c.id} c={c} me={me} index={i} streak={c.other_user_id ? streaks[c.other_user_id] : undefined} online={c.other_user_id ? online.has(c.other_user_id) : false} onOpen={() => navigate(`/chat/${c.id}`)} onMenu={() => setMenu(c)} />
               ))}
@@ -148,11 +148,11 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
       <button
         {...press}
         onClick={() => !press.wasLongPress() && onOpen()}
-        className={cn('flex w-full select-none items-center gap-3 rounded-3xl p-2.5 text-left transition-colors active:bg-white/10', unread ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]')}
+        className={cn('flex w-full select-none items-center gap-3 rounded-3xl p-2.5 text-left transition-colors active:bg-ink/10', unread ? 'bg-ink/[0.06]' : 'hover:bg-ink/[0.04]')}
       >
         <span className="relative">
           {c.kind === 'group' && !c.avatar_url ? (
-            <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-ember-flame/40 to-ember-jade/40 ring-1 ring-white/10">
+            <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-ember-flame/40 to-ember-jade/40 ring-1 ring-ink/10">
               <Users className="h-5 w-5" />
             </span>
           ) : (
@@ -162,7 +162,7 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className={cn('truncate text-[15px]', unread ? 'font-bold text-white' : 'font-semibold')}>{name}</span>
+            <span className={cn('truncate text-[15px]', unread ? 'font-bold text-ink' : 'font-semibold')}>{name}</span>
             {c.pinned && <Pin className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.muted && <BellOff className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.disappear_mode !== 'never' && (c.disappear_mode === 'after_view' ? <Eye className="h-3 w-3 shrink-0 text-ember-peach" /> : <Clock3 className="h-3 w-3 shrink-0 text-ember-peach" />)}

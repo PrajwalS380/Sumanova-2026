@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { EmberBackground } from '@/components/EmberBackground';
+import { AppBackground } from '@/components/AppBackground';
 import { LogoMark, Wordmark } from '@/components/Logo';
 
 /** Editorial sign-in layout: serif headline over warm ember light, matte card below. */
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <div className="relative flex min-h-full flex-col px-5 pb-10 pt-safe">
-      <EmberBackground />
+      <AppBackground />
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}

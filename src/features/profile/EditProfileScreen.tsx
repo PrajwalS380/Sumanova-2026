@@ -94,7 +94,7 @@ export default function EditProfileScreen() {
         <div className="space-y-3">
           <Field label="Name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} error={errors.displayName} maxLength={40} />
           <div>
-            <div className="rounded-2xl bg-white/[0.04] ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-ember-amber/70">
+            <div className="rounded-2xl bg-ink/[0.04] ring-1 ring-ink/10 focus-within:ring-2 focus-within:ring-ember-amber/70">
               <label htmlFor="bio" className="block px-4 pt-2 text-[11px] font-medium uppercase tracking-wider text-ink-mute">
                 Bio
               </label>
@@ -118,7 +118,7 @@ export default function EditProfileScreen() {
                 }}
                 aria-label={AURA[k].label}
                 aria-pressed={aura === k}
-                className={cn('grid h-11 w-11 place-items-center rounded-full transition-transform', aura === k ? 'scale-110 ring-2 ring-white' : 'ring-1 ring-white/10')}
+                className={cn('grid h-11 w-11 place-items-center rounded-full transition-transform', aura === k ? 'scale-110 ring-2 ring-ember-flame' : 'ring-1 ring-ink/10')}
                 style={{ background: `linear-gradient(135deg, ${AURA[k].from}, ${AURA[k].to})` }}
               >
                 {aura === k && <Check className="h-5 w-5 text-white drop-shadow" />}

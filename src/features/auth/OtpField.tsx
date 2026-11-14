@@ -39,8 +39,8 @@ export function OtpField({ value, onChange, onComplete, error, disabled }: { val
               <span
                 key={i}
                 className={cn(
-                  'grid h-14 flex-1 place-items-center rounded-2xl bg-white/[0.05] font-display text-2xl ring-1 transition-all duration-200',
-                  error ? 'ring-ember-rose/60' : active ? 'ring-2 ring-ember-amber shadow-[0_0_20px_rgba(255,181,71,0.35)]' : value[i] ? 'ring-white/25' : 'ring-white/10',
+                  'grid h-14 flex-1 place-items-center rounded-2xl bg-ink/[0.05] font-display text-2xl ring-1 transition-all duration-200',
+                  error ? 'ring-ember-rose/60' : active ? 'ring-2 ring-ember-amber shadow-[0_0_20px_rgba(255,181,71,0.35)]' : value[i] ? 'ring-ink/25' : 'ring-ink/10',
                 )}
               >
                 {value[i] ?? (active ? <span className="h-6 w-0.5 animate-pulse rounded bg-ember-amber" /> : '')}

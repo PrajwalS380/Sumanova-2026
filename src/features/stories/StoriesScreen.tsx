@@ -56,7 +56,7 @@ export default function StoriesScreen() {
         {/* My story */}
         <div className="glass flex items-center gap-3 rounded-3xl p-3">
           <button onClick={() => (mine ? setOpen({ list: [mine], index: 0 }) : setComposer(true))} className="relative">
-            <span className={cn('block rounded-full p-[3px]', mine ? 'ring-ember' : 'bg-white/10')}>
+            <span className={cn('block rounded-full p-[3px]', mine ? 'ring-ember' : 'bg-ink/10')}>
               <span className="block rounded-full bg-noir p-[2px]"><Avatar name={profile?.display_name ?? 'Me'} url={profile?.avatar_url} aura={profile?.aura_color} size={56} ring={false} /></span>
             </span>
             {!mine && <span className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full bg-ember-gradient text-noir ring-2 ring-noir"><Plus className="h-4 w-4" /></span>}
@@ -65,8 +65,8 @@ export default function StoriesScreen() {
             <p className="font-semibold">My story</p>
             <p className="text-xs text-ink-mute">{mine ? `${mine.story_count} ${mine.story_count === 1 ? 'story' : 'stories'} · ${shortTime(mine.latest_at)}` : 'Share a moment for 24 hours'}</p>
           </div>
-          <button onClick={() => setComposer(true)} className="grid h-10 w-10 place-items-center rounded-full bg-white/10" aria-label="Text story"><Type className="h-5 w-5" /></button>
-          <Link to="/" className="grid h-10 w-10 place-items-center rounded-full bg-white/10" aria-label="Camera story"><Camera className="h-5 w-5" /></Link>
+          <button onClick={() => setComposer(true)} className="grid h-10 w-10 place-items-center rounded-full bg-ink/10" aria-label="Text story"><Type className="h-5 w-5" /></button>
+          <Link to="/" className="grid h-10 w-10 place-items-center rounded-full bg-ink/10" aria-label="Camera story"><Camera className="h-5 w-5" /></Link>
         </div>
 
         <Section title="Friends">
@@ -136,5 +136,5 @@ function RingTile({ r, onClick, delay }: { r: StoryRing; onClick: () => void; de
 }
 
 function Skeleton() {
-  return <div className="grid grid-cols-2 gap-4">{[0, 1].map((i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-[18px] bg-white/[0.04]" />)}</div>;
+  return <div className="grid grid-cols-2 gap-4">{[0, 1].map((i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-[18px] bg-ink/[0.04]" />)}</div>;
 }

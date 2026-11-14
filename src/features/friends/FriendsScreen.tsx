@@ -94,7 +94,7 @@ export default function FriendsScreen() {
 
   return (
     <div className="pb-16">
-      <ScreenHeader title="Friends" back />
+      <ScreenHeader title="Friends" />
       <div className="mx-auto max-w-lg px-4">
         <label className="glass flex h-12 items-center gap-2 rounded-2xl px-4 focus-within:ring-2 focus-within:ring-ember-amber/60">
           <Search className="h-5 w-5 text-ink-mute" />
@@ -117,7 +117,7 @@ export default function FriendsScreen() {
                     {p.relation === 'friend' ? (
                       <RowButton onClick={() => openChat(p.id)} icon={<MessageCircle className="h-4 w-4" />} label="Chat" />
                     ) : p.relation === 'outgoing' ? (
-                      <span className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-ink-mute">Requested</span>
+                      <span className="rounded-full bg-ink/5 px-3 py-1.5 text-xs text-ink-mute">Requested</span>
                     ) : p.relation === 'incoming' ? (
                       <RowButton primary loading={busy === p.id} onClick={() => run(p.id, () => friendsApi.send(p.id), 'You’re now friends!')} icon={<UserCheck className="h-4 w-4" />} label="Accept" />
                     ) : (
@@ -136,7 +136,7 @@ export default function FriendsScreen() {
                     if (!p) return null;
                     return (
                       <PersonRow key={r.id} person={p}>
-                        <button aria-label="Decline" disabled={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, false))} className="grid h-9 w-9 place-items-center rounded-full bg-white/5 text-ink-mute hover:text-ember-rose">
+                        <button aria-label="Decline" disabled={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, false))} className="grid h-9 w-9 place-items-center rounded-full bg-ink/5 text-ink-mute hover:text-ember-rose">
                           <X className="h-4 w-4" />
                         </button>
                         <RowButton primary loading={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, true), `You and ${p.display_name} are friends`)} icon={<Check className="h-4 w-4" />} label="Accept" />
@@ -210,7 +210,7 @@ function PersonRow({ person, children, onClick }: { person: PublicProfile; child
 
 function RowButton({ onClick, icon, label, primary, loading }: { onClick: () => void; icon: React.ReactNode; label: string; primary?: boolean; loading?: boolean }) {
   return (
-    <button onClick={onClick} disabled={loading} className={cn('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-transform active:scale-95 disabled:opacity-60', primary ? 'bg-ember-gradient text-noir shadow-glow' : 'bg-white/10 text-ink')}>
+    <button onClick={onClick} disabled={loading} className={cn('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-transform active:scale-95 disabled:opacity-60', primary ? 'bg-ember-gradient text-noir shadow-glow' : 'bg-ink/10 text-ink')}>
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
       {label}
     </button>
@@ -222,10 +222,10 @@ function SkeletonRows() {
     <>
       {[0, 1, 2].map((i) => (
         <li key={i} className="glass flex h-[66px] items-center gap-3 rounded-3xl p-2.5">
-          <span className="h-11 w-11 animate-pulse rounded-full bg-white/10" />
+          <span className="h-11 w-11 animate-pulse rounded-full bg-ink/10" />
           <span className="flex-1 space-y-2">
-            <span className="block h-3 w-32 animate-pulse rounded bg-white/10" />
-            <span className="block h-2.5 w-20 animate-pulse rounded bg-white/5" />
+            <span className="block h-3 w-32 animate-pulse rounded bg-ink/10" />
+            <span className="block h-2.5 w-20 animate-pulse rounded bg-ink/5" />
           </span>
         </li>
       ))}

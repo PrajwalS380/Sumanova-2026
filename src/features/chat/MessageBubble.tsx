@@ -44,7 +44,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
   if (m.kind === 'system') {
     return (
       <div className="my-3 flex justify-center px-6">
-        <span className="rounded-full bg-white/5 px-3 py-1 text-center text-xs text-ink-mute">{m.body}</span>
+        <span className="rounded-full bg-ink/5 px-3 py-1 text-center text-xs text-ink-mute">{m.body}</span>
       </div>
     );
   }
@@ -74,9 +74,9 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           onDoubleClick={() => !m.local && !deleted && p.onQuickReact(m)}
           className={cn(
             'relative select-none touch-manipulation',
-            !isSticker && !isMedia && cn(r, corner, topCorner, 'px-3.5 py-2', mine ? 'text-white' : 'bg-white/[0.08] text-ink ring-1 ring-white/[0.06]'),
-            isMedia && cn('overflow-hidden p-1', r, corner, topCorner, mine ? '' : 'bg-white/[0.06]'),
-            deleted && 'bg-transparent italic text-ink-mute ring-1 ring-white/10',
+            !isSticker && !isMedia && cn(r, corner, topCorner, 'px-3.5 py-2', mine ? 'text-white' : 'bg-ink/[0.08] text-ink ring-1 ring-ink/[0.06]'),
+            isMedia && cn('overflow-hidden p-1', r, corner, topCorner, mine ? '' : 'bg-ink/[0.06]'),
+            deleted && 'bg-transparent italic text-ink-mute ring-1 ring-ink/10',
             m.local === 'failed' && 'opacity-70',
           )}
           style={mine && !isSticker && !deleted ? { background: p.bubbleGradient, color: p.bubbleInk } : undefined}
@@ -87,7 +87,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
             </span>
           )}
           {p.reply && !deleted && (
-            <button onClick={() => p.onReplyTap(p.reply!.id)} className={cn('mb-1.5 block w-full rounded-xl border-l-2 px-2.5 py-1.5 text-left text-xs', mine ? 'border-white/70 bg-black/15' : 'border-ember-amber bg-white/5')}>
+            <button onClick={() => p.onReplyTap(p.reply!.id)} className={cn('mb-1.5 block w-full rounded-xl border-l-2 px-2.5 py-1.5 text-left text-xs', mine ? 'border-ink/70 bg-black/15' : 'border-ember-amber bg-ink/5')}>
               <span className="block font-semibold opacity-90">{p.replySender}</span>
               <span className="line-clamp-2 opacity-75">{p.reply.deleted_at ? 'Deleted message' : p.reply.body ?? (p.reply.kind === 'image' ? '📷 Photo' : p.reply.kind === 'video' ? '🎬 Video' : p.reply.kind === 'voice' ? '🎙️ Voice note' : '')}</span>
             </button>
@@ -113,7 +113,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
         {Object.keys(counts).length > 0 && (
           <div className={cn('relative z-10 -mt-1.5 flex gap-1', mine ? 'mr-2' : 'ml-2')}>
             {Object.entries(counts).map(([e, n]) => (
-              <span key={e} className="flex items-center gap-0.5 rounded-full bg-noir-700 px-1.5 py-0.5 text-xs ring-1 ring-white/10">
+              <span key={e} className="flex items-center gap-0.5 rounded-full bg-noir-700 px-1.5 py-0.5 text-xs ring-1 ring-ink/10">
                 {e}
                 {n > 1 && <span className="text-[10px] text-ink-mute">{n}</span>}
               </span>

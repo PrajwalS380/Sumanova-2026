@@ -1,12 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, CameraOff, Images, ImagePlus, Loader2, RefreshCw, ScanFace, Settings2, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
+import { Bell, X, CameraOff, Images, ImagePlus, Loader2, RefreshCw, ScanFace, Settings2, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
 import { LENSES } from './lenses';
 import { useLens } from './useLens';
 import { useNotificationsOptional } from '@/providers/NotificationsProvider';
-import { Avatar } from '@/components/Avatar';
-import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
@@ -39,7 +37,6 @@ export default function CameraScreen() {
     // Record the lens composite; keep the original audio-less video track out.
     return lens.recordingStream();
   });
-  const { profile } = useAuth();
   const unreadActivity = useNotificationsOptional()?.unread ?? 0;
   const toast = useToast();
   const [captured, setCaptured] = useState<Captured | null>(null);
@@ -178,8 +175,8 @@ export default function CameraScreen() {
       {/* Top bar */}
       <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between bg-gradient-to-b from-black/50 to-transparent px-4 pb-10 pt-safe">
         <div className="flex items-center gap-2">
-          <Link to="/profile" aria-label="Your profile" className="active:scale-95">
-            <Avatar name={profile?.display_name ?? '?'} url={profile?.avatar_url} aura={profile?.aura_color} size={44} />
+          <Link to="/" aria-label="Close camera" className="grid h-11 w-11 place-items-center rounded-full bg-black/25 text-white ring-1 ring-white/10 backdrop-blur-md active:scale-90">
+            <X className="h-5 w-5" />
           </Link>
           <Link to="/notifications" aria-label={`Activity${unreadActivity ? `, ${unreadActivity} new` : ''}`} className="relative grid h-11 w-11 place-items-center rounded-full bg-black/25 text-white ring-1 ring-white/10 backdrop-blur-md active:scale-90">
             <Bell className="h-5 w-5" />
@@ -211,7 +208,7 @@ export default function CameraScreen() {
 
       {/* Zoom */}
       {cam.caps.zoom && cam.status === 'live' && (
-        <div className="absolute inset-x-0 bottom-48 z-10 flex justify-center">
+        <div className="absolute inset-x-0 bottom-36 z-10 flex justify-center">
           <input type="range" aria-label="Zoom" min={cam.caps.zoom.min} max={Math.min(cam.caps.zoom.max, 8)} step={cam.caps.zoom.step || 0.1} value={cam.zoom} onChange={(e) => cam.setZoom(Number(e.target.value))} className="w-48 accent-ember-amber" />
         </div>
       )}
@@ -219,7 +216,7 @@ export default function CameraScreen() {
       {/* Lens tray */}
       <AnimatePresence>
         {lensTray && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="no-scrollbar absolute inset-x-0 bottom-[13.5rem] z-10 flex gap-2 overflow-x-auto px-4" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="no-scrollbar absolute inset-x-0 bottom-[10.25rem] z-10 flex gap-2 overflow-x-auto px-4" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
             <button onClick={() => setLensId(null)} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-full text-xs font-semibold text-white ring-2 backdrop-blur-md', !lensId ? 'bg-white/30 ring-white' : 'bg-black/30 ring-white/20')}>Off</button>
             {LENSES.map((l) => (
               <button key={l.id} onClick={() => { haptic(6); setLensId(l.id); }} aria-label={l.name} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl ring-2 backdrop-blur-md transition-transform', lensId === l.id ? 'scale-110 bg-white/30 ring-white' : 'bg-black/30 ring-white/20')}>{l.emoji}</button>
@@ -229,14 +226,14 @@ export default function CameraScreen() {
       </AnimatePresence>
 
       {/* Filter dots */}
-      <div className="absolute inset-x-0 bottom-[11.5rem] z-10 flex justify-center gap-1.5" aria-hidden>
+      <div className="absolute inset-x-0 bottom-[8.25rem] z-10 flex justify-center gap-1.5" aria-hidden>
         {FILTERS.map((f, i) => (
           <span key={f.id} className={cn('h-1.5 rounded-full transition-all duration-300', i === filterIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/40')} />
         ))}
       </div>
 
       {/* Capture row */}
-      <div className="absolute inset-x-0 bottom-28 z-10 flex items-center justify-center gap-10">
+      <div className="absolute inset-x-0 bottom-[max(2.5rem,calc(var(--safe-bottom)+1.5rem))] z-10 flex items-center justify-center gap-10">
         <div className="flex flex-col gap-2">
           <Link to="/memories" aria-label="Memories" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
             <Images className="h-5 w-5" />

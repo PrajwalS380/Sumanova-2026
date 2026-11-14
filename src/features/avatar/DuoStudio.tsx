@@ -108,7 +108,7 @@ export default function DuoStudio() {
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">Scene</p>
           <div className="flex flex-wrap gap-2">
             {SCENES.map((s) => (
-              <button key={s.id} onClick={() => { haptic(5); setScene(s); }} className={cn('rounded-full px-3.5 py-2 text-sm transition-all', scene.id === s.id ? 'bg-white font-semibold text-noir' : 'bg-white/[0.06] text-ink-soft ring-1 ring-white/10')}>{s.label}</button>
+              <button key={s.id} onClick={() => { haptic(5); setScene(s); }} className={cn('rounded-full px-3.5 py-2 text-sm transition-all', scene.id === s.id ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/[0.06] text-ink-soft ring-1 ring-ink/10')}>{s.label}</button>
             ))}
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function DuoStudio() {
             <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">
               {friends.map((f) => (
                 <button key={f.id} onClick={() => setFriend(f)} className="flex w-16 shrink-0 flex-col items-center gap-1">
-                  <span className={cn('rounded-full p-0.5 transition-all', friend?.id === f.id ? 'ring-2 ring-white' : '')}><Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={54} /></span>
+                  <span className={cn('rounded-full p-0.5 transition-all', friend?.id === f.id ? 'ring-2 ring-ember-flame' : '')}><Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={54} /></span>
                   <span className="w-full truncate text-center text-[11px] text-ink-soft">{f.display_name.split(' ')[0]}</span>
                 </button>
               ))}

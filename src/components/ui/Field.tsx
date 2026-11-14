@@ -19,7 +19,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
       <div className={cn('w-full', className)}>
         <div
           className={cn(
-            'group relative rounded-2xl bg-white/[0.04] ring-1 ring-white/10 transition-shadow focus-within:ring-2 focus-within:ring-ember-amber/70',
+            'group relative rounded-2xl bg-ink/[0.04] ring-1 ring-ink/10 transition-shadow focus-within:ring-2 focus-within:ring-ember-amber/70',
             error && 'ring-ember-rose/60 focus-within:ring-ember-rose/80',
           )}
         >

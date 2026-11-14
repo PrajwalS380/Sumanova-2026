@@ -150,10 +150,10 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
           <span className="w-10 text-sm tabular-nums">{formatDuration(recSecs)}</span>
           <div className="flex flex-1 items-center justify-center gap-[3px]" aria-hidden>
             {Array.from({ length: 18 }).map((_, i) => (
-              <span key={i} className="w-[3px] rounded-full bg-white/70 transition-[height] duration-100" style={{ height: `${6 + level * 26 * (0.5 + Math.abs(Math.sin(i * 1.7 + recSecs * 6)) * 0.5)}px` }} />
+              <span key={i} className="w-[3px] rounded-full bg-ink/70 transition-[height] duration-100" style={{ height: `${6 + level * 26 * (0.5 + Math.abs(Math.sin(i * 1.7 + recSecs * 6)) * 0.5)}px` }} />
             ))}
           </div>
-          <button onClick={finishRecording} aria-label="Send voice note" className="grid h-11 w-11 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #ff5e6c)` }}>
+          <button onClick={finishRecording} aria-label="Send voice note" className="grid h-11 w-11 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #8E5BEA)` }}>
             <Square className="h-4 w-4 fill-current" />
           </button>
         </div>
@@ -187,11 +187,11 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
           </button>
           <AnimatePresence mode="wait" initial={false}>
             {text.trim() ? (
-              <motion.button key="send" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={() => void submit()} aria-label={editing ? 'Save edit' : 'Send'} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #ff5e6c)` }}>
+              <motion.button key="send" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={() => void submit()} aria-label={editing ? 'Save edit' : 'Send'} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #8E5BEA)` }}>
                 <SendHorizontal className="h-5 w-5" />
               </motion.button>
             ) : (
-              <motion.button key="mic" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={startRecording} aria-label="Record voice note" className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-white')}>
+              <motion.button key="mic" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={startRecording} aria-label="Record voice note" className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink/10 text-white')}>
                 <Mic className="h-5 w-5" />
               </motion.button>
             )}
@@ -202,7 +202,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
       <Sheet open={stickers} onClose={() => setStickers(false)} title="Stickers">
         <div className="grid grid-cols-6 gap-1 px-4 pb-6">
           {STICKERS.map((s) => (
-            <button key={s} onClick={() => { haptic(8); onSend({ kind: 'sticker', body: s, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); }} className="grid aspect-square place-items-center rounded-2xl text-4xl transition-transform hover:bg-white/5 active:scale-90" aria-label={`Send ${s} sticker`}>
+            <button key={s} onClick={() => { haptic(8); onSend({ kind: 'sticker', body: s, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); }} className="grid aspect-square place-items-center rounded-2xl text-4xl transition-transform hover:bg-ink/5 active:scale-90" aria-label={`Send ${s} sticker`}>
               {s}
             </button>
           ))}

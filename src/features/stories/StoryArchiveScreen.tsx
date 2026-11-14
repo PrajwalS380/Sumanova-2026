@@ -37,7 +37,7 @@ export default function StoryArchiveScreen() {
             <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">
               {highlights.map((h) => (
                 <div key={h.id} className="flex w-20 shrink-0 flex-col items-center gap-1.5">
-                  <button onClick={async () => setViewing(await storiesApi.byIds(h.highlight_items.map((x) => x.story_id)))} className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-ember-flame/60 to-ember-jade/50 ring-2 ring-white/20">
+                  <button onClick={async () => setViewing(await storiesApi.byIds(h.highlight_items.map((x) => x.story_id)))} className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-ember-flame/60 to-ember-jade/50 ring-2 ring-ink/20">
                     <Sparkles className="h-6 w-6" />
                   </button>
                   <span className="w-full truncate text-center text-xs">{h.title}</span>
@@ -48,13 +48,13 @@ export default function StoryArchiveScreen() {
           </section>
         )}
         {stories === null ? (
-          <div className="grid grid-cols-3 gap-2">{[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="aspect-[9/16] animate-pulse rounded-2xl bg-white/[0.04]" />)}</div>
+          <div className="grid grid-cols-3 gap-2">{[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="aspect-[9/16] animate-pulse rounded-2xl bg-ink/[0.04]" />)}</div>
         ) : stories.length === 0 ? (
           <p className="glass rounded-3xl p-8 text-center text-sm text-ink-mute">Stories you post will be saved here for you.</p>
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {stories.map((s) => (
-              <button key={s.id} onClick={() => setViewing([s])} className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-white/5 active:scale-95">
+              <button key={s.id} onClick={() => setViewing([s])} className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-ink/5 active:scale-95">
                 <Thumb s={s} />
                 <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 text-left text-[10px] text-white/90">{dayLabel(s.created_at)}{new Date(s.expires_at) > new Date() ? ' · live' : ''}</span>
               </button>
@@ -74,5 +74,5 @@ function Thumb({ s }: { s: Story }) {
   }, [s]);
   if (s.kind === 'text') return <span className="grid h-full place-items-center p-2 text-center text-[11px] font-semibold" style={{ background: bg(s.background) }}>{s.text_body?.slice(0, 60)}</span>;
   if (s.kind === 'video') return <span className="grid h-full place-items-center bg-noir-700 text-2xl">🎬</span>;
-  return url ? <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" /> : <span className="block h-full animate-pulse bg-white/5" />;
+  return url ? <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" /> : <span className="block h-full animate-pulse bg-ink/5" />;
 }

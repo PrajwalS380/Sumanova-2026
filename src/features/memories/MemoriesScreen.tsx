@@ -125,7 +125,7 @@ export default function MemoriesScreen() {
       <div className="mx-auto max-w-lg px-4">
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2">
           {(['all', 'favourites', 'albums', 'archived'] as Tab[]).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-4 py-2 text-sm capitalize', tab === t ? 'bg-white font-semibold text-noir' : 'bg-white/5 text-ink-soft ring-1 ring-white/10')}>{t}</button>
+            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-4 py-2 text-sm capitalize', tab === t ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 text-ink-soft ring-1 ring-ink/10')}>{t}</button>
           ))}
           {month && (
             <button onClick={() => setMonth('')} className="flex shrink-0 items-center gap-1 rounded-full bg-ember-flame/25 px-3 text-xs">
@@ -136,14 +136,14 @@ export default function MemoriesScreen() {
 
         {usage && tab === 'all' && !month && (
           <div className="mb-4 px-1">
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-ember-gradient text-noir" style={{ width: `${Math.min(100, (usage.bytes / usage.max_bytes) * 100)}%` }} /></div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-ink/10"><div className="h-full rounded-full bg-ember-gradient text-noir" style={{ width: `${Math.min(100, (usage.bytes / usage.max_bytes) * 100)}%` }} /></div>
             <p className="mt-1 text-[11px] text-ink-faint">{(usage.bytes / 1048576).toFixed(1)} MB of {usage.max_bytes / 1048576} MB · {usage.items}/{usage.max_items} items</p>
           </div>
         )}
 
         {tab === 'albums' && !album ? (
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={async () => { const t = window.prompt('Album name')?.trim(); if (t) { await memoriesApi.createAlbum(me, t.slice(0, 40)).catch((e) => toast((e as Error).message, 'error')); setAlbums(await memoriesApi.albums()); } }} className="grid aspect-square place-items-center rounded-3xl border border-dashed border-white/20 text-sm text-ink-mute">
+            <button onClick={async () => { const t = window.prompt('Album name')?.trim(); if (t) { await memoriesApi.createAlbum(me, t.slice(0, 40)).catch((e) => toast((e as Error).message, 'error')); setAlbums(await memoriesApi.albums()); } }} className="grid aspect-square place-items-center rounded-3xl border border-dashed border-ink/20 text-sm text-ink-mute">
               <span className="flex flex-col items-center gap-2"><FolderPlus className="h-6 w-6" /> New album</span>
             </button>
             {albums.map((a) => (
@@ -154,7 +154,7 @@ export default function MemoriesScreen() {
             ))}
           </div>
         ) : items === null ? (
-          <div className="grid grid-cols-3 gap-1.5">{Array.from({ length: 9 }).map((_, i) => <div key={i} className="aspect-square animate-pulse rounded-xl bg-white/[0.04]" />)}</div>
+          <div className="grid grid-cols-3 gap-1.5">{Array.from({ length: 9 }).map((_, i) => <div key={i} className="aspect-square animate-pulse rounded-xl bg-ink/[0.04]" />)}</div>
         ) : items.length === 0 ? (
           <div className="glass mt-4 rounded-4xl p-8 text-center">
             <p className="font-display text-lg">{tab === 'favourites' ? 'No favourites yet' : tab === 'archived' ? 'Nothing archived' : 'Your private library'}</p>
@@ -224,12 +224,12 @@ function Tile({ m, selected, selecting, onTap, onLong }: { m: Memory; selected: 
     if (m.kind === 'image') privateUrl('memories', m.media_path).then(setUrl).catch(() => undefined);
   }, [m]);
   return (
-    <button {...press} onClick={() => !press.wasLongPress() && onTap()} className={cn('relative aspect-square select-none overflow-hidden rounded-xl bg-white/5 transition-transform', selected && 'scale-[0.92] ring-2 ring-ember-amber')}>
-      {m.kind === 'image' ? (url ? <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <span className="block h-full animate-pulse bg-white/5" />) : (
+    <button {...press} onClick={() => !press.wasLongPress() && onTap()} className={cn('relative aspect-square select-none overflow-hidden rounded-xl bg-ink/5 transition-transform', selected && 'scale-[0.92] ring-2 ring-ember-amber')}>
+      {m.kind === 'image' ? (url ? <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <span className="block h-full animate-pulse bg-ink/5" />) : (
         <span className="grid h-full place-items-center bg-gradient-to-br from-ember-flame/30 to-ember-jade/20"><Play className="h-7 w-7" /></span>
       )}
       {m.favourite && <Heart className="absolute right-1.5 top-1.5 h-4 w-4 fill-ember-rose text-ember-rose" />}
-      {selecting && <span className={cn('absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full ring-2 ring-white', selected ? 'bg-ember-amber' : 'bg-black/30')}>{selected && <Check className="h-3 w-3" />}</span>}
+      {selecting && <span className={cn('absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full ring-2 ring-ember-flame', selected ? 'bg-ember-amber' : 'bg-black/30')}>{selected && <Check className="h-3 w-3" />}</span>}
     </button>
   );
 }

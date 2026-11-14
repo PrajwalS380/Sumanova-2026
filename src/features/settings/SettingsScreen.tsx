@@ -21,7 +21,7 @@ function Section({ title, icon, children }: { title: string; icon: ReactNode; ch
         {icon}
         {title}
       </h2>
-      <div className="glass divide-y divide-white/5 overflow-hidden rounded-3xl">{children}</div>
+      <div className="glass divide-y divide-ink/5 overflow-hidden rounded-3xl">{children}</div>
     </section>
   );
 }

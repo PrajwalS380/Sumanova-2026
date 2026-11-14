@@ -159,7 +159,7 @@ export default function ChatThreadScreen() {
         <button onClick={() => navigate('/chat')} className="grid h-10 w-10 place-items-center rounded-full" aria-label="Back to chats">
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <Link to={`/chat/${id}/info`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 pr-2 active:bg-white/5">
+        <Link to={`/chat/${id}/info`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 pr-2 active:bg-ink/5">
           {isGroup ? (
             info?.avatar_url ? <Avatar name={title} url={info.avatar_url} size={40} /> : (
               <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-ember-flame/50 to-ember-jade/50"><Users className="h-5 w-5" /></span>
@@ -216,7 +216,7 @@ export default function ChatThreadScreen() {
           <>
             <AnimatePresence>
               {typingNames.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="ml-3 mt-2 w-fit rounded-full bg-white/[0.08] px-4 py-3">
+                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="ml-3 mt-2 w-fit rounded-full bg-ink/[0.08] px-4 py-3">
                   <TypingDots />
                 </motion.div>
               )}
@@ -298,7 +298,7 @@ export default function ChatThreadScreen() {
               {QUICK_REACTIONS.map((e) => {
                 const active = conv.reactions.some((r) => r.message_id === menu.id && r.user_id === me && r.emoji === e);
                 return (
-                  <button key={e} onClick={() => { haptic(10); void safe(() => conv.react(menu.id, e)); setMenu(null); }} className={cn('grid h-12 w-12 place-items-center rounded-full text-2xl transition-transform active:scale-90', active ? 'bg-white/15 ring-1 ring-white/30' : 'hover:bg-white/5')} aria-label={`React ${e}`}>
+                  <button key={e} onClick={() => { haptic(10); void safe(() => conv.react(menu.id, e)); setMenu(null); }} className={cn('grid h-12 w-12 place-items-center rounded-full text-2xl transition-transform active:scale-90', active ? 'bg-ink/15 ring-1 ring-ink/30' : 'hover:bg-ink/5')} aria-label={`React ${e}`}>
                     {e}
                   </button>
                 );
@@ -325,7 +325,7 @@ export default function ChatThreadScreen() {
         <ul className="px-3 pb-4">
           {inbox.conversations.filter((c) => c.id !== id).map((c) => (
             <li key={c.id}>
-              <button onClick={() => void forwardTo(c.id)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-white/5">
+              <button onClick={() => void forwardTo(c.id)} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-ink/5">
                 <Avatar name={conversationName(c)} url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} aura={c.other_aura ?? 'violet'} size={40} />
                 <span className="truncate font-medium">{conversationName(c)}</span>
               </button>

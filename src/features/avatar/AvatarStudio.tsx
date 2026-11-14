@@ -157,8 +157,8 @@ export default function AvatarStudio() {
 
       {/* Panel */}
       <div className="glass-strong relative z-20 flex h-[50vh] shrink-0 flex-col rounded-t-[28px] pb-safe">
-        <div className="flex justify-center pt-2"><span className="h-1 w-9 rounded-full bg-white/15" /></div>
-        <div role="tablist" className="mx-3 mt-2 grid grid-cols-3 rounded-2xl bg-white/[0.04] p-1">
+        <div className="flex justify-center pt-2"><span className="h-1 w-9 rounded-full bg-ink/15" /></div>
+        <div role="tablist" className="mx-3 mt-2 grid grid-cols-3 rounded-2xl bg-ink/[0.04] p-1">
           {MODES.map((m) => (
             <button key={m.id} role="tab" aria-selected={mode === m.id} onClick={() => switchMode(m.id)} className={cn('relative flex items-center justify-center gap-1.5 rounded-xl py-2 text-[13px] font-bold transition-colors', mode === m.id ? 'text-noir' : 'text-ink-mute')}>
               {mode === m.id && <motion.span layoutId="studio-mode" className="absolute inset-0 rounded-xl bg-ember-cream" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
@@ -171,7 +171,7 @@ export default function AvatarStudio() {
         {mode !== 'saved' && (
           <div className="no-scrollbar mt-2 flex gap-1 overflow-x-auto px-3 pb-1">
             {CATEGORIES.filter((c) => c.mode === mode).map((c) => (
-              <button key={c.id} onClick={() => setCatId(c.id)} aria-pressed={catId === c.id} className={cn('flex w-[64px] shrink-0 flex-col items-center gap-1 rounded-2xl py-2 transition-colors', catId === c.id ? 'bg-white/[0.08] text-ink' : 'text-ink-mute')}>
+              <button key={c.id} onClick={() => setCatId(c.id)} aria-pressed={catId === c.id} className={cn('flex w-[64px] shrink-0 flex-col items-center gap-1 rounded-2xl py-2 transition-colors', catId === c.id ? 'bg-ink/[0.08] text-ink' : 'text-ink-mute')}>
                 <c.icon className={cn('h-5 w-5', catId === c.id && 'text-ember-amber')} />
                 <span className="w-full truncate px-0.5 text-center text-[10px] font-semibold">{c.label}</span>
               </button>
@@ -212,7 +212,7 @@ function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial }: { cat:
     return (
       <div className="grid grid-cols-3 gap-2">
         {list.map(([id, emoji, label]) => (
-          <button key={id} onClick={() => onSpecial(cat.special!, id)} aria-pressed={cur === id} className={cn('flex flex-col items-center gap-1 rounded-2xl py-3 transition-all active:scale-95', cur === id ? 'bg-ember-cream text-noir' : 'bg-white/[0.05] text-ink-soft')}>
+          <button key={id} onClick={() => onSpecial(cat.special!, id)} aria-pressed={cur === id} className={cn('flex flex-col items-center gap-1 rounded-2xl py-3 transition-all active:scale-95', cur === id ? 'bg-ember-cream text-noir' : 'bg-ink/[0.05] text-ink-soft')}>
             <span className="text-2xl">{emoji}</span>
             <span className="text-xs font-semibold">{label}</span>
           </button>
@@ -249,7 +249,7 @@ function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; l
       )}
       <div className={cn('grid gap-2', cat.thumb === 'face' || cat.thumb === 'feet' ? 'grid-cols-3' : 'grid-cols-4')}>
         {OPTIONAL.includes(slot) && (
-          <button onClick={() => onPick(null)} aria-pressed={current === null} aria-label="None" className={cn('grid aspect-square place-items-center rounded-2xl bg-white/[0.04] ring-1 transition-all active:scale-95', current === null ? 'ring-2 ring-ember-amber' : 'ring-white/[0.06]')}>
+          <button onClick={() => onPick(null)} aria-pressed={current === null} aria-label="None" className={cn('grid aspect-square place-items-center rounded-2xl bg-ink/[0.04] ring-1 transition-all active:scale-95', current === null ? 'ring-2 ring-ember-amber' : 'ring-ink/[0.06]')}>
             <Ban className="h-6 w-6 text-ink-faint" />
           </button>
         )}
@@ -263,7 +263,7 @@ function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; l
 
 function FamilyChip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-colors', on ? 'bg-ember-cream text-noir' : 'bg-white/[0.05] text-ink-mute')}>
+    <button onClick={onClick} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-colors', on ? 'bg-ember-cream text-noir' : 'bg-ink/[0.05] text-ink-mute')}>
       {children}
     </button>
   );
@@ -302,7 +302,7 @@ const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, ti
     !FACE_SLOTS.includes(slot),
   );
   return (
-    <button ref={ref} onClick={onClick} aria-pressed={active} aria-label={name} title={name} className={cn('relative aspect-square overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_35%,#3a2e27,#1e1916)] ring-1 transition-all active:scale-95', active ? 'ring-2 ring-ember-amber' : 'ring-white/[0.06]')}>
+    <button ref={ref} onClick={onClick} aria-pressed={active} aria-label={name} title={name} className={cn('relative aspect-square overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_35%,#3a2e27,#1e1916)] ring-1 transition-all active:scale-95', active ? 'ring-2 ring-ember-amber' : 'ring-ink/[0.06]')}>
       {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} /> : <span className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)] bg-[length:200%_100%]" />}
       {active && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-ember-amber text-noir"><Check className="h-3.5 w-3.5" /></span>}
     </button>
@@ -313,7 +313,7 @@ function SwatchGrid({ palette, value, allowNone, onPick }: { palette: string[]; 
   return (
     <div className="grid grid-cols-6 gap-2.5">
       {allowNone && (
-        <button onClick={() => onPick(null)} aria-label="None" aria-pressed={value === null} className={cn('grid aspect-square place-items-center rounded-full bg-white/[0.05] ring-2', value === null ? 'ring-ember-amber' : 'ring-transparent')}>
+        <button onClick={() => onPick(null)} aria-label="None" aria-pressed={value === null} className={cn('grid aspect-square place-items-center rounded-full bg-ink/[0.05] ring-2', value === null ? 'ring-ember-amber' : 'ring-transparent')}>
           <Ban className="h-5 w-5 text-ink-faint" />
         </button>
       )}
@@ -337,12 +337,12 @@ function ColorRail({ palette, value, allowNone, onPick, second }: { palette: str
       )}
       <div className="no-scrollbar glass flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto rounded-full p-1.5">
         {cur.allowNone && (
-          <button onClick={() => cur.onPick(null)} aria-label="Default colour" className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/[0.06] ring-2', cur.value === null ? 'ring-ember-amber' : 'ring-transparent')}>
+          <button onClick={() => cur.onPick(null)} aria-label="Default colour" className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink/[0.06] ring-2', cur.value === null ? 'ring-ember-amber' : 'ring-transparent')}>
             <Ban className="h-4 w-4 text-ink-faint" />
           </button>
         )}
         {cur.palette.map((c) => (
-          <button key={c} onClick={() => cur.onPick(c)} aria-label={`Colour ${c}`} className={cn('h-8 w-8 shrink-0 rounded-full ring-2 transition-transform active:scale-90', cur.value === c ? 'scale-110 ring-ember-amber' : 'ring-white/10')} style={{ background: c }} />
+          <button key={c} onClick={() => cur.onPick(c)} aria-label={`Colour ${c}`} className={cn('h-8 w-8 shrink-0 rounded-full ring-2 transition-transform active:scale-90', cur.value === c ? 'scale-110 ring-ember-amber' : 'ring-ink/10')} style={{ background: c }} />
         ))}
       </div>
     </div>
@@ -351,7 +351,7 @@ function ColorRail({ palette, value, allowNone, onPick, second }: { palette: str
 
 function TuneSlider({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
-    <label className="block rounded-2xl bg-white/[0.04] px-4 py-3">
+    <label className="block rounded-2xl bg-ink/[0.04] px-4 py-3">
       <span className="eyebrow mb-2 flex justify-between">
         {label}
         <span className="tabular-nums normal-case tracking-normal text-ink-soft">{value > 0 ? '+' : ''}{Math.round(value * 100)}</span>
@@ -367,7 +367,7 @@ function SavedPanel({ outfits, onWear, onSave, usePhoto, setUsePhoto, onExport, 
       <div className="glass overflow-hidden rounded-3xl">
         {gl && <Toggle label="Use as my profile photo" description="Updates your photo when you save" checked={usePhoto} onChange={setUsePhoto} />}
         {gl && (
-          <button onClick={onExport} className="flex w-full items-center gap-3 border-t border-white/5 px-4 py-3.5 text-left text-[15px]">
+          <button onClick={onExport} className="flex w-full items-center gap-3 border-t border-ink/5 px-4 py-3.5 text-left text-[15px]">
             <Download className="h-5 w-5 text-ink-mute" /> Save image to device
           </button>
         )}
@@ -375,7 +375,7 @@ function SavedPanel({ outfits, onWear, onSave, usePhoto, setUsePhoto, onExport, 
       <div>
         <p className="eyebrow mb-2 px-1">My looks</p>
         <div className="grid grid-cols-3 gap-2">
-          <button onClick={onSave} className="flex aspect-[4/5] flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-white/20 text-xs font-semibold text-ink-mute">
+          <button onClick={onSave} className="flex aspect-[4/5] flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-ink/20 text-xs font-semibold text-ink-mute">
             <Plus className="h-5 w-5" /> Save outfit
           </button>
           {outfits.map((o) => (
@@ -403,7 +403,7 @@ function SavedCard({ name, outfit, onClick }: { name: string; outfit: SavedOutfi
     true,
   );
   return (
-    <button onClick={onClick} className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_35%,#3a2e27,#1e1916)] ring-1 ring-white/[0.06] active:scale-95">
+    <button onClick={onClick} className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_35%,#3a2e27,#1e1916)] ring-1 ring-ink/[0.06] active:scale-95">
       {url && <img src={url} alt="" className="h-full w-full object-cover" />}
       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent px-2 pb-1.5 pt-4 text-[11px] font-semibold">{name}</span>
     </button>

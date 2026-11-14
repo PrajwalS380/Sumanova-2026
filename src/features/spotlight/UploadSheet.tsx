@@ -74,16 +74,16 @@ export function UploadSheet({ onClose, onPosted }: { onClose: () => void; onPost
         {url ? (
           <video ref={video} src={url} controls playsInline className="mx-auto max-h-[45vh] rounded-3xl bg-black" />
         ) : (
-          <button onClick={() => input.current?.click()} className="grid h-60 place-items-center rounded-3xl border border-dashed border-white/20 text-ink-mute">
+          <button onClick={() => input.current?.click()} className="grid h-60 place-items-center rounded-3xl border border-dashed border-ink/20 text-ink-mute">
             <span className="flex flex-col items-center gap-2"><Film className="h-8 w-8" /> Choose a video (≤ 60 s, ≤ 50 MB)</span>
           </button>
         )}
-        <textarea value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} rows={2} placeholder="Write a caption…" className="w-full resize-none rounded-2xl bg-white/5 p-4 text-[15px] outline-none ring-1 ring-white/10 focus:ring-ember-amber/60" />
+        <textarea value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} rows={2} placeholder="Write a caption…" className="w-full resize-none rounded-2xl bg-ink/5 p-4 text-[15px] outline-none ring-1 ring-ink/10 focus:ring-ember-amber/60" />
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">Category</p>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
-              <button key={c} onClick={() => setCategory(c)} className={cn('rounded-full px-3.5 py-2 text-sm capitalize', category === c ? 'bg-white font-semibold text-noir' : 'bg-white/5 ring-1 ring-white/10')}>{c}</button>
+              <button key={c} onClick={() => setCategory(c)} className={cn('rounded-full px-3.5 py-2 text-sm capitalize', category === c ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 ring-1 ring-ink/10')}>{c}</button>
             ))}
           </div>
         </div>

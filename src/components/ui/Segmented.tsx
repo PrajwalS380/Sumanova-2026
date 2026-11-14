@@ -15,7 +15,7 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
   return (
     <div className="px-4 py-3">
       <p className="eyebrow mb-2">{label}</p>
-      <div role="radiogroup" aria-label={label} className="flex rounded-2xl bg-white/[0.05] p-1">
+      <div role="radiogroup" aria-label={label} className="flex rounded-2xl bg-ink/[0.05] p-1">
         {options.map((o) => (
           <button
             key={o.value}

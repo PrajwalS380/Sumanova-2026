@@ -60,8 +60,8 @@ export default function ProfileScreen() {
         </motion.div>
 
         <div className="mx-auto mt-6 max-w-sm space-y-3">
-          <Link to="/avatar" className="relative flex items-center gap-3 overflow-hidden rounded-3xl bg-gradient-to-br from-ember-flame/40 via-ember-jade/20 to-ember-rose/30 p-4 ring-1 ring-white/10 active:scale-[0.99]">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15">
+          <Link to="/avatar" className="relative flex items-center gap-3 overflow-hidden rounded-3xl bg-gradient-to-br from-ember-flame/40 via-ember-jade/20 to-ember-rose/30 p-4 ring-1 ring-ink/10 active:scale-[0.99]">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink/15">
               <Sparkles className="h-5 w-5" />
             </span>
             <span className="flex-1">
@@ -71,14 +71,14 @@ export default function ProfileScreen() {
             <ChevronRight className="h-4 w-4 text-ink-soft" />
           </Link>
           <Link to="/friends" className="glass flex items-center gap-3 rounded-3xl p-4 active:scale-[0.99]">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/5">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink/5">
               <Users className="h-5 w-5 text-ember-amber" />
             </span>
             <span className="flex-1 text-sm font-medium">Friends & requests</span>
             <ChevronRight className="h-4 w-4 text-ink-mute" />
           </Link>
           <div className="glass flex items-center gap-3 rounded-3xl p-4">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/5">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-ink/5">
               <CalendarHeart className="h-5 w-5 text-ember-peach" />
             </span>
             <div>

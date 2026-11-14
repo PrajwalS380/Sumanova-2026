@@ -35,7 +35,7 @@ export function Sheet({ open, onClose, children, title, className }: { open: boo
             className={cn('glass-strong relative max-h-[88vh] w-full max-w-lg overflow-hidden rounded-t-[28px] pb-safe', className)}
           >
             <div className="flex cursor-grab touch-none justify-center pb-1 pt-3" onPointerDown={(e) => drag.start(e)}>
-              <span className="h-1.5 w-10 rounded-full bg-white/20" />
+              <span className="h-1.5 w-10 rounded-full bg-ink/20" />
             </div>
             {title && <h2 className="px-5 pb-2 pt-1 font-display text-xl font-medium">{title}</h2>}
             <div className="max-h-[calc(88vh-3rem)] overflow-y-auto overscroll-contain">{children}</div>
@@ -49,8 +49,8 @@ export function Sheet({ open, onClose, children, title, className }: { open: boo
 
 export function SheetItem({ icon, label, onClick, danger, disabled }: { icon: ReactNode; label: string; onClick: () => void; danger?: boolean; disabled?: boolean }) {
   return (
-    <button onClick={onClick} disabled={disabled} className={cn('flex w-full items-center gap-3 px-5 py-3.5 text-left text-[15px] transition-colors hover:bg-white/5 active:bg-white/10 disabled:opacity-40', danger ? 'text-ember-rose' : 'text-ink')}>
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/5">{icon}</span>
+    <button onClick={onClick} disabled={disabled} className={cn('flex w-full items-center gap-3 px-5 py-3.5 text-left text-[15px] transition-colors hover:bg-ink/5 active:bg-ink/10 disabled:opacity-40', danger ? 'text-ember-rose' : 'text-ink')}>
+      <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink/5">{icon}</span>
       {label}
     </button>
   );

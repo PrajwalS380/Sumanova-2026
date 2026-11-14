@@ -9,9 +9,11 @@ import { AppShell } from '@/components/AppShell';
 import { ScreenLoader } from '@/components/ScreenLoader';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import CameraScreen from '@/features/camera/CameraScreen';
+import HomeScreen from '@/features/home/HomeScreen';
+import { ROOTS } from '@/components/nav';
 
-// Everything except the camera (the home screen) is code-split.
+// Everything except the home dashboard is code-split.
+const CameraScreen = lazy(() => import('@/features/camera/CameraScreen'));
 const SignInPage = lazy(() => import('@/features/auth/SignInPage'));
 const SignUpPage = lazy(() => import('@/features/auth/SignUpPage'));
 const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'));
@@ -44,7 +46,7 @@ function NativeBridge() {
     void initNative(() => {
       const p = path.current;
       if (p === '/' || p === '/auth/sign-in') return false;
-      if (['/chat', '/stories', '/map', '/spotlight'].includes(p)) navigate('/');
+      if (ROOTS.includes(p)) navigate('/');
       else if (/^\/chat\/[^/]+$/.test(p)) navigate('/chat');
       else navigate(-1);
       return true;
@@ -88,7 +90,8 @@ export default function App() {
           <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
           <Route path="/auth/reset" element={<ResetPasswordPage />} />
           <Route element={<RequireAuth><InboxProvider><NotificationsProvider><CallProvider><AppShell /></CallProvider></NotificationsProvider></InboxProvider></RequireAuth>}>
-            <Route index element={<CameraScreen />} />
+            <Route index element={<HomeScreen />} />
+            <Route path="camera" element={<CameraScreen />} />
             <Route path="chat" element={<ChatListScreen />} />
             <Route path="chat/:id" element={<ChatThreadScreen />} />
             <Route path="chat/:id/info" element={<ChatInfoScreen />} />

@@ -75,13 +75,13 @@ export function NewGroupSheet({ open, onClose, addTo, exclude = [] }: { open: bo
                 const on = picked.has(f.id);
                 return (
                   <li key={f.id}>
-                    <button onClick={() => toggle(f.id)} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors', on ? 'bg-white/10' : 'hover:bg-white/5')} aria-pressed={on}>
+                    <button onClick={() => toggle(f.id)} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors', on ? 'bg-ink/10' : 'hover:bg-ink/5')} aria-pressed={on}>
                       <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={40} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{f.display_name}</span>
                         <span className="block truncate text-xs text-ink-mute">@{f.username}</span>
                       </span>
-                      <span className={cn('grid h-6 w-6 place-items-center rounded-full ring-1 transition-all', on ? 'bg-ember-gradient text-noir ring-transparent' : 'ring-white/20')}>{on && <Check className="h-4 w-4" />}</span>
+                      <span className={cn('grid h-6 w-6 place-items-center rounded-full ring-1 transition-all', on ? 'bg-ember-gradient text-noir ring-transparent' : 'ring-ink/20')}>{on && <Check className="h-4 w-4" />}</span>
                     </button>
                   </li>
                 );

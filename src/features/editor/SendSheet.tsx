@@ -125,10 +125,10 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
         {toStory && <div className="mb-4"><AudiencePicker value={audience} onChange={setAudience} /></div>}
         {toSpotlight && prepared?.kind === 'video' && (
           <div className="mb-4 space-y-2">
-            <input value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} placeholder="Add a caption for Spotlight" className="h-11 w-full rounded-2xl bg-white/5 px-4 text-[15px] outline-none ring-1 ring-white/10 focus:ring-ember-amber/60" />
+            <input value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} placeholder="Add a caption for Spotlight" className="h-11 w-full rounded-2xl bg-ink/5 px-4 text-[15px] outline-none ring-1 ring-ink/10 focus:ring-ember-amber/60" />
             <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
               {CATEGORIES.map((c) => (
-                <button key={c} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs capitalize', category === c ? 'bg-white font-semibold text-noir' : 'bg-white/5 text-ink-soft ring-1 ring-white/10')}>{c}</button>
+                <button key={c} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs capitalize', category === c ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 text-ink-soft ring-1 ring-ink/10')}>{c}</button>
               ))}
             </div>
             <p className="px-1 text-[11px] text-ink-faint">Spotlight videos are public to everyone on SUMANOVA.</p>
@@ -136,7 +136,7 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
         )}
 
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">Friends · snap</p>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search friends" className="mb-2 h-11 w-full rounded-2xl bg-white/5 px-4 text-[15px] outline-none ring-1 ring-white/10 focus:ring-ember-amber/60" aria-label="Search friends" />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search friends" className="mb-2 h-11 w-full rounded-2xl bg-ink/5 px-4 text-[15px] outline-none ring-1 ring-ink/10 focus:ring-ember-amber/60" aria-label="Search friends" />
         {friends === null ? (
           <div className="grid h-20 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-ink-mute" /></div>
         ) : friends.length === 0 ? (
@@ -147,13 +147,13 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
               const on = picked.has(f.id);
               return (
                 <li key={f.id}>
-                  <button onClick={() => toggle(f.id)} aria-pressed={on} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors', on ? 'bg-white/10' : 'hover:bg-white/5')}>
+                  <button onClick={() => toggle(f.id)} aria-pressed={on} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors', on ? 'bg-ink/10' : 'hover:bg-ink/5')}>
                     <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={40} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold">{f.display_name}</span>
                       <span className="block truncate text-xs text-ink-mute">@{f.username}</span>
                     </span>
-                    <span className={cn('grid h-6 w-6 place-items-center rounded-full ring-1', on ? 'bg-ember-gradient text-noir ring-transparent' : 'ring-white/25')}>{on && <Check className="h-4 w-4" />}</span>
+                    <span className={cn('grid h-6 w-6 place-items-center rounded-full ring-1', on ? 'bg-ember-gradient text-noir ring-transparent' : 'ring-ink/25')}>{on && <Check className="h-4 w-4" />}</span>
                   </button>
                 </li>
               );
@@ -180,7 +180,7 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
 
 function Dest({ on, onClick, icon, label, disabled }: { on: boolean; onClick: () => void; icon: React.ReactNode; label: string; disabled?: boolean }) {
   return (
-    <button onClick={onClick} disabled={disabled} aria-pressed={on} className={cn('flex flex-col items-center gap-1.5 rounded-2xl py-3 text-xs font-semibold transition-all disabled:opacity-35', on ? 'bg-ember-gradient text-noir shadow-glow' : 'bg-white/5 ring-1 ring-white/10')}>
+    <button onClick={onClick} disabled={disabled} aria-pressed={on} className={cn('flex flex-col items-center gap-1.5 rounded-2xl py-3 text-xs font-semibold transition-all disabled:opacity-35', on ? 'bg-ember-gradient text-noir shadow-glow' : 'bg-ink/5 ring-1 ring-ink/10')}>
       {icon}
       {label}
     </button>

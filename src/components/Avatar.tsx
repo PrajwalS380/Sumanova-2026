@@ -30,11 +30,11 @@ export const Avatar = memo(function Avatar({ name, url, aura = 'gold', size = 44
         padding: ring ? Math.max(2, size * 0.05) : 0,
       }}
     >
-      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-noir-700 ring-2 ring-noir">
+      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full ring-2 ring-white" style={{ background: `linear-gradient(160deg, #FFFFFF, ${a.to}66)` }}>
         {url ? (
           <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <span className="font-display font-medium italic" style={{ fontSize: size * 0.38, color: a.to }}>
+          <span className="font-display font-medium italic" style={{ fontSize: size * 0.4, color: a.from }}>
             {initials || '✦'}
           </span>
         )}

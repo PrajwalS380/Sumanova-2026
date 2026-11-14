@@ -87,7 +87,7 @@ export default function PersonScreen() {
         </div>
 
         {fp && (
-          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative mt-6 overflow-hidden rounded-4xl bg-gradient-to-br from-ember-flame/30 via-noir-700 to-ember-rose/20 p-5 ring-1 ring-white/10">
+          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative mt-6 overflow-hidden rounded-4xl bg-gradient-to-br from-ember-flame/30 via-noir-700 to-ember-rose/20 p-5 ring-1 ring-ink/10">
             <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft">You & {c.display_name.split(' ')[0]}</p>
             <div className="mt-3 grid grid-cols-3 gap-3 text-center">
               <div>
@@ -101,7 +101,7 @@ export default function PersonScreen() {
             {fp.streak_expiring && <p className="mt-2 text-xs text-ember-gold">⏳ Send each other a snap today to keep your streak alive.</p>}
             {fp.badges.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {fp.badges.map((b) => <span key={b} className="rounded-full bg-white/10 px-2.5 py-1 text-xs">{b}</span>)}
+                {fp.badges.map((b) => <span key={b} className="rounded-full bg-ink/10 px-2.5 py-1 text-xs">{b}</span>)}
               </div>
             )}
             {fp.is_best_friend && <Heart className="absolute right-4 top-4 h-5 w-5 fill-ember-rose text-ember-rose" />}
@@ -115,7 +115,7 @@ export default function PersonScreen() {
             <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">
               {highlights.map((h) => (
                 <button key={h.id} onClick={async () => setViewing(await storiesApi.byIds(h.highlight_items.map((x) => x.story_id)))} className="flex w-20 shrink-0 flex-col items-center gap-1.5">
-                  <span className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-ember-flame/60 to-ember-jade/50 ring-2 ring-white/20"><Sparkles className="h-6 w-6" /></span>
+                  <span className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-ember-flame/60 to-ember-jade/50 ring-2 ring-ink/20"><Sparkles className="h-6 w-6" /></span>
                   <span className="w-full truncate text-center text-xs">{h.title}</span>
                 </button>
               ))}
@@ -130,7 +130,7 @@ export default function PersonScreen() {
           ) : (
             <div className="grid grid-cols-3 gap-1.5">
               {videos.map((v) => (
-                <a key={v.id} href={publicUrl('spotlight', v.media_path)} target="_blank" rel="noreferrer" className="relative aspect-[9/16] overflow-hidden rounded-xl bg-white/5">
+                <a key={v.id} href={publicUrl('spotlight', v.media_path)} target="_blank" rel="noreferrer" className="relative aspect-[9/16] overflow-hidden rounded-xl bg-ink/5">
                   {v.poster_path ? <img src={publicUrl('spotlight', v.poster_path)} alt="" loading="lazy" className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center"><Play className="h-6 w-6" /></span>}
                   <span className="absolute bottom-1 left-1.5 flex items-center gap-1 text-[11px] font-semibold text-white drop-shadow"><Play className="h-3 w-3" /> {v.view_count}</span>
                 </a>
@@ -156,7 +156,7 @@ function RestoreStreak({ friendId, onDone }: { friendId: string; onDone: () => v
   }, [friendId]);
   if (!restorable) return null;
   return (
-    <button onClick={async () => { try { const n = await streaksApi.restore(friendId); toast(`Streak of ${n} restored 🔥`, 'success'); onDone(); } catch (e) { toast((e as Error).message, 'error'); } }} className="mt-4 w-full rounded-2xl bg-white/10 py-2.5 text-sm font-semibold">
+    <button onClick={async () => { try { const n = await streaksApi.restore(friendId); toast(`Streak of ${n} restored 🔥`, 'success'); onDone(); } catch (e) { toast((e as Error).message, 'error'); } }} className="mt-4 w-full rounded-2xl bg-ink/10 py-2.5 text-sm font-semibold">
       🔥 Restore your streak (once every 30 days)
     </button>
   );

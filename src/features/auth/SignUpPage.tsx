@@ -77,7 +77,7 @@ export default function SignUpPage() {
     <AuthLayout title={step === 0 ? 'Make it yours' : 'Secure your account'} subtitle={step === 0 ? 'How your friends will find you.' : 'Step 2 of 2'}>
       <div className="mb-5 flex gap-1.5" aria-hidden>
         {[0, 1].map((i) => (
-          <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors duration-500', i <= step ? 'bg-ember-gradient text-noir' : 'bg-white/10')} />
+          <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors duration-500', i <= step ? 'bg-ember-gradient text-noir' : 'bg-ink/10')} />
         ))}
       </div>
       <form onSubmit={submit} noValidate>
@@ -129,7 +129,7 @@ export default function SignUpPage() {
                           key={i}
                           className={cn(
                             'h-1 flex-1 rounded-full transition-colors duration-300',
-                            i < strength.score ? (strength.score <= 1 ? 'bg-ember-rose' : strength.score === 2 ? 'bg-ember-gold' : 'bg-ember-jade') : 'bg-white/10',
+                            i < strength.score ? (strength.score <= 1 ? 'bg-ember-rose' : strength.score === 2 ? 'bg-ember-gold' : 'bg-ember-jade') : 'bg-ink/10',
                           )}
                         />
                       ))}

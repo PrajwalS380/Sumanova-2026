@@ -14,7 +14,7 @@ export default function NotificationsScreen() {
   const { items, unread, markAllRead, open } = useNotifications();
   return (
     <div className="pb-16">
-      <ScreenHeader title="Activity" back right={unread > 0 ? <button onClick={() => void markAllRead()} className="glass flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold"><CheckCheck className="h-4 w-4" /> Mark read</button> : undefined} />
+      <ScreenHeader title="Activity" right={unread > 0 ? <button onClick={() => void markAllRead()} className="glass flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold"><CheckCheck className="h-4 w-4" /> Mark read</button> : undefined} />
       <div className="mx-auto max-w-lg px-4">
         {items.length === 0 ? (
           <div className="glass mt-6 rounded-4xl p-8 text-center">
@@ -28,10 +28,10 @@ export default function NotificationsScreen() {
               const I = ICON[n.kind] ?? Bell;
               return (
                 <motion.li key={n.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 10) * 0.02 }}>
-                  <button onClick={() => open(n)} className={cn('flex w-full items-start gap-3 rounded-3xl p-3 text-left transition-colors active:bg-white/10', n.read_at ? 'hover:bg-white/[0.04]' : 'bg-white/[0.07]')}>
+                  <button onClick={() => open(n)} className={cn('flex w-full items-start gap-3 rounded-3xl p-3 text-left transition-colors active:bg-ink/10', n.read_at ? 'hover:bg-ink/[0.04]' : 'bg-ink/[0.07]')}>
                     <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-2xl', n.kind === 'missed_call' ? 'bg-ember-rose/15 text-ember-rose' : n.kind === 'streak' ? 'bg-ember-gold/15 text-ember-gold' : 'bg-ember-flame/15 text-ember-amber')}><I className="h-5 w-5" /></span>
                     <span className="min-w-0 flex-1">
-                      <span className={cn('block text-sm', n.read_at ? 'text-ink-soft' : 'font-semibold text-white')}>{n.title}</span>
+                      <span className={cn('block text-sm', n.read_at ? 'text-ink-soft' : 'font-semibold text-ink')}>{n.title}</span>
                       {n.body && <span className="block truncate text-xs text-ink-mute">{n.body}</span>}
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-1.5">

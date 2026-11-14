@@ -10,9 +10,9 @@ const button = cva(
     variants: {
       variant: {
         primary: 'bg-ember-gradient text-noir shadow-glow hover:brightness-110',
-        glass: 'glass text-ink hover:bg-white/[0.08]',
-        cream: 'bg-ember-cream text-noir hover:bg-white',
-        ghost: 'text-ink-soft hover:bg-white/5 hover:text-ink',
+        glass: 'glass text-ink hover:bg-ink/[0.08]',
+        cream: 'bg-ember-cream text-noir hover:brightness-110',
+        ghost: 'text-ink-soft hover:bg-ink/5 hover:text-ink',
         danger: 'bg-ember-rose/15 text-ember-rose ring-1 ring-ember-rose/30 hover:bg-ember-rose/25',
       },
       size: {

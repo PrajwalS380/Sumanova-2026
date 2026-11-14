@@ -1,3 +1,4 @@
+import { MenuButton } from '@/components/MenuButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
@@ -55,7 +56,7 @@ export default function MapScreen() {
     if (!el.current || map.current) return;
     const m = L.map(el.current, { zoomControl: false, attributionControl: true, worldCopyJump: true }).setView([20.6, 78.9], 4);
     // CARTO dark basemap (OpenStreetMap data) — free with attribution for light use.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       subdomains: 'abcd',
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -195,11 +196,12 @@ export default function MapScreen() {
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] bg-gradient-to-b from-noir/90 to-transparent px-4 pb-10 pt-safe">
         <div className="pointer-events-auto flex items-center gap-2">
-          <h1 className="flex-1 font-display text-[28px] font-medium drop-shadow">Map</h1>
+          <MenuButton />
+          <h1 className="flex-1 font-display text-[32px] leading-tight">Map</h1>
           <button onClick={() => void locate()} className="glass grid h-11 w-11 place-items-center rounded-full" aria-label="Find me"><LocateFixed className="h-5 w-5" /></button>
         </div>
         <div className="pointer-events-auto mt-3 flex items-center gap-2">
-          <span className={cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold', sharing ? 'bg-ember-jade/20 text-ember-sage' : 'bg-white/10 text-ink-soft')}>
+          <span className={cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold', sharing ? 'bg-ember-jade/20 text-ember-sage' : 'bg-ink/10 text-ink-soft')}>
             {sharing ? <Navigation className="h-3.5 w-3.5" /> : <Ghost className="h-3.5 w-3.5" />}
             {sharing ? `Sharing · ${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'Ghost mode'}
           </span>
@@ -236,15 +238,15 @@ export default function MapScreen() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">For</p>
             <div className="grid grid-cols-4 gap-2">
               {DURATIONS.map((d) => (
-                <button key={d.m} onClick={() => setMinutes(d.m)} className={cn('rounded-2xl py-2.5 text-sm', minutes === d.m ? 'bg-white font-semibold text-noir' : 'bg-white/5 ring-1 ring-white/10')}>{d.l}</button>
+                <button key={d.m} onClick={() => setMinutes(d.m)} className={cn('rounded-2xl py-2.5 text-sm', minutes === d.m ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 ring-1 ring-ink/10')}>{d.l}</button>
               ))}
             </div>
           </div>
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">With</p>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setAudience('friends')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'friends' ? 'bg-white font-semibold text-noir' : 'bg-white/5 ring-1 ring-white/10')}>All friends</button>
-              <button onClick={() => setAudience('selected')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'selected' ? 'bg-white font-semibold text-noir' : 'bg-white/5 ring-1 ring-white/10')}>Choose friends</button>
+              <button onClick={() => setAudience('friends')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'friends' ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 ring-1 ring-ink/10')}>All friends</button>
+              <button onClick={() => setAudience('selected')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'selected' ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 ring-1 ring-ink/10')}>Choose friends</button>
             </div>
             {audience === 'selected' && (
               <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
@@ -252,7 +254,7 @@ export default function MapScreen() {
                   const on = picked.has(f.id);
                   return (
                     <li key={f.id}>
-                      <button onClick={() => setPicked((s) => { const n = new Set(s); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left', on ? 'bg-white/10' : '')}>
+                      <button onClick={() => setPicked((s) => { const n = new Set(s); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left', on ? 'bg-ink/10' : '')}>
                         <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={34} />
                         <span className="flex-1 text-sm">{f.display_name}</span>
                         {on && <Check className="h-4 w-4 text-ember-sage" />}
@@ -281,7 +283,7 @@ export default function MapScreen() {
               <p className="font-semibold">{selected.display_name}</p>
               <p className="text-xs text-ink-mute">{lastSeenLabel(selected.updated_at).replace('Active', 'Updated')} · {selected.precise ? 'precise' : 'approximate'}</p>
             </div>
-            <button onClick={() => navigate(`/u/${selected.username}`)} className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">Profile</button>
+            <button onClick={() => navigate(`/u/${selected.username}`)} className="rounded-full bg-ink/10 px-4 py-2 text-sm font-semibold">Profile</button>
           </div>
         )}
       </Sheet>

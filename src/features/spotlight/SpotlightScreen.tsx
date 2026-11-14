@@ -1,3 +1,4 @@
+import { MenuButton } from '@/components/MenuButton';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -151,7 +152,8 @@ export default function SpotlightScreen() {
             </label>
           ) : (
             <>
-              <h1 className="flex-1 font-display text-[26px] font-medium italic text-white drop-shadow">Spotlight</h1>
+              <MenuButton dark />
+              <h1 className="flex-1 font-display text-[30px] italic text-white drop-shadow">Spotlight</h1>
               <TopBtn label="Interests" onClick={() => setInterests(true)}><SlidersHorizontal className="h-5 w-5" /></TopBtn>
               <TopBtn label="Search" onClick={() => setSearching(true)}><Search className="h-5 w-5" /></TopBtn>
               <TopBtn label="Post a video" onClick={() => setUpload(true)}><Plus className="h-5 w-5" /></TopBtn>

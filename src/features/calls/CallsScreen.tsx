@@ -20,10 +20,10 @@ export default function CallsScreen() {
 
   return (
     <div className="pb-16">
-      <ScreenHeader title="Calls" back />
+      <ScreenHeader title="Calls" />
       <div className="mx-auto max-w-lg px-4">
         {items === null ? (
-          <ul className="space-y-2">{[0, 1, 2].map((i) => <li key={i} className="h-16 animate-pulse rounded-3xl bg-white/[0.04]" />)}</ul>
+          <ul className="space-y-2">{[0, 1, 2].map((i) => <li key={i} className="h-16 animate-pulse rounded-3xl bg-ink/[0.04]" />)}</ul>
         ) : items.length === 0 ? (
           <div className="glass mt-6 rounded-4xl p-8 text-center">
             <p className="font-display text-lg">No calls yet</p>
@@ -35,7 +35,7 @@ export default function CallsScreen() {
               const missed = !c.outgoing && ['missed', 'cancelled', 'busy'].includes(c.status);
               const dur = c.answered_at && c.ended_at ? (new Date(c.ended_at).getTime() - new Date(c.answered_at).getTime()) / 1000 : null;
               return (
-                <motion.li key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 10) * 0.02 }} className="flex items-center gap-3 rounded-3xl p-2.5 hover:bg-white/[0.04]">
+                <motion.li key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 10) * 0.02 }} className="flex items-center gap-3 rounded-3xl p-2.5 hover:bg-ink/[0.04]">
                   <Avatar name={c.other_display_name} url={c.other_avatar_url} aura={c.other_aura} size={48} />
                   <div className="min-w-0 flex-1">
                     <p className={cn('truncate font-semibold', missed && 'text-ember-rose')}>{c.other_display_name}</p>
@@ -44,7 +44,7 @@ export default function CallsScreen() {
                       {c.kind === 'video' ? 'Video' : 'Voice'} · {shortTime(c.started_at)}{dur ? ` · ${formatDuration(dur)}` : c.status === 'declined' ? ' · declined' : ''}
                     </p>
                   </div>
-                  <button onClick={() => void startCall(c.conversation_id, c.kind)} aria-label={`Call ${c.other_display_name}`} className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-ember-sage active:scale-90">
+                  <button onClick={() => void startCall(c.conversation_id, c.kind)} aria-label={`Call ${c.other_display_name}`} className="grid h-10 w-10 place-items-center rounded-full bg-ink/10 text-ember-sage active:scale-90">
                     {c.kind === 'video' ? <Video className="h-5 w-5" /> : <Phone className="h-5 w-5" />}
                   </button>
                 </motion.li>

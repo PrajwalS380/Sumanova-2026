@@ -105,7 +105,7 @@ export default function ChatInfoScreen() {
         <div className="flex flex-col items-center text-center">
           <div className="relative">
             {isGroup && !conv.avatar_url ? (
-              <span className="grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br from-ember-flame/50 to-ember-jade/50 ring-4 ring-white/5"><Users className="h-10 w-10" /></span>
+              <span className="grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br from-ember-flame/50 to-ember-jade/50 ring-4 ring-ink/5"><Users className="h-10 w-10" /></span>
             ) : (
               <Avatar name={name || '?'} url={isGroup ? conv.avatar_url : otherP?.avatar_url} aura={otherP?.aura_color} size={112} />
             )}
@@ -122,10 +122,10 @@ export default function ChatInfoScreen() {
           </h2>
           <p className="text-sm text-ink-mute">{isGroup ? `${members.length} members` : `@${otherP?.username ?? ''}`}</p>
           {!isGroup && since && <p className="mt-1 text-xs text-ink-faint">Chatting since {since}</p>}
-          {!isGroup && otherP && <button onClick={() => navigate(`/u/${otherP.username}`)} className="mt-3 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">View profile & friendship</button>}
+          {!isGroup && otherP && <button onClick={() => navigate(`/u/${otherP.username}`)} className="mt-3 rounded-full bg-ink/10 px-4 py-2 text-sm font-semibold">View profile & friendship</button>}
         </div>
 
-        <section className="glass divide-y divide-white/5 overflow-hidden rounded-3xl">
+        <section className="glass divide-y divide-ink/5 overflow-hidden rounded-3xl">
           <Segmented<DisappearMode>
             label="Disappearing messages"
             value={conv.disappear_mode}
@@ -140,7 +140,7 @@ export default function ChatInfoScreen() {
             <p className="mb-2 text-[15px] font-medium">Chat theme</p>
             <div className="flex justify-between">
               {(Object.keys(CHAT_THEMES) as ChatTheme[]).map((t) => (
-                <button key={t} onClick={() => void setPref({ theme: t })} aria-label={CHAT_THEMES[t].label} aria-pressed={summary?.theme === t} className={cn('h-10 w-10 rounded-full transition-transform', summary?.theme === t ? 'scale-110 ring-2 ring-white' : 'ring-1 ring-white/10')} style={{ background: CHAT_THEMES[t].mine }} />
+                <button key={t} onClick={() => void setPref({ theme: t })} aria-label={CHAT_THEMES[t].label} aria-pressed={summary?.theme === t} className={cn('h-10 w-10 rounded-full transition-transform', summary?.theme === t ? 'scale-110 ring-2 ring-ember-flame' : 'ring-1 ring-ink/10')} style={{ background: CHAT_THEMES[t].mine }} />
               ))}
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function ChatInfoScreen() {
               <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-mute">Members</h3>
               {isAdmin && <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-sm font-semibold text-ember-amber"><UserPlus className="h-4 w-4" /> Add</button>}
             </div>
-            <ul className="glass divide-y divide-white/5 overflow-hidden rounded-3xl">
+            <ul className="glass divide-y divide-ink/5 overflow-hidden rounded-3xl">
               {members.map((m) => {
                 const p = people[m.user_id];
                 if (!p) return null;
@@ -186,7 +186,7 @@ export default function ChatInfoScreen() {
           </section>
         )}
 
-        <section className="glass divide-y divide-white/5 overflow-hidden rounded-3xl">
+        <section className="glass divide-y divide-ink/5 overflow-hidden rounded-3xl">
           <DangerRow icon={<Eraser className="h-5 w-5" />} label="Clear chat for me" onClick={() => setConfirm({ title: 'Clear this chat?', body: 'Messages disappear for you only. Others keep their copy.', action: 'Clear', run: () => act(() => chatApi.clear(id), 'Chat cleared') })} />
           {!isGroup && other && (
             <>
@@ -241,7 +241,7 @@ export default function ChatInfoScreen() {
 
 function DangerRow({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-ember-rose active:bg-white/5">
+    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-ember-rose active:bg-ink/5">
       {icon}
       <span className="text-[15px]">{label}</span>
     </button>
