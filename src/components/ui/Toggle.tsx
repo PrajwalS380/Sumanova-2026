@@ -30,13 +30,13 @@ export function Toggle({ checked, onChange, label, description, disabled }: Togg
       <span
         className={cn(
           'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-300',
-          checked ? 'bg-aurora-gradient' : 'bg-white/10',
+          checked ? 'bg-ember-gradient text-noir' : 'bg-white/[0.08] ring-1 ring-inset ring-white/10',
         )}
       >
         <motion.span
           layout
           transition={{ type: 'spring', stiffness: 600, damping: 34 }}
-          className={cn('absolute top-1 h-5 w-5 rounded-full bg-white shadow', checked ? 'right-1' : 'left-1')}
+          className={cn('absolute top-1 h-5 w-5 rounded-full bg-ember-cream shadow', checked ? 'right-1' : 'left-1')}
         />
       </span>
     </button>

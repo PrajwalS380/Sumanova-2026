@@ -80,11 +80,12 @@ export default function AvatarStudio() {
   const dirty = JSON.stringify(cfg) !== JSON.stringify(saved);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-night">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[60vh]" style={{ background: 'radial-gradient(70% 60% at 50% 35%, rgba(139,92,246,.35), transparent 70%), radial-gradient(50% 40% at 50% 70%, rgba(45,212,191,.18), transparent 70%)' }} />
+    <div className="fixed inset-0 flex flex-col bg-noir">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[62vh]" style={{ background: 'radial-gradient(60% 55% at 50% 30%, rgba(255,170,100,.22), transparent 70%), radial-gradient(45% 10% at 50% 92%, rgba(255,122,61,.35), transparent 70%)' }} />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[62vh] grain" />
       <header className="relative z-10 flex items-center gap-2 px-3 pt-safe">
         <button onClick={() => navigate(-1)} aria-label="Back" className="glass grid h-10 w-10 place-items-center rounded-full"><ChevronLeft className="h-5 w-5" /></button>
-        <h1 className="flex-1 font-display text-lg font-semibold">Avatar studio</h1>
+        <h1 className="flex-1 font-display text-[22px] font-medium">Avatar <span className="italic text-ember">studio</span></h1>
         <Link to="/avatar/duo" className="glass grid h-10 w-10 place-items-center rounded-full" aria-label="Duo stickers"><Users2 className="h-5 w-5" /></Link>
         <button onClick={() => { haptic(10); setCfg((c) => ({ ...randomAvatar(), pose: c.pose })); }} aria-label="Randomise" className="glass grid h-10 w-10 place-items-center rounded-full"><Dices className="h-5 w-5" /></button>
         <button onClick={() => setCfg(saved ?? DEFAULT_AVATAR)} aria-label="Reset" className="glass grid h-10 w-10 place-items-center rounded-full"><RotateCcw className="h-5 w-5" /></button>
@@ -105,8 +106,8 @@ export default function AvatarStudio() {
       {/* Category chips */}
       <div className="no-scrollbar relative z-10 flex gap-2 overflow-x-auto px-4 py-2">
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={cn('relative shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors', tab === t ? 'text-white' : 'text-ink-mute')}>
-            {tab === t && <motion.span layoutId="avatar-tab" className="absolute inset-0 rounded-full bg-white/12 ring-1 ring-white/15" style={{ backgroundColor: 'rgba(255,255,255,.12)' }} />}
+          <button key={t} onClick={() => setTab(t)} className={cn('relative shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors', tab === t ? 'text-noir' : 'text-ink-mute')}>
+            {tab === t && <motion.span layoutId="avatar-tab" className="absolute inset-0 rounded-full bg-ember-cream" />}
             <span className="relative">{t}</span>
           </button>
         ))}
@@ -243,7 +244,7 @@ export default function AvatarStudio() {
           {gl && (
             <button onClick={() => void exportImage()} className="glass flex h-12 items-center gap-2 rounded-2xl px-4 text-sm font-semibold" aria-label="Export image"><Download className="h-5 w-5" /></button>
           )}
-          <button onClick={() => void save()} disabled={saving || (!dirty && !!saved && !usePhoto)} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-aurora-gradient font-semibold shadow-glow disabled:opacity-50">
+          <button onClick={() => void save()} disabled={saving || (!dirty && !!saved && !usePhoto)} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-ember-gradient text-noir font-semibold shadow-glow disabled:opacity-50">
             {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="h-5 w-5" /> {saved ? (dirty ? 'Save changes' : 'Saved') : 'Save avatar'}</>}
           </button>
         </div>
@@ -270,7 +271,7 @@ function Chips<T extends string>({ label, value, options, onChange }: { label: s
     <Group label={label}>
       <div className="flex flex-wrap gap-2">
         {(Object.keys(options) as T[]).map((k) => (
-          <button key={k} onClick={() => onChange(k)} aria-pressed={value === k} className={cn('rounded-full px-3.5 py-2 text-sm transition-all active:scale-95', value === k ? 'bg-white text-night font-semibold' : 'bg-white/[0.06] text-ink-soft ring-1 ring-white/10')}>
+          <button key={k} onClick={() => onChange(k)} aria-pressed={value === k} className={cn('rounded-full px-3.5 py-2 text-sm transition-all active:scale-95', value === k ? 'bg-ember-cream text-noir font-semibold' : 'bg-white/[0.06] text-ink-soft ring-1 ring-white/10')}>
             {options[k]}
           </button>
         ))}
@@ -298,7 +299,7 @@ function Slider({ label, value, min, max, onChange }: { label: string; value: nu
         {label}
         <span className="tabular-nums normal-case tracking-normal">{Math.round(((value - min) / (max - min)) * 100)}%</span>
       </span>
-      <input type="range" min={min} max={max} step={0.01} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-aurora-iris" />
+      <input type="range" min={min} max={max} step={0.01} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-ember-amber" />
     </label>
   );
 }

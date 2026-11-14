@@ -14,7 +14,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
   }, []);
   const Icon = { success: CheckCircle2, error: AlertTriangle, info: Info };
-  const color = { success: 'text-aurora-mint', error: 'text-aurora-coral', info: 'text-aurora-iris' };
+  const color = { success: 'text-ember-sage', error: 'text-ember-rose', info: 'text-ember-amber' };
   return (
     <ToastContext.Provider value={push}>
       {children}

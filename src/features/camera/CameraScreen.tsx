@@ -162,7 +162,7 @@ export default function CameraScreen() {
       <AnimatePresence>
         {showFilterName && (
           <motion.div key={filter.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-x-0 top-1/3 z-20 text-center">
-            <span className="font-display text-3xl font-semibold text-white drop-shadow-[0_2px_20px_rgba(0,0,0,.6)]">{filter.name}</span>
+            <span className="font-display text-3xl font-medium text-white drop-shadow-[0_2px_20px_rgba(0,0,0,.6)]">{filter.name}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -170,7 +170,7 @@ export default function CameraScreen() {
       <AnimatePresence>
         {countdown > 0 && (
           <motion.div key={countdown} initial={{ scale: 1.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} className="absolute inset-0 z-20 grid place-items-center">
-            <span className="font-display text-8xl font-bold text-white drop-shadow-[0_0_30px_rgba(139,92,246,0.9)]">{countdown}</span>
+            <span className="font-display text-8xl font-bold text-white drop-shadow-[0_0_30px_rgba(255,122,61,0.9)]">{countdown}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -183,7 +183,7 @@ export default function CameraScreen() {
           </Link>
           <Link to="/notifications" aria-label={`Activity${unreadActivity ? `, ${unreadActivity} new` : ''}`} className="relative grid h-11 w-11 place-items-center rounded-full bg-black/25 text-white ring-1 ring-white/10 backdrop-blur-md active:scale-90">
             <Bell className="h-5 w-5" />
-            {unreadActivity > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-aurora-coral px-1 text-[10px] font-bold">{unreadActivity > 9 ? '9+' : unreadActivity}</span>}
+            {unreadActivity > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-ember-rose px-1 text-[10px] font-bold">{unreadActivity > 9 ? '9+' : unreadActivity}</span>}
           </Link>
         </div>
         <div className="flex flex-col gap-2 rounded-full bg-black/25 p-1.5 ring-1 ring-white/10 backdrop-blur-md">
@@ -200,7 +200,7 @@ export default function CameraScreen() {
           <CamButton label={`Timer ${timer ? `${timer}s` : 'off'}`} onClick={() => setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length])} active={timer > 0}>
             <span className="relative">
               <Timer className="h-5 w-5" />
-              {timer > 0 && <span className="absolute -right-2 -top-2 rounded-full bg-aurora-violet px-1 text-[9px] font-bold">{timer}</span>}
+              {timer > 0 && <span className="absolute -right-2 -top-2 rounded-full bg-ember-flame px-1 text-[9px] font-bold">{timer}</span>}
             </span>
           </CamButton>
           <Link to="/settings" aria-label="Settings" className="grid h-10 w-10 place-items-center rounded-full text-white active:scale-90">
@@ -212,7 +212,7 @@ export default function CameraScreen() {
       {/* Zoom */}
       {cam.caps.zoom && cam.status === 'live' && (
         <div className="absolute inset-x-0 bottom-48 z-10 flex justify-center">
-          <input type="range" aria-label="Zoom" min={cam.caps.zoom.min} max={Math.min(cam.caps.zoom.max, 8)} step={cam.caps.zoom.step || 0.1} value={cam.zoom} onChange={(e) => cam.setZoom(Number(e.target.value))} className="w-48 accent-aurora-iris" />
+          <input type="range" aria-label="Zoom" min={cam.caps.zoom.min} max={Math.min(cam.caps.zoom.max, 8)} step={cam.caps.zoom.step || 0.1} value={cam.zoom} onChange={(e) => cam.setZoom(Number(e.target.value))} className="w-48 accent-ember-amber" />
         </div>
       )}
 
@@ -251,7 +251,7 @@ export default function CameraScreen() {
           aria-label="Tap for photo, hold for video"
           className="group relative grid h-20 w-20 touch-none select-none place-items-center rounded-full disabled:opacity-40"
         >
-          <motion.span animate={{ scale: recorder.recording ? 1.25 : 1 }} className={cn('absolute inset-0 rounded-full', recorder.recording ? '' : 'ring-aurora opacity-90')} />
+          <motion.span animate={{ scale: recorder.recording ? 1.25 : 1 }} className={cn('absolute inset-0 rounded-full', recorder.recording ? '' : 'ring-ember opacity-90')} />
           {recorder.recording && (
             <svg className="absolute inset-[-10px] h-[calc(100%+20px)] w-[calc(100%+20px)] -rotate-90" viewBox="0 0 100 100" aria-hidden>
               <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="5" />
@@ -259,10 +259,10 @@ export default function CameraScreen() {
             </svg>
           )}
           <span className="absolute inset-[4px] rounded-full bg-black/40 backdrop-blur-sm" />
-          <motion.span animate={{ scale: recorder.recording ? 0.55 : 1, borderRadius: recorder.recording ? '30%' : '50%' }} className={cn('absolute inset-[9px]', recorder.recording ? 'bg-aurora-coral' : 'bg-white')} />
+          <motion.span animate={{ scale: recorder.recording ? 0.55 : 1, borderRadius: recorder.recording ? '30%' : '50%' }} className={cn('absolute inset-[9px]', recorder.recording ? 'bg-ember-rose' : 'bg-white')} />
         </button>
         <div className="flex gap-2">
-          <button onClick={() => setLensTray((v) => !v)} aria-label="Face lenses" aria-pressed={lensTray} className={cn('grid h-12 w-12 place-items-center rounded-2xl text-white ring-1 backdrop-blur-md active:scale-90', lensTray || lensId ? 'bg-aurora-gradient ring-transparent' : 'bg-black/30 ring-white/15')}>
+          <button onClick={() => setLensTray((v) => !v)} aria-label="Face lenses" aria-pressed={lensTray} className={cn('grid h-12 w-12 place-items-center rounded-2xl ring-1 backdrop-blur-md active:scale-90', lensTray || lensId ? 'bg-ember-gradient text-noir ring-transparent' : 'bg-black/30 ring-white/15')}>
             <ScanFace className="h-5 w-5" />
           </button>
           <button onClick={() => gallery.current?.click()} aria-label="Upload from gallery" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
@@ -302,7 +302,7 @@ function CameraState({ status, onRetry }: { status: string; onRetry: () => void 
   const c = copy[status] ?? copy.error;
   const busy = status === 'idle' || status === 'starting';
   return (
-    <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_top,#1d2145,#070814)] px-8 text-center">
+    <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_top,#2a1d16,#0c0a09)] px-8 text-center">
       <div>
         <div className={cn('mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-white/5 ring-1 ring-white/10', busy && 'animate-pulse')}>
           <CameraOff className="h-7 w-7 text-ink-soft" />

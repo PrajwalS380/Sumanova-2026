@@ -37,11 +37,11 @@ export default function StoryArchiveScreen() {
             <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4">
               {highlights.map((h) => (
                 <div key={h.id} className="flex w-20 shrink-0 flex-col items-center gap-1.5">
-                  <button onClick={async () => setViewing(await storiesApi.byIds(h.highlight_items.map((x) => x.story_id)))} className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-aurora-violet/60 to-aurora-teal/50 ring-2 ring-white/20">
+                  <button onClick={async () => setViewing(await storiesApi.byIds(h.highlight_items.map((x) => x.story_id)))} className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-ember-flame/60 to-ember-jade/50 ring-2 ring-white/20">
                     <Sparkles className="h-6 w-6" />
                   </button>
                   <span className="w-full truncate text-center text-xs">{h.title}</span>
-                  <button onClick={async () => { await storiesApi.removeHighlight(h.id); load(); }} className="text-[10px] text-ink-faint hover:text-aurora-coral" aria-label={`Remove highlight ${h.title}`}><Trash2 className="h-3 w-3" /></button>
+                  <button onClick={async () => { await storiesApi.removeHighlight(h.id); load(); }} className="text-[10px] text-ink-faint hover:text-ember-rose" aria-label={`Remove highlight ${h.title}`}><Trash2 className="h-3 w-3" /></button>
                 </div>
               ))}
             </div>
@@ -73,6 +73,6 @@ function Thumb({ s }: { s: Story }) {
     if (s.kind === 'image' && s.media_path) privateUrl('stories', s.media_path).then(setUrl).catch(() => undefined);
   }, [s]);
   if (s.kind === 'text') return <span className="grid h-full place-items-center p-2 text-center text-[11px] font-semibold" style={{ background: bg(s.background) }}>{s.text_body?.slice(0, 60)}</span>;
-  if (s.kind === 'video') return <span className="grid h-full place-items-center bg-night-700 text-2xl">🎬</span>;
+  if (s.kind === 'video') return <span className="grid h-full place-items-center bg-noir-700 text-2xl">🎬</span>;
   return url ? <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" /> : <span className="block h-full animate-pulse bg-white/5" />;
 }

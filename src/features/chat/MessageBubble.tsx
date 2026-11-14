@@ -24,6 +24,7 @@ interface Props {
   reactions: Reaction[];
   receipt: Receipt;
   bubbleGradient: string;
+  bubbleInk?: string;
   onMenu: (m: LocalMessage) => void;
   onReplyTap: (id: string) => void;
   onRetry: (clientId: string) => void;
@@ -78,7 +79,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
             deleted && 'bg-transparent italic text-ink-mute ring-1 ring-white/10',
             m.local === 'failed' && 'opacity-70',
           )}
-          style={mine && !isSticker && !deleted ? { background: p.bubbleGradient } : undefined}
+          style={mine && !isSticker && !deleted ? { background: p.bubbleGradient, color: p.bubbleInk } : undefined}
         >
           {m.forwarded && !deleted && (
             <span className="mb-1 flex items-center gap-1 text-[11px] opacity-70">
@@ -86,7 +87,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
             </span>
           )}
           {p.reply && !deleted && (
-            <button onClick={() => p.onReplyTap(p.reply!.id)} className={cn('mb-1.5 block w-full rounded-xl border-l-2 px-2.5 py-1.5 text-left text-xs', mine ? 'border-white/70 bg-black/15' : 'border-aurora-iris bg-white/5')}>
+            <button onClick={() => p.onReplyTap(p.reply!.id)} className={cn('mb-1.5 block w-full rounded-xl border-l-2 px-2.5 py-1.5 text-left text-xs', mine ? 'border-white/70 bg-black/15' : 'border-ember-amber bg-white/5')}>
               <span className="block font-semibold opacity-90">{p.replySender}</span>
               <span className="line-clamp-2 opacity-75">{p.reply.deleted_at ? 'Deleted message' : p.reply.body ?? (p.reply.kind === 'image' ? '📷 Photo' : p.reply.kind === 'video' ? '🎬 Video' : p.reply.kind === 'voice' ? '🎙️ Voice note' : '')}</span>
             </button>
@@ -112,7 +113,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
         {Object.keys(counts).length > 0 && (
           <div className={cn('relative z-10 -mt-1.5 flex gap-1', mine ? 'mr-2' : 'ml-2')}>
             {Object.entries(counts).map(([e, n]) => (
-              <span key={e} className="flex items-center gap-0.5 rounded-full bg-night-700 px-1.5 py-0.5 text-xs ring-1 ring-white/10">
+              <span key={e} className="flex items-center gap-0.5 rounded-full bg-noir-700 px-1.5 py-0.5 text-xs ring-1 ring-white/10">
                 {e}
                 {n > 1 && <span className="text-[10px] text-ink-mute">{n}</span>}
               </span>
@@ -123,7 +124,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
         {(!p.groupedWithNext || m.local || p.receipt) && (
           <div className={cn('mt-1 flex items-center gap-1 px-1 text-[10px] text-ink-faint', mine ? 'flex-row-reverse' : '')}>
             {m.local === 'failed' ? (
-              <button onClick={() => p.onRetry(m.client_id)} className="flex items-center gap-1 text-aurora-coral">
+              <button onClick={() => p.onRetry(m.client_id)} className="flex items-center gap-1 text-ember-rose">
                 <AlertCircle className="h-3 w-3" /> Not sent · <RotateCw className="h-3 w-3" /> Retry
               </button>
             ) : (
@@ -131,8 +132,8 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
                 {mine && p.receipt && <ReceiptIcon r={p.receipt} />}
                 {!m.local && <span>{clockTime(m.created_at)}</span>}
                 {m.edited_at && !deleted && <span>· edited</span>}
-                {m.disappear_mode === 'after_view' && <Eye className="h-3 w-3 text-aurora-peach" />}
-                {m.disappear_mode === '24h' && <Clock3 className="h-3 w-3 text-aurora-peach" />}
+                {m.disappear_mode === 'after_view' && <Eye className="h-3 w-3 text-ember-peach" />}
+                {m.disappear_mode === '24h' && <Clock3 className="h-3 w-3 text-ember-peach" />}
               </>
             )}
           </div>
@@ -144,7 +145,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
 
 function ReceiptIcon({ r }: { r: Receipt }) {
   if (r === 'sending') return <span className="h-2.5 w-2.5 animate-spin rounded-full border border-ink-faint border-t-transparent" aria-label="Sending" />;
-  if (r === 'seen') return <span className="flex items-center gap-0.5 text-aurora-mint"><CheckCheck className="h-3.5 w-3.5" /> Seen</span>;
+  if (r === 'seen') return <span className="flex items-center gap-0.5 text-ember-sage"><CheckCheck className="h-3.5 w-3.5" /> Seen</span>;
   if (r === 'delivered') return <span className="flex items-center gap-0.5"><CheckCheck className="h-3.5 w-3.5" /> Delivered</span>;
   if (r === 'sent') return <span className="flex items-center gap-0.5"><Check className="h-3.5 w-3.5" /> Sent</span>;
   return null;

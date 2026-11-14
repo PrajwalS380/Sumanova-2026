@@ -14,7 +14,7 @@ import { cropRotate, exportImage, exportOverlay, TEXT_FONT, type OverlayItem, ty
 import { SendSheet, type Prepared } from './SendSheet';
 
 type Tool = 'none' | 'text' | 'draw' | 'crop';
-const COLORS = ['#ffffff', '#0b0b14', '#a78bfa', '#2dd4bf', '#fb7185', '#fbbf24', '#38bdf8', '#4ade80'];
+const COLORS = ['#ffffff', '#0c0a09', '#ffb547', '#ff7a3d', '#ff6b6b', '#f4e9da', '#9fdc8f', '#c084b4', '#7cc4e8'];
 const DURATIONS = [3, 5, 10, 0] as const; // 0 = no limit
 const ASPECTS: { label: string; value: number | null }[] = [
   { label: 'Original', value: null },
@@ -267,7 +267,7 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
             <EdBtn label={`Snap timer ${duration || 'no limit'}`} onClick={() => setDuration((d) => DURATIONS[(DURATIONS.indexOf(d) + 1) % DURATIONS.length])}>
               <span className="relative">
                 {duration ? <Timer className="h-5 w-5" /> : <InfinityIcon className="h-5 w-5" />}
-                {duration > 0 && <span className="absolute -bottom-2 -right-2 rounded-full bg-aurora-violet px-1 text-[9px] font-bold">{duration}s</span>}
+                {duration > 0 && <span className="absolute -bottom-2 -right-2 rounded-full bg-ember-flame px-1 text-[9px] font-bold">{duration}s</span>}
               </span>
             </EdBtn>
           )}
@@ -291,14 +291,14 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
               <button key={a.label} onClick={() => setAspect(a.value)} className={cn('rounded-full px-3 py-1.5 text-xs font-semibold', aspect === a.value ? 'bg-white text-black' : 'text-white')}>{a.label}</button>
             ))}
             <button onClick={() => setRotation((r) => r + 90)} aria-label="Rotate" className="grid h-8 w-8 place-items-center rounded-full text-white"><RotateCw className="h-4 w-4" /></button>
-            <button onClick={() => void applyCrop()} aria-label="Apply crop" className="grid h-8 w-8 place-items-center rounded-full bg-aurora-gradient text-white"><Check className="h-4 w-4" /></button>
+            <button onClick={() => void applyCrop()} aria-label="Apply crop" className="grid h-8 w-8 place-items-center rounded-full bg-ember-gradient text-noir"><Check className="h-4 w-4" /></button>
           </motion.div>
         )}
         {selected && tool === 'none' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute bottom-28 left-1/2 flex -translate-x-1/2 gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-md">
             <button onClick={() => resize(selected, 0.85)} className="h-8 w-8 rounded-full text-lg text-white" aria-label="Smaller">−</button>
             <button onClick={() => resize(selected, 1.18)} className="h-8 w-8 rounded-full text-lg text-white" aria-label="Bigger">+</button>
-            <button onClick={() => { setItems((l) => l.filter((x) => x.id !== selected)); setSelected(null); }} className="grid h-8 w-8 place-items-center rounded-full text-aurora-coral" aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
+            <button onClick={() => { setItems((l) => l.filter((x) => x.id !== selected)); setSelected(null); }} className="grid h-8 w-8 place-items-center rounded-full text-ember-rose" aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -306,7 +306,7 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
       {/* Trash target while dragging */}
       <AnimatePresence>
         {drag.current && (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: overTrash ? 1.25 : 1 }} exit={{ scale: 0 }} className={cn('absolute bottom-10 left-1/2 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full', overTrash ? 'bg-aurora-coral' : 'bg-black/50')}>
+          <motion.div initial={{ scale: 0 }} animate={{ scale: overTrash ? 1.25 : 1 }} exit={{ scale: 0 }} className={cn('absolute bottom-10 left-1/2 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full', overTrash ? 'bg-ember-rose' : 'bg-black/50')}>
             <Trash2 className="h-6 w-6 text-white" />
           </motion.div>
         )}
@@ -319,7 +319,7 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
             <Download className="h-5 w-5" /> Save
           </button>
           <span className="rounded-full bg-black/40 px-3 py-1 text-xs text-white/85">{f.name} · swipe for filters</span>
-          <button onClick={() => void openSend()} disabled={busy} className="flex h-12 items-center gap-2 rounded-2xl bg-aurora-gradient px-5 text-sm font-semibold text-white shadow-glow disabled:opacity-60">
+          <button onClick={() => void openSend()} disabled={busy} className="flex h-12 items-center gap-2 rounded-2xl bg-ember-gradient text-noir px-5 text-sm font-semibold shadow-glow disabled:opacity-60">
             Send <Send className="h-4 w-4" />
           </button>
         </div>
@@ -348,7 +348,7 @@ function itemStyle(it: OverlayItem): React.CSSProperties {
   if (it.type === 'sticker') return {};
   const base: React.CSSProperties = { fontFamily: TEXT_FONT, fontWeight: 700 };
   if (it.style === 'pill')
-    return { ...base, color: it.color === '#ffffff' ? '#fff' : '#0b0b14', background: it.color === '#ffffff' ? 'rgba(7,8,20,.72)' : it.color, padding: '0.25em 0.45em', borderRadius: '0.8em' };
+    return { ...base, color: it.color === '#ffffff' ? '#fff' : '#0c0a09', background: it.color === '#ffffff' ? 'rgba(7,8,20,.72)' : it.color, padding: '0.25em 0.45em', borderRadius: '0.8em' };
   if (it.style === 'glow') return { ...base, color: it.color, textShadow: `0 0 0.3em ${it.color}, 0 0 0.6em ${it.color}` };
   return { ...base, color: it.color, textShadow: '0 2px 8px rgba(0,0,0,.45)' };
 }
@@ -362,7 +362,7 @@ function TextEditor({ item, onDone }: { item: OverlayItem; onDone: (it: OverlayI
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-10 flex flex-col bg-black/60 backdrop-blur-sm">
       <div className="flex items-center justify-between px-4 pt-safe">
         <button onClick={() => setIt({ ...it, style: styles[(styles.indexOf(it.style) + 1) % styles.length] })} className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold capitalize">{it.style}</button>
-        <button onClick={() => onDone(it)} className="rounded-full bg-aurora-gradient px-4 py-1.5 text-sm font-semibold">Done</button>
+        <button onClick={() => onDone(it)} className="rounded-full bg-ember-gradient text-noir px-4 py-1.5 text-sm font-semibold">Done</button>
       </div>
       <div className="grid flex-1 place-items-center px-6">
         <textarea

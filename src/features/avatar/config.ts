@@ -33,7 +33,7 @@ export const SKIN_TONES = ['#fde3cf', '#f6cfae', '#ecb98f', '#d9a074', '#c68555'
 export const EYE_COLORS = ['#3b2414', '#5a3a22', '#7a5230', '#4c6b3c', '#3f6f8f', '#6b8fb5', '#7a7a7a', '#2a2a35'];
 export const HAIR_COLORS = ['#141010', '#2f1d14', '#4e2f1f', '#7a4a2a', '#a8703f', '#d6a35c', '#e8cf9a', '#b5b5b5', '#f2f2f2', '#9b2c3a', '#5b3fa8', '#1f8a8a', '#e05fa2'];
 export const LIP_COLORS = ['#b86b6b', '#c4776e', '#9f4f55', '#d2848a', '#8a4a4a', '#c95b7a', '#a33a4a'];
-export const CLOTH_COLORS = ['#f5f5f7', '#16161f', '#7c3aed', '#14b8a6', '#fb7185', '#f59e0b', '#2563eb', '#16a34a', '#dc2626', '#9ca3af', '#7c4a2d', '#ec4899', '#1e3a8a', '#fde68a'];
+export const CLOTH_COLORS = ['#f5f5f7', '#16161f', '#e0663a', '#7c3aed', '#14b8a6', '#fb7185', '#f59e0b', '#2563eb', '#16a34a', '#dc2626', '#9ca3af', '#7c4a2d', '#ec4899', '#1e3a8a', '#fde68a'];
 
 export const LABELS = {
   face: { oval: 'Oval', round: 'Round', square: 'Square', heart: 'Heart', long: 'Long' },
@@ -66,7 +66,7 @@ export const DEFAULT_AVATAR: AvatarConfig = {
   hair: { style: 'short', color: '#2f1d14' },
   facialHair: { style: 'none', color: '#2f1d14' },
   body: { height: 1, build: 'average', posture: 'relaxed' },
-  outfit: { top: 'hoodie', topColor: '#7c3aed', bottom: 'jeans', bottomColor: '#1e3a8a', shoes: 'sneakers', shoeColor: '#f5f5f7' },
+  outfit: { top: 'hoodie', topColor: '#e0663a', bottom: 'jeans', bottomColor: '#1e3a8a', shoes: 'sneakers', shoeColor: '#f5f5f7' },
   accessories: { glasses: 'none', hat: 'none', earrings: false, necklace: false, watch: false, bag: false, bindi: false },
   expression: 'happy',
   pose: 'standing',

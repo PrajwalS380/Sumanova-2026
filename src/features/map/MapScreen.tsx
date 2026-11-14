@@ -190,16 +190,16 @@ export default function MapScreen() {
   const left = sharing ? Math.max(0, Math.round((new Date(mine!.expires_at).getTime() - Date.now()) / 60000)) : 0;
 
   return (
-    <div className="fixed inset-0 bg-night">
+    <div className="fixed inset-0 bg-noir">
       <div ref={el} className="absolute inset-0 z-0" aria-label="Map" />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] bg-gradient-to-b from-night/90 to-transparent px-4 pb-10 pt-safe">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] bg-gradient-to-b from-noir/90 to-transparent px-4 pb-10 pt-safe">
         <div className="pointer-events-auto flex items-center gap-2">
-          <h1 className="flex-1 font-display text-2xl font-semibold drop-shadow">Map</h1>
+          <h1 className="flex-1 font-display text-[28px] font-medium drop-shadow">Map</h1>
           <button onClick={() => void locate()} className="glass grid h-11 w-11 place-items-center rounded-full" aria-label="Find me"><LocateFixed className="h-5 w-5" /></button>
         </div>
         <div className="pointer-events-auto mt-3 flex items-center gap-2">
-          <span className={cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold', sharing ? 'bg-aurora-teal/20 text-aurora-mint' : 'bg-white/10 text-ink-soft')}>
+          <span className={cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold', sharing ? 'bg-ember-jade/20 text-ember-sage' : 'bg-white/10 text-ink-soft')}>
             {sharing ? <Navigation className="h-3.5 w-3.5" /> : <Ghost className="h-3.5 w-3.5" />}
             {sharing ? `Sharing · ${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'Ghost mode'}
           </span>
@@ -224,7 +224,7 @@ export default function MapScreen() {
             {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Ghost className="h-5 w-5" /> Stop sharing</>}
           </button>
         ) : (
-          <button onClick={() => setSheet(true)} className="flex h-14 items-center gap-2 rounded-full bg-aurora-gradient px-6 font-semibold shadow-glow">
+          <button onClick={() => setSheet(true)} className="flex h-14 items-center gap-2 rounded-full bg-ember-gradient text-noir px-6 font-semibold shadow-glow">
             <MapPin className="h-5 w-5" /> Share my location
           </button>
         )}
@@ -236,15 +236,15 @@ export default function MapScreen() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">For</p>
             <div className="grid grid-cols-4 gap-2">
               {DURATIONS.map((d) => (
-                <button key={d.m} onClick={() => setMinutes(d.m)} className={cn('rounded-2xl py-2.5 text-sm', minutes === d.m ? 'bg-white font-semibold text-night' : 'bg-white/5 ring-1 ring-white/10')}>{d.l}</button>
+                <button key={d.m} onClick={() => setMinutes(d.m)} className={cn('rounded-2xl py-2.5 text-sm', minutes === d.m ? 'bg-white font-semibold text-noir' : 'bg-white/5 ring-1 ring-white/10')}>{d.l}</button>
               ))}
             </div>
           </div>
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">With</p>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setAudience('friends')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'friends' ? 'bg-white font-semibold text-night' : 'bg-white/5 ring-1 ring-white/10')}>All friends</button>
-              <button onClick={() => setAudience('selected')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'selected' ? 'bg-white font-semibold text-night' : 'bg-white/5 ring-1 ring-white/10')}>Choose friends</button>
+              <button onClick={() => setAudience('friends')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'friends' ? 'bg-white font-semibold text-noir' : 'bg-white/5 ring-1 ring-white/10')}>All friends</button>
+              <button onClick={() => setAudience('selected')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'selected' ? 'bg-white font-semibold text-noir' : 'bg-white/5 ring-1 ring-white/10')}>Choose friends</button>
             </div>
             {audience === 'selected' && (
               <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
@@ -255,7 +255,7 @@ export default function MapScreen() {
                       <button onClick={() => setPicked((s) => { const n = new Set(s); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left', on ? 'bg-white/10' : '')}>
                         <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={34} />
                         <span className="flex-1 text-sm">{f.display_name}</span>
-                        {on && <Check className="h-4 w-4 text-aurora-mint" />}
+                        {on && <Check className="h-4 w-4 text-ember-sage" />}
                       </button>
                     </li>
                   );
@@ -266,8 +266,8 @@ export default function MapScreen() {
           <div className="glass overflow-hidden rounded-2xl">
             <Toggle label="Precise location" description={precise ? 'Friends see your exact spot' : 'Friends see roughly where you are (about 1 km)'} checked={precise} onChange={setPrecise} />
           </div>
-          <p className="flex gap-2 text-xs text-ink-mute"><ShieldCheck className="h-4 w-4 shrink-0 text-aurora-mint" /> Updates only while SUMANOVA is open — never in the background. Sharing stops automatically when time is up, and you can stop anytime.</p>
-          <button onClick={() => void start()} disabled={busy || (audience === 'selected' && picked.size === 0)} className="flex h-14 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-aurora-gradient font-semibold shadow-glow disabled:opacity-50">
+          <p className="flex gap-2 text-xs text-ink-mute"><ShieldCheck className="h-4 w-4 shrink-0 text-ember-sage" /> Updates only while SUMANOVA is open — never in the background. Sharing stops automatically when time is up, and you can stop anytime.</p>
+          <button onClick={() => void start()} disabled={busy || (audience === 'selected' && picked.size === 0)} className="flex h-14 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-ember-gradient text-noir font-semibold shadow-glow disabled:opacity-50">
             {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Start sharing'}
           </button>
         </div>

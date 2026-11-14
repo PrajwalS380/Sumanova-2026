@@ -58,7 +58,7 @@ export function InstallPrompt() {
               <p className="text-xs text-ink-mute">Full screen, faster, right on your home screen.</p>
             </div>
             <button
-              className="flex h-10 items-center gap-1.5 rounded-2xl bg-aurora-gradient px-3 text-sm font-semibold"
+              className="flex h-10 items-center gap-1.5 rounded-2xl bg-ember-gradient text-noir px-3 text-sm font-semibold"
               onClick={async () => {
                 await evt.prompt();
                 await evt.userChoice;

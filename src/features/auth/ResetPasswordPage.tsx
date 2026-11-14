@@ -46,7 +46,7 @@ export default function ResetPasswordPage() {
       <form onSubmit={submit} className="space-y-3" noValidate>
         <Field label="New password" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} error={errors.pw} />
         <Field label="Confirm password" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={errors.confirm} />
-        {errors.form && <p role="alert" className="text-sm text-aurora-coral">{errors.form}</p>}
+        {errors.form && <p role="alert" className="text-sm text-ember-rose">{errors.form}</p>}
         <Button type="submit" block size="lg" loading={busy}>
           Update password
         </Button>

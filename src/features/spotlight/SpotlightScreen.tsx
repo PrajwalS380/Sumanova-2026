@@ -130,7 +130,7 @@ export default function SpotlightScreen() {
             <div>
               <p className="font-display text-xl">{query ? 'No results' : 'Spotlight is warming up'}</p>
               <p className="mt-2 text-sm text-ink-mute">{query ? 'Try another word or creator.' : 'Be the first to post a short video for everyone on SUMANOVA.'}</p>
-              <button onClick={() => setUpload(true)} className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-aurora-gradient px-5 text-sm font-semibold"><Plus className="h-4 w-4" /> Post a video</button>
+              <button onClick={() => setUpload(true)} className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-ember-gradient text-noir px-5 text-sm font-semibold"><Plus className="h-4 w-4" /> Post a video</button>
             </div>
           </div>
         ) : (
@@ -151,7 +151,7 @@ export default function SpotlightScreen() {
             </label>
           ) : (
             <>
-              <h1 className="flex-1 font-display text-xl font-semibold text-white drop-shadow">Spotlight</h1>
+              <h1 className="flex-1 font-display text-[26px] font-medium italic text-white drop-shadow">Spotlight</h1>
               <TopBtn label="Interests" onClick={() => setInterests(true)}><SlidersHorizontal className="h-5 w-5" /></TopBtn>
               <TopBtn label="Search" onClick={() => setSearching(true)}><Search className="h-5 w-5" /></TopBtn>
               <TopBtn label="Post a video" onClick={() => setUpload(true)}><Plus className="h-5 w-5" /></TopBtn>
@@ -160,7 +160,7 @@ export default function SpotlightScreen() {
         </div>
         <div className="no-scrollbar pointer-events-auto mt-2 flex gap-1.5 overflow-x-auto px-3">
           {[null, ...CATEGORIES].map((c) => (
-            <button key={c ?? 'all'} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold capitalize backdrop-blur-md', category === c ? 'bg-white text-night' : 'bg-white/15 text-white')}>{c ?? 'For you'}</button>
+            <button key={c ?? 'all'} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold capitalize backdrop-blur-md', category === c ? 'bg-ember-cream text-noir' : 'bg-white/15 text-white')}>{c ?? 'For you'}</button>
           ))}
         </div>
       </div>
@@ -188,7 +188,7 @@ export default function SpotlightScreen() {
                 const next = on ? (settings?.interests ?? []).filter((x) => x !== c) : [...(settings?.interests ?? []), c];
                 if (settings) setSettings({ ...settings, interests: next });
                 await spotlightApi.setInterests(me, next).catch((e) => toast((e as Error).message, 'error'));
-              }} className={cn('rounded-full px-4 py-2 text-sm capitalize', on ? 'bg-aurora-gradient font-semibold' : 'bg-white/5 ring-1 ring-white/10')}>{c}</button>
+              }} className={cn('rounded-full px-4 py-2 text-sm capitalize', on ? 'bg-ember-gradient text-noir font-semibold' : 'bg-white/5 ring-1 ring-white/10')}>{c}</button>
             );
           })}
           <p className="mt-2 w-full text-xs text-ink-mute">“For you” ranks videos by likes, comments, saves and views, how recent they are, creators you follow and these interests. It’s a simple, transparent formula — not an AI model.</p>
@@ -242,7 +242,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
       ) : v.poster_path ? (
         <img src={publicUrl('spotlight', v.poster_path)} alt="" className="h-full w-full object-cover" loading="lazy" />
       ) : (
-        <div className="h-full w-full bg-night-800" />
+        <div className="h-full w-full bg-noir-800" />
       )}
       <button
         className="absolute inset-0"
@@ -259,7 +259,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
       <AnimatePresence>
         {heart > 0 && (
           <motion.div key={heart} initial={{ scale: 0.3, opacity: 0 }} animate={{ scale: 1.3, opacity: 1 }} exit={{ opacity: 0, y: -60 }} transition={{ type: 'spring', stiffness: 400, damping: 15 }} onAnimationComplete={() => setTimeout(() => setHeart(0), 300)} className="pointer-events-none absolute inset-0 grid place-items-center">
-            <Heart className="h-28 w-28 fill-aurora-coral text-aurora-coral drop-shadow-[0_0_30px_rgba(251,113,133,.8)]" />
+            <Heart className="h-28 w-28 fill-ember-rose text-ember-rose drop-shadow-[0_0_30px_rgba(255,107,107,.8)]" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -267,9 +267,9 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
 
       {/* Side rail */}
       <div className="absolute bottom-32 right-3 flex flex-col items-center gap-5 text-white">
-        <Rail label={fmt(v.like_count)} active={v.liked} onClick={() => onLike()}><Heart className={cn('h-7 w-7', v.liked && 'fill-aurora-coral text-aurora-coral')} /></Rail>
+        <Rail label={fmt(v.like_count)} active={v.liked} onClick={() => onLike()}><Heart className={cn('h-7 w-7', v.liked && 'fill-ember-rose text-ember-rose')} /></Rail>
         <Rail label={fmt(v.comment_count)} onClick={onComments}><MessageCircle className="h-7 w-7" /></Rail>
-        <Rail label={fmt(v.save_count)} active={v.saved} onClick={onSave}><Bookmark className={cn('h-7 w-7', v.saved && 'fill-aurora-gold text-aurora-gold')} /></Rail>
+        <Rail label={fmt(v.save_count)} active={v.saved} onClick={onSave}><Bookmark className={cn('h-7 w-7', v.saved && 'fill-ember-gold text-ember-gold')} /></Rail>
         <Rail label="Share" onClick={onShare}><Share2 className="h-7 w-7" /></Rail>
         <Rail label="" onClick={onMenu}><MoreHorizontal className="h-7 w-7" /></Rail>
         <button onClick={onMute} aria-label={muted ? 'Unmute' : 'Mute'} className="grid h-10 w-10 place-items-center rounded-full bg-black/30">{muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
@@ -286,7 +286,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
             </span>
           </Link>
           {v.user_id !== me && (
-            <button onClick={onFollow} className={cn('ml-1 rounded-full px-3 py-1 text-xs font-semibold', v.following ? 'bg-white/20' : 'bg-white text-night')}>{v.following ? 'Following' : 'Follow'}</button>
+            <button onClick={onFollow} className={cn('ml-1 rounded-full px-3 py-1 text-xs font-semibold', v.following ? 'bg-white/20' : 'bg-ember-cream text-noir')}>{v.following ? 'Following' : 'Follow'}</button>
           )}
         </div>
         {v.caption && <p className="mt-2 line-clamp-3 pr-16 text-sm">{v.caption}</p>}
@@ -354,15 +354,15 @@ function CommentsSheet({ video, me, onClose, onCount }: { video: SpotlightVideo 
                   <p className="break-words text-sm">{c.body}</p>
                 </div>
                 {(c.user_id === me || video?.user_id === me) && (
-                  <button onClick={async () => { await spotlightApi.removeComment(c.id).catch(() => undefined); setList((l) => l?.filter((x) => x.id !== c.id) ?? null); if (video) onCount(video.id, -1); }} aria-label="Delete comment" className="text-ink-faint hover:text-aurora-coral"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={async () => { await spotlightApi.removeComment(c.id).catch(() => undefined); setList((l) => l?.filter((x) => x.id !== c.id) ?? null); if (video) onCount(video.id, -1); }} aria-label="Delete comment" className="text-ink-faint hover:text-ember-rose"><Trash2 className="h-4 w-4" /></button>
                 )}
               </li>
             );
           })}
         </ul>
         <form onSubmit={(e) => { e.preventDefault(); void post(); }} className="flex gap-2 border-t border-white/5 px-4 py-3">
-          <input value={text} onChange={(e) => setText(e.target.value.slice(0, 500))} placeholder="Add a comment…" className="h-11 flex-1 rounded-full bg-white/5 px-4 text-[15px] outline-none ring-1 ring-white/10 focus:ring-aurora-iris/60" />
-          <button type="submit" disabled={!text.trim() || busy} aria-label="Post comment" className="grid h-11 w-11 place-items-center rounded-full bg-aurora-gradient disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button>
+          <input value={text} onChange={(e) => setText(e.target.value.slice(0, 500))} placeholder="Add a comment…" className="h-11 flex-1 rounded-full bg-white/5 px-4 text-[15px] outline-none ring-1 ring-white/10 focus:ring-ember-amber/60" />
+          <button type="submit" disabled={!text.trim() || busy} aria-label="Post comment" className="grid h-11 w-11 place-items-center rounded-full bg-ember-gradient text-noir disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button>
         </form>
       </div>
     </Sheet>

@@ -44,7 +44,7 @@ export function StoryMedia({ story, paused, onReady, onDuration, onEnded }: { st
   if (story.kind === 'text') {
     return (
       <div className="grid h-full w-full place-items-center px-8" style={{ background: bg(story.background) }}>
-        <p className="whitespace-pre-wrap text-center font-display text-[clamp(1.6rem,7vw,2.6rem)] font-semibold leading-tight text-white drop-shadow-[0_4px_24px_rgba(0,0,0,.35)]">{story.text_body}</p>
+        <p className="whitespace-pre-wrap text-center font-display text-[clamp(1.6rem,7vw,2.6rem)] font-medium leading-tight text-white drop-shadow-[0_4px_24px_rgba(0,0,0,.35)]">{story.text_body}</p>
       </div>
     );
   }

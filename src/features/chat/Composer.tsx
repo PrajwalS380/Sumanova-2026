@@ -145,15 +145,15 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
 
       {rec ? (
         <div className="glass-strong flex h-14 items-center gap-3 rounded-[1.75rem] px-2">
-          <button onClick={() => { rec.cancel(); setRec(null); }} aria-label="Discard recording" className="grid h-10 w-10 place-items-center rounded-full text-aurora-coral"><Trash2 className="h-5 w-5" /></button>
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-aurora-coral" />
+          <button onClick={() => { rec.cancel(); setRec(null); }} aria-label="Discard recording" className="grid h-10 w-10 place-items-center rounded-full text-ember-rose"><Trash2 className="h-5 w-5" /></button>
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-ember-rose" />
           <span className="w-10 text-sm tabular-nums">{formatDuration(recSecs)}</span>
           <div className="flex flex-1 items-center justify-center gap-[3px]" aria-hidden>
             {Array.from({ length: 18 }).map((_, i) => (
               <span key={i} className="w-[3px] rounded-full bg-white/70 transition-[height] duration-100" style={{ height: `${6 + level * 26 * (0.5 + Math.abs(Math.sin(i * 1.7 + recSecs * 6)) * 0.5)}px` }} />
             ))}
           </div>
-          <button onClick={finishRecording} aria-label="Send voice note" className="grid h-11 w-11 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #2dd4bf)` }}>
+          <button onClick={finishRecording} aria-label="Send voice note" className="grid h-11 w-11 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #ff5e6c)` }}>
             <Square className="h-4 w-4 fill-current" />
           </button>
         </div>
@@ -187,7 +187,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
           </button>
           <AnimatePresence mode="wait" initial={false}>
             {text.trim() ? (
-              <motion.button key="send" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={() => void submit()} aria-label={editing ? 'Save edit' : 'Send'} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #2dd4bf)` }}>
+              <motion.button key="send" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={() => void submit()} aria-label={editing ? 'Save edit' : 'Send'} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #ff5e6c)` }}>
                 <SendHorizontal className="h-5 w-5" />
               </motion.button>
             ) : (

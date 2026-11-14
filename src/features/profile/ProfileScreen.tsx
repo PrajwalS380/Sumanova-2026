@@ -41,12 +41,12 @@ export default function ProfileScreen() {
       <div className="relative px-5">
         <div
           aria-hidden
-          className="absolute inset-x-6 -top-6 h-48 rounded-full opacity-50 blur-3xl"
-          style={{ background: `radial-gradient(closest-side, ${aura.from}, transparent)` }}
+          className="absolute inset-x-0 -top-10 h-64 opacity-60"
+          style={{ background: `radial-gradient(closest-side, ${aura.from}, transparent 75%)` }}
         />
         <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 22 }} className="relative flex flex-col items-center">
           <Avatar name={profile.display_name} url={profile.avatar_url} aura={profile.aura_color} size={120} />
-          <h2 className="mt-4 font-display text-2xl font-semibold">{profile.display_name}</h2>
+          <h2 className="mt-4 font-display text-[30px] font-medium leading-tight">{profile.display_name}</h2>
           <p className="text-sm text-ink-mute">@{profile.username}</p>
           {profile.bio && <p className="mt-3 max-w-xs text-center text-[15px] text-ink-soft">{profile.bio}</p>}
           <div className="mt-6 flex w-full max-w-sm gap-2">
@@ -60,7 +60,7 @@ export default function ProfileScreen() {
         </motion.div>
 
         <div className="mx-auto mt-6 max-w-sm space-y-3">
-          <Link to="/avatar" className="relative flex items-center gap-3 overflow-hidden rounded-3xl bg-gradient-to-br from-aurora-violet/40 via-aurora-teal/20 to-aurora-coral/30 p-4 ring-1 ring-white/10 active:scale-[0.99]">
+          <Link to="/avatar" className="relative flex items-center gap-3 overflow-hidden rounded-3xl bg-gradient-to-br from-ember-flame/40 via-ember-jade/20 to-ember-rose/30 p-4 ring-1 ring-white/10 active:scale-[0.99]">
             <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/15">
               <Sparkles className="h-5 w-5" />
             </span>
@@ -72,14 +72,14 @@ export default function ProfileScreen() {
           </Link>
           <Link to="/friends" className="glass flex items-center gap-3 rounded-3xl p-4 active:scale-[0.99]">
             <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/5">
-              <Users className="h-5 w-5 text-aurora-iris" />
+              <Users className="h-5 w-5 text-ember-amber" />
             </span>
             <span className="flex-1 text-sm font-medium">Friends & requests</span>
             <ChevronRight className="h-4 w-4 text-ink-mute" />
           </Link>
           <div className="glass flex items-center gap-3 rounded-3xl p-4">
             <span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/5">
-              <CalendarHeart className="h-5 w-5 text-aurora-peach" />
+              <CalendarHeart className="h-5 w-5 text-ember-peach" />
             </span>
             <div>
               <p className="text-sm font-medium">Joined {joined}</p>

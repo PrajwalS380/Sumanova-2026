@@ -33,10 +33,10 @@ export interface PrivacySettings {
 }
 
 export const AURA: Record<AuraColor, { from: string; to: string; label: string }> = {
-  violet: { from: '#8b5cf6', to: '#c084fc', label: 'Violet' },
-  teal: { from: '#14b8a6', to: '#5eead4', label: 'Teal' },
-  coral: { from: '#f43f5e', to: '#fdba74', label: 'Coral' },
-  gold: { from: '#f59e0b', to: '#fde68a', label: 'Gold' },
-  sky: { from: '#0ea5e9', to: '#a5f3fc', label: 'Sky' },
-  rose: { from: '#ec4899', to: '#f9a8d4', label: 'Rose' },
+  violet: { from: '#b56aa6', to: '#f0b3d8', label: 'Orchid' },
+  teal: { from: '#3fae8c', to: '#b9e6a5', label: 'Sage' },
+  coral: { from: '#e5484d', to: '#ffb38a', label: 'Coral' },
+  gold: { from: '#ff9a3d', to: '#ffe1a0', label: 'Amber' },
+  sky: { from: '#4b8fc2', to: '#bfe3f2', label: 'Dusk' },
+  rose: { from: '#d6456e', to: '#ffc0c8', label: 'Rose' },
 };

@@ -77,11 +77,11 @@ export default function DuoStudio() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-night">
+    <div className="fixed inset-0 flex flex-col bg-noir">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[55vh]" style={{ background: 'radial-gradient(70% 60% at 50% 40%, rgba(251,113,133,.25), transparent 70%), radial-gradient(60% 50% at 50% 70%, rgba(139,92,246,.25), transparent 70%)' }} />
       <header className="relative z-10 flex items-center gap-2 px-3 pt-safe">
         <button onClick={() => navigate(-1)} aria-label="Back" className="glass grid h-10 w-10 place-items-center rounded-full"><ChevronLeft className="h-5 w-5" /></button>
-        <h1 className="flex-1 font-display text-lg font-semibold">Duo stickers</h1>
+        <h1 className="flex-1 font-display text-lg font-medium">Duo stickers</h1>
       </header>
 
       <div className="relative h-[44vh] shrink-0">
@@ -91,7 +91,7 @@ export default function DuoStudio() {
           <div className="grid h-full place-items-center px-8 text-center">
             <div>
               <p className="font-display text-lg">Create your avatar first</p>
-              <Link to="/avatar" className="mt-4 inline-flex h-11 items-center rounded-2xl bg-aurora-gradient px-5 text-sm font-semibold">Open avatar studio</Link>
+              <Link to="/avatar" className="mt-4 inline-flex h-11 items-center rounded-2xl bg-ember-gradient text-noir px-5 text-sm font-semibold">Open avatar studio</Link>
             </div>
           </div>
         ) : !gl ? (
@@ -99,7 +99,7 @@ export default function DuoStudio() {
         ) : (
           <AvatarStage ref={stage} configs={configs} poses={[scene.poses[0], scene.poses[1]]} interactive={false} className="!h-full !w-full" />
         )}
-        {friend && theirs === null && <p className="absolute inset-x-0 bottom-2 text-center text-xs text-aurora-gold">{friend.display_name} hasn’t made an avatar yet — showing just you.</p>}
+        {friend && theirs === null && <p className="absolute inset-x-0 bottom-2 text-center text-xs text-ember-gold">{friend.display_name} hasn’t made an avatar yet — showing just you.</p>}
       </div>
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-28 pt-3">
@@ -107,7 +107,7 @@ export default function DuoStudio() {
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">Scene</p>
           <div className="flex flex-wrap gap-2">
             {SCENES.map((s) => (
-              <button key={s.id} onClick={() => { haptic(5); setScene(s); }} className={cn('rounded-full px-3.5 py-2 text-sm transition-all', scene.id === s.id ? 'bg-white font-semibold text-night' : 'bg-white/[0.06] text-ink-soft ring-1 ring-white/10')}>{s.label}</button>
+              <button key={s.id} onClick={() => { haptic(5); setScene(s); }} className={cn('rounded-full px-3.5 py-2 text-sm transition-all', scene.id === s.id ? 'bg-white font-semibold text-noir' : 'bg-white/[0.06] text-ink-soft ring-1 ring-white/10')}>{s.label}</button>
             ))}
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function DuoStudio() {
       </div>
 
       <div className="glass-strong absolute inset-x-0 bottom-0 z-20 rounded-t-[2rem] px-4 pb-safe pt-3">
-        <button onClick={() => void send()} disabled={!friend || !mine || sending || !gl} className="mb-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-aurora-gradient font-semibold shadow-glow disabled:opacity-50">
+        <button onClick={() => void send()} disabled={!friend || !mine || sending || !gl} className="mb-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ember-gradient text-noir font-semibold shadow-glow disabled:opacity-50">
           {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Send{friend ? ` to ${friend.display_name.split(' ')[0]}` : ''} <Send className="h-4 w-4" /></>}
         </button>
       </div>

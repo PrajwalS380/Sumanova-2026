@@ -30,11 +30,11 @@ export default function SignInPage() {
         <Field label="Email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
         <Field label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} />
         <div className="flex justify-end">
-          <Link to="/auth/forgot" className="text-sm text-aurora-iris hover:underline">
+          <Link to="/auth/forgot" className="text-sm text-ember-amber hover:underline">
             Forgot password?
           </Link>
         </div>
-        {errors.form && <p role="alert" className="rounded-xl bg-aurora-coral/10 px-3 py-2 text-sm text-aurora-coral">{errors.form}</p>}
+        {errors.form && <p role="alert" className="rounded-xl bg-ember-rose/10 px-3 py-2 text-sm text-ember-rose">{errors.form}</p>}
         <Button type="submit" block size="lg" loading={busy}>
           Sign in
         </Button>

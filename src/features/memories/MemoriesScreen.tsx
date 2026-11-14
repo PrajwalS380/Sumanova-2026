@@ -113,6 +113,7 @@ export default function MemoriesScreen() {
     <div className="pb-36">
       <ScreenHeader
         title={album ? album.title : 'Memories'}
+        kicker={album ? 'Album' : 'Only you can see these'}
         back={!!album}
         right={
           <label className="glass relative grid h-10 w-10 cursor-pointer place-items-center rounded-full" aria-label="Jump to month">
@@ -124,10 +125,10 @@ export default function MemoriesScreen() {
       <div className="mx-auto max-w-lg px-4">
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2">
           {(['all', 'favourites', 'albums', 'archived'] as Tab[]).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-4 py-2 text-sm capitalize', tab === t ? 'bg-white font-semibold text-night' : 'bg-white/5 text-ink-soft ring-1 ring-white/10')}>{t}</button>
+            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-4 py-2 text-sm capitalize', tab === t ? 'bg-white font-semibold text-noir' : 'bg-white/5 text-ink-soft ring-1 ring-white/10')}>{t}</button>
           ))}
           {month && (
-            <button onClick={() => setMonth('')} className="flex shrink-0 items-center gap-1 rounded-full bg-aurora-violet/25 px-3 text-xs">
+            <button onClick={() => setMonth('')} className="flex shrink-0 items-center gap-1 rounded-full bg-ember-flame/25 px-3 text-xs">
               {new Date(`${month}-01`).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} <X className="h-3 w-3" />
             </button>
           )}
@@ -135,7 +136,7 @@ export default function MemoriesScreen() {
 
         {usage && tab === 'all' && !month && (
           <div className="mb-4 px-1">
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-aurora-gradient" style={{ width: `${Math.min(100, (usage.bytes / usage.max_bytes) * 100)}%` }} /></div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-ember-gradient text-noir" style={{ width: `${Math.min(100, (usage.bytes / usage.max_bytes) * 100)}%` }} /></div>
             <p className="mt-1 text-[11px] text-ink-faint">{(usage.bytes / 1048576).toFixed(1)} MB of {usage.max_bytes / 1048576} MB · {usage.items}/{usage.max_items} items</p>
           </div>
         )}
@@ -213,7 +214,7 @@ export default function MemoriesScreen() {
 }
 
 function IconBtn({ children, label, onClick, danger }: { children: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
-  return <button onClick={onClick} aria-label={label} className={cn('grid h-11 w-11 place-items-center rounded-full', danger ? 'text-aurora-coral' : '')}>{children}</button>;
+  return <button onClick={onClick} aria-label={label} className={cn('grid h-11 w-11 place-items-center rounded-full', danger ? 'text-ember-rose' : '')}>{children}</button>;
 }
 
 function Tile({ m, selected, selecting, onTap, onLong }: { m: Memory; selected: boolean; selecting: boolean; onTap: () => void; onLong: () => void }) {
@@ -223,12 +224,12 @@ function Tile({ m, selected, selecting, onTap, onLong }: { m: Memory; selected: 
     if (m.kind === 'image') privateUrl('memories', m.media_path).then(setUrl).catch(() => undefined);
   }, [m]);
   return (
-    <button {...press} onClick={() => !press.wasLongPress() && onTap()} className={cn('relative aspect-square select-none overflow-hidden rounded-xl bg-white/5 transition-transform', selected && 'scale-[0.92] ring-2 ring-aurora-iris')}>
+    <button {...press} onClick={() => !press.wasLongPress() && onTap()} className={cn('relative aspect-square select-none overflow-hidden rounded-xl bg-white/5 transition-transform', selected && 'scale-[0.92] ring-2 ring-ember-amber')}>
       {m.kind === 'image' ? (url ? <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <span className="block h-full animate-pulse bg-white/5" />) : (
-        <span className="grid h-full place-items-center bg-gradient-to-br from-aurora-violet/30 to-aurora-teal/20"><Play className="h-7 w-7" /></span>
+        <span className="grid h-full place-items-center bg-gradient-to-br from-ember-flame/30 to-ember-jade/20"><Play className="h-7 w-7" /></span>
       )}
-      {m.favourite && <Heart className="absolute right-1.5 top-1.5 h-4 w-4 fill-aurora-coral text-aurora-coral" />}
-      {selecting && <span className={cn('absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full ring-2 ring-white', selected ? 'bg-aurora-iris' : 'bg-black/30')}>{selected && <Check className="h-3 w-3" />}</span>}
+      {m.favourite && <Heart className="absolute right-1.5 top-1.5 h-4 w-4 fill-ember-rose text-ember-rose" />}
+      {selecting && <span className={cn('absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full ring-2 ring-white', selected ? 'bg-ember-amber' : 'bg-black/30')}>{selected && <Check className="h-3 w-3" />}</span>}
     </button>
   );
 }
@@ -267,11 +268,11 @@ function MemoryViewer({ m, onClose, onChanged }: { m: Memory; onClose: () => voi
         {!url ? <Loader2 className="h-7 w-7 animate-spin text-white/60" /> : m.kind === 'image' ? <img src={url} alt="" className="max-h-full max-w-full object-contain" /> : <video src={url} controls autoPlay playsInline className="max-h-full max-w-full" />}
       </div>
       <div className="flex justify-around px-2 pb-safe pt-3 text-white">
-        <VBtn label={m.favourite ? 'Unfavourite' : 'Favourite'} busy={busy === 'fav'} onClick={() => void run('fav', () => memoriesApi.update([m.id], { favourite: !m.favourite }), m.favourite ? 'Removed from favourites' : 'Favourited')}><Heart className={cn('h-6 w-6', m.favourite && 'fill-aurora-coral text-aurora-coral')} /></VBtn>
+        <VBtn label={m.favourite ? 'Unfavourite' : 'Favourite'} busy={busy === 'fav'} onClick={() => void run('fav', () => memoriesApi.update([m.id], { favourite: !m.favourite }), m.favourite ? 'Removed from favourites' : 'Favourited')}><Heart className={cn('h-6 w-6', m.favourite && 'fill-ember-rose text-ember-rose')} /></VBtn>
         <VBtn label="Story" busy={busy === 'story'} onClick={() => void run('story', async () => storiesApi.post(session!.user.id, { kind: m.kind, blob: await blob(), meta: m.media_meta, audience: 'friends' }), 'Posted to your story')}><Sparkles className="h-6 w-6" /></VBtn>
         <VBtn label="Save" busy={busy === 'dl'} onClick={() => void (async () => { setBusy('dl'); try { await saveMedia(await blob(), `sumanova-memory-${m.id.slice(0, 8)}.${m.kind === 'image' ? 'webp' : 'mp4'}`); } finally { setBusy(null); } })()}><Download className="h-6 w-6" /></VBtn>
         <VBtn label={m.archived ? 'Unarchive' : 'Archive'} busy={busy === 'arc'} onClick={() => void run('arc', () => memoriesApi.update([m.id], { archived: !m.archived }), m.archived ? 'Restored' : 'Archived')}><Archive className="h-6 w-6" /></VBtn>
-        <VBtn label="Delete" busy={busy === 'del'} onClick={() => window.confirm('Delete this memory permanently?') && void run('del', () => memoriesApi.remove([m]), 'Deleted')}><Trash2 className="h-6 w-6 text-aurora-coral" /></VBtn>
+        <VBtn label="Delete" busy={busy === 'del'} onClick={() => window.confirm('Delete this memory permanently?') && void run('del', () => memoriesApi.remove([m]), 'Deleted')}><Trash2 className="h-6 w-6 text-ember-rose" /></VBtn>
       </div>
     </motion.div>,
     document.body,

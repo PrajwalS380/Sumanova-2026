@@ -77,7 +77,7 @@ export default function SignUpPage() {
     <AuthLayout title={step === 0 ? 'Make it yours' : 'Secure your account'} subtitle={step === 0 ? 'How your friends will find you.' : 'Step 2 of 2'}>
       <div className="mb-5 flex gap-1.5" aria-hidden>
         {[0, 1].map((i) => (
-          <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors duration-500', i <= step ? 'bg-aurora-gradient' : 'bg-white/10')} />
+          <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors duration-500', i <= step ? 'bg-ember-gradient text-noir' : 'bg-white/10')} />
         ))}
       </div>
       <form onSubmit={submit} noValidate>
@@ -102,14 +102,14 @@ export default function SignUpPage() {
                   onChange={set('username')}
                   maxLength={20}
                   error={errors.username || (avail.state === 'taken' || avail.state === 'invalid' ? avail.message : undefined)}
-                  hint={avail.state === 'available' ? <span className="text-aurora-mint">{avail.message}</span> : avail.state === 'error' ? avail.message : 'Letters, numbers, . and _'}
+                  hint={avail.state === 'available' ? <span className="text-ember-sage">{avail.message}</span> : avail.state === 'error' ? avail.message : 'Letters, numbers, . and _'}
                   trailing={
                     avail.state === 'checking' ? (
                       <Loader2 className="h-4 w-4 animate-spin text-ink-mute" />
                     ) : avail.state === 'available' ? (
-                      <Check className="h-4 w-4 text-aurora-mint" />
+                      <Check className="h-4 w-4 text-ember-sage" />
                     ) : avail.state === 'taken' ? (
-                      <X className="h-4 w-4 text-aurora-coral" />
+                      <X className="h-4 w-4 text-ember-rose" />
                     ) : (
                       <AtSign className="h-4 w-4 text-ink-faint" />
                     )
@@ -129,7 +129,7 @@ export default function SignUpPage() {
                           key={i}
                           className={cn(
                             'h-1 flex-1 rounded-full transition-colors duration-300',
-                            i < strength.score ? (strength.score <= 1 ? 'bg-aurora-coral' : strength.score === 2 ? 'bg-aurora-gold' : 'bg-aurora-teal') : 'bg-white/10',
+                            i < strength.score ? (strength.score <= 1 ? 'bg-ember-rose' : strength.score === 2 ? 'bg-ember-gold' : 'bg-ember-jade') : 'bg-white/10',
                           )}
                         />
                       ))}
@@ -141,7 +141,7 @@ export default function SignUpPage() {
             )}
           </motion.div>
         </AnimatePresence>
-        {errors.form && <p role="alert" className="mt-3 rounded-xl bg-aurora-coral/10 px-3 py-2 text-sm text-aurora-coral">{errors.form}</p>}
+        {errors.form && <p role="alert" className="mt-3 rounded-xl bg-ember-rose/10 px-3 py-2 text-sm text-ember-rose">{errors.form}</p>}
         <div className="mt-5 flex gap-2">
           {step === 1 && (
             <Button type="button" variant="glass" size="lg" onClick={() => setStep(0)}>
@@ -194,7 +194,7 @@ function VerifyEmailStep({ email, onBack }: { email: string; onBack: () => void 
   return (
     <AuthLayout title="Verify your email" subtitle={`We sent a ${OTP_LENGTH}-digit code to ${email}`}>
       <div className="mb-5 flex justify-center">
-        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="grid h-14 w-14 place-items-center rounded-3xl bg-aurora-teal/15 text-aurora-mint">
+        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="grid h-14 w-14 place-items-center rounded-3xl bg-ember-jade/15 text-ember-sage">
           <MailCheck className="h-7 w-7" />
         </motion.div>
       </div>
@@ -204,7 +204,7 @@ function VerifyEmailStep({ email, onBack }: { email: string; onBack: () => void 
       </Button>
       <div className="mt-5 flex items-center justify-between text-sm">
         <button onClick={onBack} className="text-ink-mute hover:text-ink">Change email</button>
-        <button onClick={resend} disabled={cooldown.left > 0} className="font-semibold text-aurora-iris disabled:text-ink-faint">
+        <button onClick={resend} disabled={cooldown.left > 0} className="font-semibold text-ember-amber disabled:text-ink-faint">
           {cooldown.left > 0 ? `Resend in ${cooldown.left}s` : 'Resend code'}
         </button>
       </div>

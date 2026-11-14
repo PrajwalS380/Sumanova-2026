@@ -105,7 +105,7 @@ export default function ChatThreadScreen() {
     const el = document.getElementById(`msg-${msgId}`);
     if (!el) return toast('That message is further back', 'info');
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    el.animate([{ background: 'rgba(167,139,250,.25)' }, { background: 'transparent' }], { duration: 1200 });
+    el.animate([{ background: 'rgba(255,181,71,.25)' }, { background: 'transparent' }], { duration: 1200 });
   };
 
   async function safe(fn: () => Promise<unknown>, ok?: string) {
@@ -153,7 +153,7 @@ export default function ChatThreadScreen() {
   const close = (a: LocalMessage, b?: LocalMessage) => !!b && b.kind !== 'system' && a.kind !== 'system' && a.sender_id === b.sender_id && Math.abs(new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) < 3 * 60_000;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-night" style={{ backgroundImage: theme.wallpaper }}>
+    <div className="fixed inset-0 flex flex-col bg-noir" style={{ backgroundImage: theme.wallpaper }}>
       {/* Header */}
       <header className="glass-strong z-30 flex items-center gap-2 rounded-b-[1.75rem] px-2 pb-2.5 pt-safe">
         <button onClick={() => navigate('/chat')} className="grid h-10 w-10 place-items-center rounded-full" aria-label="Back to chats">
@@ -162,12 +162,12 @@ export default function ChatThreadScreen() {
         <Link to={`/chat/${id}/info`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 pr-2 active:bg-white/5">
           {isGroup ? (
             info?.avatar_url ? <Avatar name={title} url={info.avatar_url} size={40} /> : (
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-aurora-violet/50 to-aurora-teal/50"><Users className="h-5 w-5" /></span>
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-ember-flame/50 to-ember-jade/50"><Users className="h-5 w-5" /></span>
             )
           ) : (
             <span className="relative">
               <Avatar name={title || '?'} url={otherProfile?.avatar_url} aura={otherProfile?.aura_color} size={40} />
-              {online && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-aurora-mint ring-2 ring-night-800" />}
+              {online && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-ember-sage ring-2 ring-noir-800" />}
             </span>
           )}
           <span className="min-w-0">
@@ -179,7 +179,7 @@ export default function ChatThreadScreen() {
                 ) : isGroup ? (
                   <span className="text-ink-mute">{conv.members.length} members</span>
                 ) : online ? (
-                  <span className="text-aurora-mint">Online</span>
+                  <span className="text-ember-sage">Online</span>
                 ) : (
                   <span className="text-ink-mute">{lastSeenLabel(lastSeen) || `@${otherProfile?.username ?? ''}`}</span>
                 )}
@@ -240,6 +240,7 @@ export default function ChatThreadScreen() {
                     reactions={reactionsBy.get(r.m!.id) ?? []}
                     receipt={r.m!.sender_id === me ? receiptFor(r.m!) : null}
                     bubbleGradient={theme.mine}
+                    bubbleInk={theme.ink}
                     onMenu={setMenu}
                     onReplyTap={jumpTo}
                     onRetry={conv.retry}

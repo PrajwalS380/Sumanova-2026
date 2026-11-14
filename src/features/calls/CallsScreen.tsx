@@ -38,13 +38,13 @@ export default function CallsScreen() {
                 <motion.li key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 10) * 0.02 }} className="flex items-center gap-3 rounded-3xl p-2.5 hover:bg-white/[0.04]">
                   <Avatar name={c.other_display_name} url={c.other_avatar_url} aura={c.other_aura} size={48} />
                   <div className="min-w-0 flex-1">
-                    <p className={cn('truncate font-semibold', missed && 'text-aurora-coral')}>{c.other_display_name}</p>
+                    <p className={cn('truncate font-semibold', missed && 'text-ember-rose')}>{c.other_display_name}</p>
                     <p className="flex items-center gap-1 text-xs text-ink-mute">
-                      {missed ? <PhoneMissed className="h-3.5 w-3.5 text-aurora-coral" /> : c.outgoing ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownLeft className="h-3.5 w-3.5 text-aurora-mint" />}
+                      {missed ? <PhoneMissed className="h-3.5 w-3.5 text-ember-rose" /> : c.outgoing ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownLeft className="h-3.5 w-3.5 text-ember-sage" />}
                       {c.kind === 'video' ? 'Video' : 'Voice'} · {shortTime(c.started_at)}{dur ? ` · ${formatDuration(dur)}` : c.status === 'declined' ? ' · declined' : ''}
                     </p>
                   </div>
-                  <button onClick={() => void startCall(c.conversation_id, c.kind)} aria-label={`Call ${c.other_display_name}`} className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-aurora-mint active:scale-90">
+                  <button onClick={() => void startCall(c.conversation_id, c.kind)} aria-label={`Call ${c.other_display_name}`} className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-ember-sage active:scale-90">
                     {c.kind === 'video' ? <Video className="h-5 w-5" /> : <Phone className="h-5 w-5" />}
                   </button>
                 </motion.li>

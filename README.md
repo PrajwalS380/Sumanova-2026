@@ -17,11 +17,13 @@ A real-time social app — camera-first, aurora-themed, installable on Android a
 | 8–9 | Social map, AR face lenses, notifications + web push, hardening | ✅ |
 | 10 | Live validation on real devices | owner testing |
 
-## Design — "Aurora Glass"
+## Design — "Ember Noir"
 
-Original visual language (no third-party brand assets): midnight base, slowly drifting violet/teal/coral aurora,
-frosted-glass surfaces, a floating pill dock with a glowing central camera orb, spring-based motion,
-Unbounded display type + Plus Jakarta Sans text. Performance rules: transform/opacity-only animation,
+Original visual language (no third-party brand assets): warm near-black base lit by slow amber/rose "ember light",
+fine film grain, matte card-stock surfaces with cream hairlines, an editorial serif (Fraunces, italic accents) over
+Manrope text, a floating dock whose active tab opens into a cream capsule around a glowing ember camera orb, and
+stories shown as tilted cream "prints". The avatar is an original sculpted 3D character (smooth deformed head,
+blinking eyes with lids and lashes, shaped hair and lathed clothing), built entirely in code. Performance rules: transform/opacity-only animation,
 pre-blurred gradients instead of live blur on large areas, code-split routes, camera released when the app is backgrounded,
 `prefers-reduced-motion` + in-app "Reduce motion" respected.
 

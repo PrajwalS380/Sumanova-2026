@@ -105,18 +105,18 @@ export default function ChatInfoScreen() {
         <div className="flex flex-col items-center text-center">
           <div className="relative">
             {isGroup && !conv.avatar_url ? (
-              <span className="grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br from-aurora-violet/50 to-aurora-teal/50 ring-4 ring-white/5"><Users className="h-10 w-10" /></span>
+              <span className="grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br from-ember-flame/50 to-ember-jade/50 ring-4 ring-white/5"><Users className="h-10 w-10" /></span>
             ) : (
               <Avatar name={name || '?'} url={isGroup ? conv.avatar_url : otherP?.avatar_url} aura={otherP?.aura_color} size={112} />
             )}
             {isGroup && isAdmin && (
               <>
-                <button onClick={() => file.current?.click()} className="absolute bottom-0 right-0 grid h-9 w-9 place-items-center rounded-full bg-aurora-gradient ring-4 ring-night" aria-label="Change group photo"><Camera className="h-4 w-4" /></button>
+                <button onClick={() => file.current?.click()} className="absolute bottom-0 right-0 grid h-9 w-9 place-items-center rounded-full bg-ember-gradient text-noir ring-4 ring-noir" aria-label="Change group photo"><Camera className="h-4 w-4" /></button>
                 <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => void changePhoto(e.target.files?.[0])} />
               </>
             )}
           </div>
-          <h2 className="mt-4 flex items-center gap-2 font-display text-2xl font-semibold">
+          <h2 className="mt-4 flex items-center gap-2 font-display text-2xl font-medium">
             {name}
             {isGroup && isAdmin && <button onClick={() => { setNewTitle(conv.title ?? ''); setRenaming(true); }} aria-label="Rename group" className="text-ink-mute"><PencilLine className="h-4 w-4" /></button>}
           </h2>
@@ -158,7 +158,7 @@ export default function ChatInfoScreen() {
           <section>
             <div className="mb-2 flex items-center justify-between px-2">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-mute">Members</h3>
-              {isAdmin && <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-sm font-semibold text-aurora-iris"><UserPlus className="h-4 w-4" /> Add</button>}
+              {isAdmin && <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-sm font-semibold text-ember-amber"><UserPlus className="h-4 w-4" /> Add</button>}
             </div>
             <ul className="glass divide-y divide-white/5 overflow-hidden rounded-3xl">
               {members.map((m) => {
@@ -172,7 +172,7 @@ export default function ChatInfoScreen() {
                       <span className="block truncate text-xs text-ink-mute">@{p.username}</span>
                     </span>
                     {m.role !== 'member' && (
-                      <span className={cn('flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', m.role === 'owner' ? 'bg-aurora-gold/15 text-aurora-gold' : 'bg-aurora-iris/15 text-aurora-iris')}>
+                      <span className={cn('flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', m.role === 'owner' ? 'bg-ember-gold/15 text-ember-gold' : 'bg-ember-amber/15 text-ember-amber')}>
                         {m.role === 'owner' ? <Crown className="h-3 w-3" /> : <Shield className="h-3 w-3" />}{m.role}
                       </span>
                     )}
@@ -241,7 +241,7 @@ export default function ChatInfoScreen() {
 
 function DangerRow({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-aurora-coral active:bg-white/5">
+    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-ember-rose active:bg-white/5">
       {icon}
       <span className="text-[15px]">{label}</span>
     </button>

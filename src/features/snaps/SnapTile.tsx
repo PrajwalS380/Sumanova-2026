@@ -41,7 +41,7 @@ export function SnapTile({ kind, state, screenshot, mine, onOpen }: { kind: stri
     <button
       onClick={actionable ? onOpen : undefined}
       disabled={!actionable}
-      className={cn('flex min-w-[190px] items-center gap-3 rounded-[1.4rem] px-3 py-2.5 text-left transition-transform active:scale-[0.98]', fresh ? 'bg-gradient-to-br from-aurora-violet/90 to-aurora-teal/80 text-white shadow-glow' : 'bg-white/[0.07] ring-1 ring-white/10')}
+      className={cn('flex min-w-[190px] items-center gap-3 rounded-[1.4rem] px-3 py-2.5 text-left transition-transform active:scale-[0.98]', fresh ? 'bg-gradient-to-br from-ember-flame/90 to-ember-jade/80 text-white shadow-glow' : 'bg-white/[0.07] ring-1 ring-white/10')}
     >
       <span className={cn('relative grid h-10 w-10 place-items-center rounded-xl', fresh ? 'bg-white/20' : 'bg-white/5')}>
         {fresh && <span className="absolute inset-0 animate-ping rounded-xl bg-white/20" />}

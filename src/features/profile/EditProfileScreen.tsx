@@ -79,13 +79,13 @@ export default function EditProfileScreen() {
         <div className="flex flex-col items-center">
           <button type="button" onClick={() => fileRef.current?.click()} className="relative active:scale-95" aria-label="Change photo">
             <Avatar name={displayName || profile.display_name} url={avatarUrl} aura={aura} size={112} />
-            <span className={cn('absolute bottom-0 right-0 grid h-9 w-9 place-items-center rounded-full bg-aurora-gradient ring-4 ring-night', uploading && 'animate-pulse')}>
+            <span className={cn('absolute bottom-0 right-0 grid h-9 w-9 place-items-center rounded-full bg-ember-gradient text-noir ring-4 ring-noir', uploading && 'animate-pulse')}>
               <Camera className="h-4 w-4" />
             </span>
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
           {avatarUrl && (
-            <button type="button" onClick={() => setAvatarUrl(null)} className="mt-3 flex items-center gap-1 text-xs text-ink-mute hover:text-aurora-coral">
+            <button type="button" onClick={() => setAvatarUrl(null)} className="mt-3 flex items-center gap-1 text-xs text-ink-mute hover:text-ember-rose">
               <Trash2 className="h-3.5 w-3.5" /> Remove photo
             </button>
           )}
@@ -94,7 +94,7 @@ export default function EditProfileScreen() {
         <div className="space-y-3">
           <Field label="Name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} error={errors.displayName} maxLength={40} />
           <div>
-            <div className="rounded-2xl bg-white/[0.04] ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-aurora-iris/70">
+            <div className="rounded-2xl bg-white/[0.04] ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-ember-amber/70">
               <label htmlFor="bio" className="block px-4 pt-2 text-[11px] font-medium uppercase tracking-wider text-ink-mute">
                 Bio
               </label>

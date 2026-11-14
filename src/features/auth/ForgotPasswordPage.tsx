@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
             </Button>
             <div className="flex justify-between text-sm">
               <button type="button" onClick={() => setStep('email')} className="text-ink-mute hover:text-ink">Change email</button>
-              <button type="button" onClick={() => void sendCode()} disabled={cooldown.left > 0} className="font-semibold text-aurora-iris disabled:text-ink-faint">
+              <button type="button" onClick={() => void sendCode()} disabled={cooldown.left > 0} className="font-semibold text-ember-amber disabled:text-ink-faint">
                 {cooldown.left > 0 ? `Resend in ${cooldown.left}s` : 'Resend code'}
               </button>
             </div>
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
         )}
       </AnimatePresence>
       <p className="mt-6 text-center text-sm">
-        <Link to="/auth/sign-in" className="font-semibold text-aurora-iris">
+        <Link to="/auth/sign-in" className="font-semibold text-ember-amber">
           Back to sign in
         </Link>
       </p>

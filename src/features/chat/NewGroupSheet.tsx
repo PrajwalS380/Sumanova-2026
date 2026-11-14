@@ -81,7 +81,7 @@ export function NewGroupSheet({ open, onClose, addTo, exclude = [] }: { open: bo
                         <span className="block truncate text-sm font-semibold">{f.display_name}</span>
                         <span className="block truncate text-xs text-ink-mute">@{f.username}</span>
                       </span>
-                      <span className={cn('grid h-6 w-6 place-items-center rounded-full ring-1 transition-all', on ? 'bg-aurora-gradient ring-transparent' : 'ring-white/20')}>{on && <Check className="h-4 w-4" />}</span>
+                      <span className={cn('grid h-6 w-6 place-items-center rounded-full ring-1 transition-all', on ? 'bg-ember-gradient text-noir ring-transparent' : 'ring-white/20')}>{on && <Check className="h-4 w-4" />}</span>
                     </button>
                   </li>
                 );

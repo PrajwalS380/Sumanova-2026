@@ -60,6 +60,7 @@ export default function ChatListScreen() {
     <div className="pb-36">
       <ScreenHeader
         title="Chat"
+        kicker={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
         right={
           <div className="flex gap-2">
             <Link to="/calls" className="glass grid h-10 w-10 place-items-center rounded-full" aria-label="Call history">
@@ -70,7 +71,7 @@ export default function ChatListScreen() {
             </button>
             <Link to="/friends" className="glass relative grid h-10 w-10 place-items-center rounded-full" aria-label={`Friends${pendingRequests ? `, ${pendingRequests} requests` : ''}`}>
               <UserPlus className="h-5 w-5" />
-              {pendingRequests > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-aurora-coral px-1 text-[10px] font-bold">{pendingRequests}</span>}
+              {pendingRequests > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-ember-rose px-1 text-[10px] font-bold">{pendingRequests}</span>}
             </Link>
           </div>
         }
@@ -87,7 +88,7 @@ export default function ChatListScreen() {
               <Link key={c.id} to={`/chat/${c.id}`} className="flex w-16 shrink-0 flex-col items-center gap-1.5 active:scale-95">
                 <span className="relative">
                   <Avatar name={conversationName(c)} url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} aura={c.other_aura ?? 'violet'} size={58} />
-                  {c.unread_count > 0 && <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-aurora-mint ring-2 ring-night" />}
+                  {c.unread_count > 0 && <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-ember-sage ring-2 ring-noir" />}
                 </span>
                 <span className="w-full truncate text-center text-[11px] text-ink-soft">{conversationName(c).split(' ')[0]}</span>
               </Link>
@@ -96,7 +97,7 @@ export default function ChatListScreen() {
         )}
 
         {error && (
-          <button onClick={() => void refresh()} className="mt-4 w-full rounded-2xl bg-aurora-coral/10 px-4 py-3 text-left text-sm text-aurora-coral">
+          <button onClick={() => void refresh()} className="mt-4 w-full rounded-2xl bg-ember-rose/10 px-4 py-3 text-left text-sm text-ember-rose">
             {error} — tap to retry
           </button>
         )}
@@ -113,7 +114,7 @@ export default function ChatListScreen() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass mt-6 rounded-4xl p-8 text-center">
             <p className="font-display text-lg">Your chats live here</p>
             <p className="mt-2 text-sm text-ink-mute">Add friends by username, then start a conversation.</p>
-            <Link to="/friends" className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-aurora-gradient px-5 text-sm font-semibold shadow-glow">
+            <Link to="/friends" className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-ember-gradient text-noir px-5 text-sm font-semibold shadow-glow">
               <UserPlus className="h-4 w-4" /> Find friends
             </Link>
           </motion.div>
@@ -151,30 +152,30 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
       >
         <span className="relative">
           {c.kind === 'group' && !c.avatar_url ? (
-            <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-aurora-violet/40 to-aurora-teal/40 ring-1 ring-white/10">
+            <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-ember-flame/40 to-ember-jade/40 ring-1 ring-white/10">
               <Users className="h-5 w-5" />
             </span>
           ) : (
             <Avatar name={name} url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} aura={c.other_aura ?? 'violet'} size={52} />
           )}
-          {online && <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-aurora-mint ring-[3px] ring-night" aria-label="Online" />}
+          {online && <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-ember-sage ring-[3px] ring-noir" aria-label="Online" />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
             <span className={cn('truncate text-[15px]', unread ? 'font-bold text-white' : 'font-semibold')}>{name}</span>
             {c.pinned && <Pin className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.muted && <BellOff className="h-3 w-3 shrink-0 text-ink-faint" />}
-            {c.disappear_mode !== 'never' && (c.disappear_mode === 'after_view' ? <Eye className="h-3 w-3 shrink-0 text-aurora-peach" /> : <Clock3 className="h-3 w-3 shrink-0 text-aurora-peach" />)}
+            {c.disappear_mode !== 'never' && (c.disappear_mode === 'after_view' ? <Eye className="h-3 w-3 shrink-0 text-ember-peach" /> : <Clock3 className="h-3 w-3 shrink-0 text-ember-peach" />)}
           </span>
           <span className={cn('mt-0.5 block truncate text-[13px]', unread ? 'text-ink' : 'text-ink-mute')}>{previewText(c, me)}</span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1.5">
           <span className="flex items-center gap-1.5">
-            {streak && streak.count > 0 && <span className="text-[11px] font-semibold text-aurora-peach" aria-label={`${streak.count} day streak`}>🔥{streak.count}{streak.expiring && '⏳'}</span>}
-            <span className={cn('text-[11px]', unread ? 'text-aurora-mint' : 'text-ink-faint')}>{shortTime(c.last_created_at ?? c.last_message_at)}</span>
+            {streak && streak.count > 0 && <span className="text-[11px] font-semibold text-ember-peach" aria-label={`${streak.count} day streak`}>🔥{streak.count}{streak.expiring && '⏳'}</span>}
+            <span className={cn('text-[11px]', unread ? 'text-ember-sage' : 'text-ink-faint')}>{shortTime(c.last_created_at ?? c.last_message_at)}</span>
           </span>
           {unread ? (
-            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-aurora-gradient px-1.5 text-[11px] font-bold text-white">{c.unread_count > 99 ? '99+' : c.unread_count}</span>
+            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember-gradient text-noir px-1.5 text-[11px] font-bold">{c.unread_count > 99 ? '99+' : c.unread_count}</span>
           ) : (
             <span className="h-5" />
           )}

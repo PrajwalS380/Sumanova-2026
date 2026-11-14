@@ -37,8 +37,14 @@ Android (APK) and iPhone.
 ## Stack & conventions
 React 18 + TS + Vite 5 + Tailwind 3 + Framer Motion + Lucide + Zod, Supabase JS v2, vite-plugin-pwa (web only),
 Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path alias `@/` → `src/`.
-- Design system "Aurora Glass": tokens in `tailwind.config.ts` (night, aurora.*, ink.*), `.glass`, `.glass-strong`,
-  fonts Unbounded (display) + Plus Jakarta Sans. Components in `src/components/ui`. Floating `NovaDock`, camera home.
+- Design system **"Ember Noir"** (owner-approved, replaced "Aurora Glass"): warm near-black `noir.*`, light `ember.*`
+  (flame/amber/rose/gold/cream…), cream `ink.*`; `.glass` = matte card (no blur), `.glass-strong` = sheets/dock (small blur),
+  `.text-ember`, `.ring-ember`, `.eyebrow`, `.grain`; `bg-ember-gradient` always with `text-noir`. Fonts Fraunces (display
+  serif, italics for accents) + Manrope. `ScreenHeader` takes a `kicker`. Dock = cream capsule tabs + ember orb camera.
+  Stories render as tilted cream "print" cards. Components in `src/components/ui`.
+- Avatar: sculpted procedural 3D (owner chose "Better 3D"): `features/avatar/sculpt.ts` (deformed head + shell technique for
+  hair/beard/hat), `AvatarHead.tsx` (blinking eyes, lids, mouths), `AvatarFigure.tsx` (lathed body/clothes). Visual check:
+  `npx vite --config vite.avatar-test.config.ts` (port 5199, `?i=N`, `?bust=N`).
 - Features live in `src/features/<feature>`. Shared libs in `src/lib`. Auth state in `src/providers/AuthProvider.tsx`.
 - Auth uses **6-digit email OTP** (`verifyOtp` types `signup`/`recovery`) so it works in APK/iOS/web without deep links.
 - DB: migrations in `supabase/migrations/` (timestamped). Apply via Supabase MCP `apply_migration` with the same SQL.

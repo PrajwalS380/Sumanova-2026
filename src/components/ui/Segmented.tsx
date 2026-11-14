@@ -14,7 +14,7 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
   const id = useId();
   return (
     <div className="px-4 py-3">
-      <p className="mb-2 text-[15px] font-medium text-ink">{label}</p>
+      <p className="eyebrow mb-2">{label}</p>
       <div role="radiogroup" aria-label={label} className="flex rounded-2xl bg-white/[0.05] p-1">
         {options.map((o) => (
           <button
@@ -27,13 +27,13 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
             }}
             className={cn(
               'relative flex-1 rounded-xl py-2 text-sm font-medium transition-colors',
-              value === o.value ? 'text-white' : 'text-ink-mute hover:text-ink',
+              value === o.value ? 'text-noir' : 'text-ink-mute hover:text-ink',
             )}
           >
             {value === o.value && (
               <motion.span
                 layoutId={`seg-${id}`}
-                className="absolute inset-0 rounded-xl bg-white/10 ring-1 ring-white/15"
+                className="absolute inset-0 rounded-xl bg-ember-cream"
                 transition={{ type: 'spring', stiffness: 500, damping: 36 }}
               />
             )}

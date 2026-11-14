@@ -233,7 +233,7 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
             )}
             <form onSubmit={(e) => { e.preventDefault(); void sendReply(reply); }} className="flex items-center gap-2">
               <input value={reply} onChange={(e) => setReply(e.target.value)} onFocus={() => setTyping(true)} onBlur={() => !reply && setTyping(false)} placeholder={`Reply to ${ring.display_name.split(' ')[0]}…`} maxLength={1000} className="h-12 flex-1 rounded-full bg-white/12 px-5 text-[15px] text-white outline-none ring-1 ring-white/25 backdrop-blur-md placeholder:text-white/60" style={{ backgroundColor: 'rgba(255,255,255,.12)' }} aria-label="Reply" />
-              {reply.trim() && <button type="submit" aria-label="Send reply" className="grid h-12 w-12 place-items-center rounded-full bg-aurora-gradient"><Send className="h-5 w-5" /></button>}
+              {reply.trim() && <button type="submit" aria-label="Send reply" className="grid h-12 w-12 place-items-center rounded-full bg-ember-gradient text-noir"><Send className="h-5 w-5" /></button>}
             </form>
           </div>
         )}

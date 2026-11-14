@@ -19,7 +19,7 @@ export const Avatar2D = memo(function Avatar2D({ config: c, size = 240 }: { conf
       <defs>
         <radialGradient id="a2bg" cx="50%" cy="35%" r="70%">
           <stop offset="0" stopColor="#2a1f5c" />
-          <stop offset="1" stopColor="#0d0f22" />
+          <stop offset="1" stopColor="#1e1916" />
         </radialGradient>
       </defs>
       <rect width="200" height="220" rx="36" fill="url(#a2bg)" />

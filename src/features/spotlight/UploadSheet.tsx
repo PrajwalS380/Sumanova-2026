@@ -63,10 +63,10 @@ export function UploadSheet({ onClose, onPosted }: { onClose: () => void; onPost
   }
 
   return createPortal(
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] flex flex-col bg-night">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] flex flex-col bg-noir">
       <div className="flex items-center justify-between px-3 pt-safe">
         <button onClick={onClose} aria-label="Close" className="grid h-11 w-11 place-items-center"><X className="h-6 w-6" /></button>
-        <h2 className="font-display text-lg font-semibold">New Spotlight</h2>
+        <h2 className="font-display text-lg font-medium">New Spotlight</h2>
         <span className="w-11" />
       </div>
       <input ref={input} type="file" accept="video/*" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
@@ -78,19 +78,19 @@ export function UploadSheet({ onClose, onPosted }: { onClose: () => void; onPost
             <span className="flex flex-col items-center gap-2"><Film className="h-8 w-8" /> Choose a video (≤ 60 s, ≤ 50 MB)</span>
           </button>
         )}
-        <textarea value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} rows={2} placeholder="Write a caption…" className="w-full resize-none rounded-2xl bg-white/5 p-4 text-[15px] outline-none ring-1 ring-white/10 focus:ring-aurora-iris/60" />
+        <textarea value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} rows={2} placeholder="Write a caption…" className="w-full resize-none rounded-2xl bg-white/5 p-4 text-[15px] outline-none ring-1 ring-white/10 focus:ring-ember-amber/60" />
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">Category</p>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
-              <button key={c} onClick={() => setCategory(c)} className={cn('rounded-full px-3.5 py-2 text-sm capitalize', category === c ? 'bg-white font-semibold text-night' : 'bg-white/5 ring-1 ring-white/10')}>{c}</button>
+              <button key={c} onClick={() => setCategory(c)} className={cn('rounded-full px-3.5 py-2 text-sm capitalize', category === c ? 'bg-white font-semibold text-noir' : 'bg-white/5 ring-1 ring-white/10')}>{c}</button>
             ))}
           </div>
         </div>
         <p className="text-xs text-ink-faint">Spotlight is public to everyone on SUMANOVA. Videos reported by several people are hidden until reviewed.</p>
       </div>
       <div className="px-4 pb-safe">
-        <button onClick={() => void publish()} disabled={!file || busy} className="mb-3 flex h-14 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-aurora-gradient font-semibold shadow-glow disabled:opacity-50">
+        <button onClick={() => void publish()} disabled={!file || busy} className="mb-3 flex h-14 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-ember-gradient text-noir font-semibold shadow-glow disabled:opacity-50">
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Publish'}
         </button>
       </div>

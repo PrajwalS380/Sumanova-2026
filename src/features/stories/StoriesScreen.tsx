@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { storiesApi, type StoryRing } from '@/lib/social/api';
 import { shortTime } from '@/lib/chat/time';
 import { cn } from '@/lib/cn';
+import { AURA } from '@/lib/types';
 import { StoryViewer } from './StoryViewer';
 import { TextStoryComposer } from './TextStoryComposer';
 
@@ -44,6 +45,7 @@ export default function StoriesScreen() {
     <div className="pb-36">
       <ScreenHeader
         title="Stories"
+        kicker="The last 24 hours"
         right={
           <Link to="/stories/archive" className="glass grid h-10 w-10 place-items-center rounded-full" aria-label="Story archive">
             <Archive className="h-5 w-5" />
@@ -54,10 +56,10 @@ export default function StoriesScreen() {
         {/* My story */}
         <div className="glass flex items-center gap-3 rounded-3xl p-3">
           <button onClick={() => (mine ? setOpen({ list: [mine], index: 0 }) : setComposer(true))} className="relative">
-            <span className={cn('block rounded-full p-[3px]', mine ? 'ring-aurora' : 'bg-white/10')}>
-              <span className="block rounded-full bg-night p-[2px]"><Avatar name={profile?.display_name ?? 'Me'} url={profile?.avatar_url} aura={profile?.aura_color} size={56} ring={false} /></span>
+            <span className={cn('block rounded-full p-[3px]', mine ? 'ring-ember' : 'bg-white/10')}>
+              <span className="block rounded-full bg-noir p-[2px]"><Avatar name={profile?.display_name ?? 'Me'} url={profile?.avatar_url} aura={profile?.aura_color} size={56} ring={false} /></span>
             </span>
-            {!mine && <span className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full bg-aurora-gradient ring-2 ring-night"><Plus className="h-4 w-4" /></span>}
+            {!mine && <span className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full bg-ember-gradient text-noir ring-2 ring-noir"><Plus className="h-4 w-4" /></span>}
           </button>
           <div className="flex-1">
             <p className="font-semibold">My story</p>
@@ -73,7 +75,7 @@ export default function StoriesScreen() {
           ) : friends.length === 0 ? (
             <p className="glass rounded-3xl p-6 text-center text-sm text-ink-mute">No new stories from friends right now.</p>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5 px-1 pt-1">
               {friends.map((r, i) => (
                 <RingTile key={r.user_id} r={r} delay={i} onClick={() => setOpen({ list: friends, index: i })} />
               ))}
@@ -83,7 +85,7 @@ export default function StoriesScreen() {
 
         {discover.length > 0 && (
           <Section title="Discover">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5 px-1 pt-1">
               {discover.map((r, i) => (
                 <RingTile key={r.user_id} r={r} delay={i} onClick={() => setOpen({ list: discover, index: i })} />
               ))}
@@ -101,24 +103,38 @@ export default function StoriesScreen() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-6">
-      <h2 className="mb-3 px-1 text-xs font-semibold uppercase tracking-wider text-ink-mute">{title}</h2>
+      <h2 className="eyebrow mb-3 px-1">{title}</h2>
       {children}
     </section>
   );
 }
 
+/** A story as a tilted "print": cream-bordered card lit by the friend's aura. */
 function RingTile({ r, onClick, delay }: { r: StoryRing; onClick: () => void; delay: number }) {
+  const a = AURA[r.aura_color] ?? AURA.gold;
+  const tilt = [-2.2, 1.6, -1.2, 2.4][delay % 4];
   return (
-    <motion.button initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: Math.min(delay, 9) * 0.03 }} onClick={onClick} className="flex flex-col items-center gap-2 rounded-3xl bg-white/[0.04] p-3 ring-1 ring-white/5 active:scale-95">
-      <span className={cn('rounded-full p-[3px]', r.unseen ? 'ring-aurora animate-none' : 'bg-white/15')}>
-        <span className="block rounded-full bg-night p-[2px]"><Avatar name={r.display_name} url={r.avatar_url} aura={r.aura_color} size={64} ring={false} /></span>
+    <motion.button
+      initial={{ opacity: 0, y: 14, rotate: 0 }}
+      animate={{ opacity: 1, y: 0, rotate: tilt }}
+      whileTap={{ scale: 0.96, rotate: 0 }}
+      transition={{ delay: Math.min(delay, 9) * 0.04, type: 'spring', stiffness: 260, damping: 24 }}
+      onClick={onClick}
+      className="relative rounded-[18px] bg-ember-cream p-2 pb-3 text-left shadow-[0_18px_40px_-18px_rgba(0,0,0,.9)]"
+    >
+      <span className="relative block aspect-[4/5] overflow-hidden rounded-[12px]" style={{ background: `radial-gradient(120% 90% at 30% 15%, ${a.to}, ${a.from} 55%, #1e1916 100%)` }}>
+        <span className="absolute inset-0 grid place-items-center">
+          <Avatar name={r.display_name} url={r.avatar_url} aura={r.aura_color} size={84} ring={false} />
+        </span>
+        {r.unseen && <span className="absolute left-2 top-2 rounded-full bg-noir/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ember-amber">New</span>}
+        {r.story_count > 1 && <span className="absolute right-2 top-2 rounded-full bg-noir/70 px-1.5 py-0.5 text-[10px] font-bold text-ink">{r.story_count}</span>}
       </span>
-      <span className="w-full truncate text-center text-xs font-semibold">{r.display_name.split(' ')[0]}</span>
-      <span className="text-[10px] text-ink-faint">{shortTime(r.latest_at)}</span>
+      <span className="mt-2 block truncate px-0.5 font-display text-[17px] italic leading-tight text-noir">{r.display_name.split(' ')[0]}</span>
+      <span className="block px-0.5 text-[11px] font-medium text-noir/55">{shortTime(r.latest_at)}</span>
     </motion.button>
   );
 }
 
 function Skeleton() {
-  return <div className="grid grid-cols-3 gap-3">{[0, 1, 2].map((i) => <div key={i} className="h-36 animate-pulse rounded-3xl bg-white/[0.04]" />)}</div>;
+  return <div className="grid grid-cols-2 gap-4">{[0, 1].map((i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-[18px] bg-white/[0.04]" />)}</div>;
 }

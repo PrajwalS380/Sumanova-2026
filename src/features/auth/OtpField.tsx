@@ -40,16 +40,16 @@ export function OtpField({ value, onChange, onComplete, error, disabled }: { val
                 key={i}
                 className={cn(
                   'grid h-14 flex-1 place-items-center rounded-2xl bg-white/[0.05] font-display text-2xl ring-1 transition-all duration-200',
-                  error ? 'ring-aurora-coral/60' : active ? 'ring-2 ring-aurora-iris shadow-[0_0_20px_rgba(167,139,250,0.35)]' : value[i] ? 'ring-white/25' : 'ring-white/10',
+                  error ? 'ring-ember-rose/60' : active ? 'ring-2 ring-ember-amber shadow-[0_0_20px_rgba(255,181,71,0.35)]' : value[i] ? 'ring-white/25' : 'ring-white/10',
                 )}
               >
-                {value[i] ?? (active ? <span className="h-6 w-0.5 animate-pulse rounded bg-aurora-iris" /> : '')}
+                {value[i] ?? (active ? <span className="h-6 w-0.5 animate-pulse rounded bg-ember-amber" /> : '')}
               </span>
             );
           })}
         </span>
       </label>
-      {error && <p role="alert" className="mt-2 px-1 text-sm text-aurora-coral">{error}</p>}
+      {error && <p role="alert" className="mt-2 px-1 text-sm text-ember-rose">{error}</p>}
     </div>
   );
 }

@@ -29,14 +29,14 @@ export default function NotificationsScreen() {
               return (
                 <motion.li key={n.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 10) * 0.02 }}>
                   <button onClick={() => open(n)} className={cn('flex w-full items-start gap-3 rounded-3xl p-3 text-left transition-colors active:bg-white/10', n.read_at ? 'hover:bg-white/[0.04]' : 'bg-white/[0.07]')}>
-                    <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-2xl', n.kind === 'missed_call' ? 'bg-aurora-coral/15 text-aurora-coral' : n.kind === 'streak' ? 'bg-aurora-gold/15 text-aurora-gold' : 'bg-aurora-violet/15 text-aurora-iris')}><I className="h-5 w-5" /></span>
+                    <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-2xl', n.kind === 'missed_call' ? 'bg-ember-rose/15 text-ember-rose' : n.kind === 'streak' ? 'bg-ember-gold/15 text-ember-gold' : 'bg-ember-flame/15 text-ember-amber')}><I className="h-5 w-5" /></span>
                     <span className="min-w-0 flex-1">
                       <span className={cn('block text-sm', n.read_at ? 'text-ink-soft' : 'font-semibold text-white')}>{n.title}</span>
                       {n.body && <span className="block truncate text-xs text-ink-mute">{n.body}</span>}
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-1.5">
                       <span className="text-[11px] text-ink-faint">{shortTime(n.created_at)}</span>
-                      {!n.read_at && <span className="h-2 w-2 rounded-full bg-aurora-mint" />}
+                      {!n.read_at && <span className="h-2 w-2 rounded-full bg-ember-sage" />}
                     </span>
                   </button>
                 </motion.li>

@@ -29,7 +29,7 @@ export function NetworkBanner() {
           className="fixed inset-x-0 top-0 z-[90] flex justify-center pt-safe"
           role="alert"
         >
-          <div className="flex items-center gap-2 rounded-full bg-aurora-coral/90 px-4 py-1.5 text-xs font-semibold text-white shadow-lg">
+          <div className="flex items-center gap-2 rounded-full bg-ember-rose/90 px-4 py-1.5 text-xs font-semibold text-white shadow-lg">
             <WifiOff className="h-3.5 w-3.5" /> You’re offline — we’ll reconnect automatically
           </div>
         </motion.div>

@@ -19,8 +19,8 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
       <div className={cn('w-full', className)}>
         <div
           className={cn(
-            'group relative rounded-2xl bg-white/[0.04] ring-1 ring-white/10 transition-shadow focus-within:ring-2 focus-within:ring-aurora-iris/70',
-            error && 'ring-aurora-coral/60 focus-within:ring-aurora-coral/80',
+            'group relative rounded-2xl bg-white/[0.04] ring-1 ring-white/10 transition-shadow focus-within:ring-2 focus-within:ring-ember-amber/70',
+            error && 'ring-ember-rose/60 focus-within:ring-ember-rose/80',
           )}
         >
           <input
@@ -35,7 +35,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
           />
           <label
             htmlFor={id}
-            className="pointer-events-none absolute left-4 top-1.5 text-[11px] font-medium uppercase tracking-wider text-ink-mute transition-all peer-placeholder-shown:top-[1.05rem] peer-placeholder-shown:text-[15px] peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-1.5 peer-focus:text-[11px] peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-aurora-iris"
+            className="pointer-events-none absolute left-4 top-1.5 text-[11px] font-medium uppercase tracking-wider text-ink-mute transition-all peer-placeholder-shown:top-[1.05rem] peer-placeholder-shown:text-[15px] peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-1.5 peer-focus:text-[11px] peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-ember-amber"
           >
             {label}
           </label>
@@ -54,7 +54,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
           </div>
         </div>
         {(error || hint) && (
-          <p id={`${id}-msg`} className={cn('mt-1.5 px-1 text-xs', error ? 'text-aurora-coral' : 'text-ink-mute')}>
+          <p id={`${id}-msg`} className={cn('mt-1.5 px-1 text-xs', error ? 'text-ember-rose' : 'text-ink-mute')}>
             {error || hint}
           </p>
         )}

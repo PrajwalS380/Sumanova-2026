@@ -12,7 +12,7 @@ interface AvatarProps {
 }
 
 /** Profile photo inside a gradient "aura" ring; falls back to initials. */
-export const Avatar = memo(function Avatar({ name, url, aura = 'violet', size = 44, ring = true, className }: AvatarProps) {
+export const Avatar = memo(function Avatar({ name, url, aura = 'gold', size = 44, ring = true, className }: AvatarProps) {
   const a = AURA[aura];
   const initials = name
     .split(/\s+/)
@@ -30,11 +30,11 @@ export const Avatar = memo(function Avatar({ name, url, aura = 'violet', size = 
         padding: ring ? Math.max(2, size * 0.05) : 0,
       }}
     >
-      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-night-700 ring-2 ring-night">
+      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-noir-700 ring-2 ring-noir">
         {url ? (
           <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <span className="font-display font-semibold" style={{ fontSize: size * 0.34, color: a.to }}>
+          <span className="font-display font-medium italic" style={{ fontSize: size * 0.38, color: a.to }}>
             {initials || '✦'}
           </span>
         )}

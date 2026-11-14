@@ -96,7 +96,7 @@ export default function FriendsScreen() {
     <div className="pb-16">
       <ScreenHeader title="Friends" back />
       <div className="mx-auto max-w-lg px-4">
-        <label className="glass flex h-12 items-center gap-2 rounded-2xl px-4 focus-within:ring-2 focus-within:ring-aurora-iris/60">
+        <label className="glass flex h-12 items-center gap-2 rounded-2xl px-4 focus-within:ring-2 focus-within:ring-ember-amber/60">
           <Search className="h-5 w-5 text-ink-mute" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find by username or name" autoCapitalize="none" spellCheck={false} className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search people" />
           {searching && <Loader2 className="h-4 w-4 animate-spin text-ink-mute" />}
@@ -136,7 +136,7 @@ export default function FriendsScreen() {
                     if (!p) return null;
                     return (
                       <PersonRow key={r.id} person={p}>
-                        <button aria-label="Decline" disabled={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, false))} className="grid h-9 w-9 place-items-center rounded-full bg-white/5 text-ink-mute hover:text-aurora-coral">
+                        <button aria-label="Decline" disabled={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, false))} className="grid h-9 w-9 place-items-center rounded-full bg-white/5 text-ink-mute hover:text-ember-rose">
                           <X className="h-4 w-4" />
                         </button>
                         <RowButton primary loading={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, true), `You and ${p.display_name} are friends`)} icon={<Check className="h-4 w-4" />} label="Accept" />
@@ -210,7 +210,7 @@ function PersonRow({ person, children, onClick }: { person: PublicProfile; child
 
 function RowButton({ onClick, icon, label, primary, loading }: { onClick: () => void; icon: React.ReactNode; label: string; primary?: boolean; loading?: boolean }) {
   return (
-    <button onClick={onClick} disabled={loading} className={cn('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-transform active:scale-95 disabled:opacity-60', primary ? 'bg-aurora-gradient text-white shadow-glow' : 'bg-white/10 text-ink')}>
+    <button onClick={onClick} disabled={loading} className={cn('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-transform active:scale-95 disabled:opacity-60', primary ? 'bg-ember-gradient text-noir shadow-glow' : 'bg-white/10 text-ink')}>
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
       {label}
     </button>

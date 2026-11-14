@@ -2,13 +2,13 @@ import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { NovaDock } from './NovaDock';
-import { AuroraBackground } from './AuroraBackground';
+import { EmberBackground } from './EmberBackground';
 import { InstallPrompt } from './InstallPrompt';
 import { navIndex } from './nav';
 import { useRef } from 'react';
 import { ScreenLoader } from './ScreenLoader';
 
-/** Signed-in layout: aurora backdrop, animated page transitions, floating dock. */
+/** Signed-in layout: ember backdrop, animated page transitions, floating dock. */
 export function AppShell() {
   const location = useLocation();
   const idx = navIndex(location.pathname);
@@ -20,7 +20,7 @@ export function AppShell() {
 
   return (
     <div className="relative h-full overflow-hidden">
-      {!onCamera && <AuroraBackground />}
+      {!onCamera && <EmberBackground />}
       <AnimatePresence mode="popLayout" initial={false} custom={direction}>
         <motion.main
           key={location.pathname}

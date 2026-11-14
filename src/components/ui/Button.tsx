@@ -5,14 +5,15 @@ import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
 
 const button = cva(
-  'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-semibold transition-[transform,background-color,opacity,box-shadow] duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
+  'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-semibold transition-[transform,background-color,opacity,box-shadow,filter] duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        aurora: 'bg-aurora-gradient bg-[length:200%_100%] bg-left text-white shadow-glow hover:bg-right',
-        glass: 'glass text-ink hover:bg-white/10',
+        primary: 'bg-ember-gradient text-noir shadow-glow hover:brightness-110',
+        glass: 'glass text-ink hover:bg-white/[0.08]',
+        cream: 'bg-ember-cream text-noir hover:bg-white',
         ghost: 'text-ink-soft hover:bg-white/5 hover:text-ink',
-        danger: 'bg-aurora-coral/15 text-aurora-coral ring-1 ring-aurora-coral/30 hover:bg-aurora-coral/25',
+        danger: 'bg-ember-rose/15 text-ember-rose ring-1 ring-ember-rose/30 hover:bg-ember-rose/25',
       },
       size: {
         sm: 'h-9 rounded-xl px-3 text-sm',
@@ -22,7 +23,7 @@ const button = cva(
       },
       block: { true: 'w-full' },
     },
-    defaultVariants: { variant: 'aurora', size: 'md' },
+    defaultVariants: { variant: 'primary', size: 'md' },
   },
 );
 
@@ -34,7 +35,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, block, loading, children, onClick, disabled, ...props }, ref) => (
     <button
       ref={ref}
-      className={cn(button({ variant, size, block }), 'bg-[position:0%_50%] hover:bg-[position:100%_50%]', className)}
+      className={cn(button({ variant, size, block }), className)}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       onClick={(e) => {

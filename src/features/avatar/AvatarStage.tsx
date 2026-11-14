@@ -1,4 +1,6 @@
-import { forwardRef, Suspense, useImperativeHandle, useRef } from 'react';
+import { forwardRef, Suspense, useEffect, useImperativeHandle, useRef } from 'react';
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Canvas, useThree } from '@react-three/fiber';
 import { ContactShadows, OrbitControls } from '@react-three/drei';
 import type { AvatarConfig, Pose } from './config';
@@ -9,13 +11,30 @@ export interface AvatarStageHandle {
   capture: (framing?: 'full' | 'bust') => Promise<Blob>;
 }
 
+/** Procedural soft-box environment (no downloads) for gentle reflections on skin, eyes and fabric. */
+function StudioEnvironment() {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = env;
+    scene.environmentIntensity = 0.45;
+    return () => {
+      scene.environment = null;
+      env.dispose();
+      pmrem.dispose();
+    };
+  }, [gl, scene]);
+  return null;
+}
+
 function Capturer({ apiRef }: { apiRef: React.MutableRefObject<AvatarStageHandle['capture'] | null> }) {
   const { gl, scene, camera } = useThree();
   apiRef.current = async (framing = 'full') => {
     const cam = camera as import('three').PerspectiveCamera;
     const prev = { pos: cam.position.clone(), fov: cam.fov };
     if (framing === 'bust') {
-      cam.position.set(0, 1.95, 2.3);
+      cam.position.set(0, 2.02, 2.75);
       cam.fov = 30;
       cam.lookAt(0, 1.9, 0);
     }
@@ -24,7 +43,7 @@ function Capturer({ apiRef }: { apiRef: React.MutableRefObject<AvatarStageHandle
     const blob = await new Promise<Blob>((resolve, reject) => gl.domElement.toBlob((b) => (b ? resolve(b) : reject(new Error('Capture failed'))), 'image/png'));
     cam.position.copy(prev.pos);
     cam.fov = prev.fov;
-    cam.lookAt(0, 1.18, 0);
+    cam.lookAt(0, 1.22, 0);
     cam.updateProjectionMatrix();
     return blob;
   };
@@ -41,14 +60,15 @@ export const AvatarStage = forwardRef<AvatarStageHandle, { configs: AvatarConfig
       shadows
       dpr={[1, 1.75]}
       gl={{ preserveDrawingBuffer: true, antialias: true, alpha: true, powerPreference: 'high-performance' }}
-      camera={{ position: [0, 1.35, duo ? 6.8 : 5.6], fov: 30 }}
-      onCreated={({ camera }) => camera.lookAt(0, 1.18, 0)}
+      camera={{ position: [0, 1.4, duo ? 6.9 : 5.5], fov: 30 }}
+      onCreated={({ camera }) => camera.lookAt(0, 1.22, 0)}
     >
-      <ambientLight intensity={0.55} />
-      <hemisphereLight args={['#c4b5fd', '#0d0f22', 0.6]} />
-      <directionalLight position={[2.5, 4, 3]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-3, 2, -2]} intensity={0.6} color="#2dd4bf" />
-      <pointLight position={[0, 2, 2.5]} intensity={0.35} color="#fb7185" />
+      {/* Warm studio: soft key, cream fill, cool rim to separate the silhouette */}
+      <hemisphereLight args={['#fff1e0', '#2a1a12', 0.6]} />
+      <directionalLight position={[2.2, 4, 3.2]} intensity={2.1} color="#ffe6cc" castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} shadow-normalBias={0.02} />
+      <directionalLight position={[-2.5, 1.8, 2.5]} intensity={0.55} color="#ffd2b8" />
+      <directionalLight position={[-2, 3, -3.5]} intensity={1.5} color="#bcd4ff" />
+      <directionalLight position={[2.5, 1, -3]} intensity={0.7} color="#ff9a5c" />
       <Suspense fallback={null}>
         {configs.map((c, i) => (
           <group key={i} position={[duo ? (i === 0 ? -0.55 : 0.55) : 0, 0, 0]} rotation={[0, duo ? (i === 0 ? 0.35 : -0.35) : 0, 0]}>
@@ -56,8 +76,9 @@ export const AvatarStage = forwardRef<AvatarStageHandle, { configs: AvatarConfig
           </group>
         ))}
       </Suspense>
-      <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={6} blur={2.4} far={3} />
-      {interactive && <OrbitControls target={[0, 1.18, 0]} enablePan={false} minDistance={2.2} maxDistance={7} minPolarAngle={0.6} maxPolarAngle={1.75} enableDamping dampingFactor={0.08} />}
+      <ContactShadows position={[0, 0, 0]} opacity={0.55} scale={6} blur={2.6} far={3} color="#1a0d06" />
+      {interactive && <OrbitControls target={[0, 1.22, 0]} enablePan={false} minDistance={2.2} maxDistance={7} minPolarAngle={0.6} maxPolarAngle={1.75} enableDamping dampingFactor={0.08} />}
+      <StudioEnvironment />
       <Capturer apiRef={apiRef} />
     </Canvas>
   );
