@@ -12,6 +12,7 @@ import { hasWebGL } from './config';
 import { AvatarStage, type AvatarStageHandle } from './AvatarStage';
 import { Avatar2D } from './Avatar2D';
 import { avatarApi, FASHION_SLOTS, type SavedOutfit } from './api';
+import { PRESETS } from './look/presets';
 import { DEFAULT_LOOK, OPTIONAL, SLOTS, randomLook, type ColorKey, type Look, type Slot } from './look/config';
 import { CATEGORIES, EXPRESSIONS, POSES, type Category, type Mode } from './editor/categories';
 import { mannequin, useThumb } from './editor/thumbs';
@@ -21,7 +22,7 @@ const FACE_SLOTS: Slot[] = ['head', 'eyes', 'lashes', 'brows', 'nose', 'mouth', 
 const MODES: { id: Mode; label: string; icon: typeof Shirt }[] = [
   { id: 'style', label: 'Style', icon: Shirt },
   { id: 'face', label: 'Face & body', icon: UserRound },
-  { id: 'saved', label: 'Saved', icon: Heart },
+  { id: 'saved', label: 'Looks', icon: Heart },
 ];
 
 export default function AvatarStudio() {
@@ -186,6 +187,7 @@ export default function AvatarStudio() {
                 <SavedPanel
                   outfits={outfits}
                   onWear={(o) => commit((l) => ({ ...l, pick: { ...l.pick, ...o.pick }, color: { ...l.color, ...o.color } }))}
+                  onStart={(l) => commit(() => structuredClone(l))}
                   onSave={() => void saveOutfit()}
                   usePhoto={usePhoto}
                   setUsePhoto={setUsePhoto}
@@ -302,7 +304,7 @@ const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, ti
     !FACE_SLOTS.includes(slot),
   );
   return (
-    <button ref={ref} onClick={onClick} aria-pressed={active} aria-label={name} title={name} className={cn('relative aspect-square overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_35%,#3a2e27,#1e1916)] ring-1 transition-all active:scale-95', active ? 'ring-2 ring-ember-amber' : 'ring-ink/[0.06]')}>
+    <button ref={ref} onClick={onClick} aria-pressed={active} aria-label={name} title={name} className={cn('relative aspect-square overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_32%,#ffffff,#e3e8f6)] ring-1 transition-all active:scale-95', active ? 'ring-2 ring-ember-amber' : 'ring-ink/[0.06]')}>
       {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} /> : <span className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)] bg-[length:200%_100%]" />}
       {active && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-ember-amber text-noir"><Check className="h-3.5 w-3.5" /></span>}
     </button>
@@ -361,9 +363,18 @@ function TuneSlider({ label, value, onChange }: { label: string; value: number; 
   );
 }
 
-function SavedPanel({ outfits, onWear, onSave, usePhoto, setUsePhoto, onExport, gl }: { outfits: { id: string; name: string; outfit: SavedOutfit }[]; onWear: (o: SavedOutfit) => void; onSave: () => void; usePhoto: boolean; setUsePhoto: (v: boolean) => void; onExport: () => void; gl: boolean }) {
+function SavedPanel({ outfits, onWear, onStart, onSave, usePhoto, setUsePhoto, onExport, gl }: { outfits: { id: string; name: string; outfit: SavedOutfit }[]; onWear: (o: SavedOutfit) => void; onStart: (l: Look) => void; onSave: () => void; usePhoto: boolean; setUsePhoto: (v: boolean) => void; onExport: () => void; gl: boolean }) {
   return (
     <div className="space-y-4">
+      <div>
+        <p className="eyebrow mb-2 px-1">Start from a character</p>
+        <div className="grid grid-cols-4 gap-2">
+          {PRESETS.map((p) => (
+            <PresetCard key={p.name} name={p.name} look={p.look} onClick={() => onStart(p.look)} />
+          ))}
+        </div>
+        <p className="mt-2 px-1 text-xs text-ink-mute">Tap one to try it on — everything stays editable, and Undo brings your old look back.</p>
+      </div>
       <div className="glass overflow-hidden rounded-3xl">
         {gl && <Toggle label="Use as my profile photo" description="Updates your photo when you save" checked={usePhoto} onChange={setUsePhoto} />}
         {gl && (
@@ -388,6 +399,25 @@ function SavedPanel({ outfits, onWear, onSave, usePhoto, setUsePhoto, onExport, 
   );
 }
 
+function PresetCard({ name, look, onClick }: { name: string; look: Look; onClick: () => void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { rootMargin: '120px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const url = useThumb('preset:' + name + ':' + JSON.stringify(look.pick).length, () => structuredClone(look), 'full', visible);
+  return (
+    <button ref={ref} onClick={onClick} aria-label={`Start from ${name}`} className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_30%,#ffffff,#e3e8f6)] ring-1 ring-ink/[0.06] transition-transform active:scale-95">
+      {url && <img src={url} alt="" className="h-full w-full object-cover" />}
+      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-white/90 to-transparent px-1.5 pb-1 pt-3 text-center text-[11px] font-semibold text-ink">{name}</span>
+    </button>
+  );
+}
+
 function SavedCard({ name, outfit, onClick }: { name: string; outfit: SavedOutfit; onClick: () => void }) {
   const key = 'saved:' + JSON.stringify(outfit);
   const url = useThumb(
@@ -403,9 +433,9 @@ function SavedCard({ name, outfit, onClick }: { name: string; outfit: SavedOutfi
     true,
   );
   return (
-    <button onClick={onClick} className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_35%,#3a2e27,#1e1916)] ring-1 ring-ink/[0.06] active:scale-95">
+    <button onClick={onClick} className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_32%,#ffffff,#e3e8f6)] ring-1 ring-ink/[0.06] active:scale-95">
       {url && <img src={url} alt="" className="h-full w-full object-cover" />}
-      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-noir/90 to-transparent px-2 pb-1.5 pt-4 text-[11px] font-semibold">{name}</span>
+      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-white/90 to-transparent px-2 pb-1.5 pt-4 text-[11px] font-semibold text-ink">{name}</span>
     </button>
   );
 }

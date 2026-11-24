@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { lathe, mix, wobble } from '../sculpt';
+import { lathe, mix, smooth, wobble } from '../sculpt';
 import type { Wear } from '../look/fashion';
 import type { BodyP } from '../look/face';
 import { fabric } from './patterns';
@@ -54,6 +54,16 @@ export function TorsoGarment({ w, body, layer }: GarmentProps) {
     if (cut === 'Boxy tee' || cut === 'Sweatshirt' || cut === 'Hoodie') pts = pts.map(([r, y]) => [y < 1.4 ? Math.max(r, 0.27 * body.shoulders) + 0.01 : r, y]);
     const open = cut === 'Blazer' || cut === 'Denim jacket' || cut === 'Biker' || cut === 'Zip hoodie' || cut === 'Trench' || cut === 'Shaggy coat';
     const g = open ? lathe(pts, 64, 0.32, Math.PI * 2 - 0.64) : lathe(pts, 64);
+    // soft drape folds on everyday fabrics (strongest toward the hem)
+    if (cut !== 'Puffer' && cut !== 'Shaggy coat' && cut !== 'Biker') {
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+        const k = 1 + 0.02 * (0.5 + 0.5 * Math.sin(Math.atan2(x, z) * 7 + y * 4)) * smooth(1.35, 0.95, y); // outward only, never exposes layers below
+        p.setXYZ(i, x * k, y, z * k);
+      }
+      g.computeVertexNormals();
+    }
     // puffer quilting / fur
     if (cut === 'Puffer' || cut === 'Shaggy coat' || cut === 'Bomber') {
       const p = g.attributes.position;
@@ -318,11 +328,24 @@ export function pantsStyle(cut: string) {
 export function PantLeg({ w, r0, r1, y0, y1, flareOut = 0 }: { w: Wear; r0: number; r1: number; y0: number; y1: number; flareOut?: number }) {
   const geo = useMemo(() => {
     const pts: [number, number][] = [];
-    for (let i = 0; i <= 8; i++) {
-      const t = i / 8;
-      pts.push([r1 + (r0 - r1) * t + (flareOut > 0 ? flareOut * (1 - t) ** 3 : 0), y1 + (y0 - y1) * t]);
+    const n = 24;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const y = y1 + (y0 - y1) * t;
+      // fabric stacking: soft horizontal folds that bunch toward the hem
+      const fold = 0.006 * (1 - t) ** 1.5 * (0.5 + 0.5 * Math.sin(y * 85));
+      pts.push([r1 + (r0 - r1) * t + (flareOut > 0 ? flareOut * (1 - t) ** 3 : 0) + fold, y]);
     }
-    return scaleUV(lathe(pts, 28, 0, Math.PI * 2), 1.5, 1.5);
+    const g = lathe(pts, 32, 0, Math.PI * 2);
+    // a few long vertical drape lines
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i);
+      const k = 1 + 0.025 * (0.5 + 0.5 * Math.sin(Math.atan2(x, z) * 5 + 1.3));
+      p.setXYZ(i, x * k, p.getY(i), z * k);
+    }
+    g.computeVertexNormals();
+    return scaleUV(g, 1.5, 1.5);
   }, [r0, r1, y0, y1, flareOut]);
   return (
     <mesh geometry={geo} castShadow>
@@ -387,12 +410,33 @@ export function Shoe({ w, skin }: { w: Wear; skin: string }) {
           <meshStandardMaterial color={c2} />
         </mesh>
       )}
-      <mesh position={[0, -0.022, 0]} scale={[0.094, cut === 'Runner' ? 0.032 : 0.025, 0.168]} castShadow>
-        <sphereGeometry args={[1, 24, 10]} />
+      <mesh geometry={soleGeo(cut === 'Runner' || cut === 'Combat boot' ? 0.032 : cut === 'Loafer' ? 0.012 : 0.024)} position={[0, -0.008, 0]} castShadow>
         <meshStandardMaterial color={sole} roughness={0.7} />
       </mesh>
     </group>
   );
+}
+
+/** Foot-shaped sole (wider toe, rounded heel), extruded downward from y = 0 with soft bevelled edges. */
+const soles = new Map<number, THREE.BufferGeometry>();
+function soleGeo(th: number) {
+  let g = soles.get(th);
+  if (g) return g;
+  const s = new THREE.Shape();
+  const N = 40;
+  for (let i = 0; i <= N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    const toe = Math.cos(a) > 0;
+    const x = (toe ? 0.08 : 0.068) * Math.sin(a);
+    const y = 0.01 + (toe ? 0.158 : 0.15) * Math.cos(a);
+    if (i === 0) s.moveTo(x, y);
+    else s.lineTo(x, y);
+  }
+  g = new THREE.ExtrudeGeometry(s, { depth: th, bevelEnabled: true, bevelThickness: 0.009, bevelSize: 0.009, bevelSegments: 3, curveSegments: 24 });
+  g.rotateX(Math.PI / 2);
+  g.computeVertexNormals();
+  soles.set(th, g);
+  return g;
 }
 
 export function Sock({ w, height }: { w: Wear; height: number }) {

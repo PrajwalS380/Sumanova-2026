@@ -153,17 +153,28 @@ export function randomLook(): Look {
   const R = (n: number) => Math.floor(Math.random() * n);
   const l = structuredClone(DEFAULT_LOOK);
   l.skin = SKIN[R(SKIN.length)];
-  for (const s of ['head', 'eyes', 'brows', 'nose', 'mouth', 'ears', 'body', 'hair', 'top', 'bottom', 'shoes'] as Slot[]) l.pick[s] = R(SLOTS[s].length);
+  for (const s of ['head', 'eyes', 'brows', 'nose', 'mouth', 'ears', 'body', 'hair'] as Slot[]) l.pick[s] = R(SLOTS[s].length);
+  // Wearable outfits: mostly plain fabrics/denim in real-world colours, the odd print for fun.
+  const plain = (s: 'top' | 'outer' | 'bottom' | 'shoes') => {
+    const list = SLOTS[s] as readonly { id: number; p: { pattern: string } }[];
+    const ok = Math.random() < 0.85 ? list.filter((v) => /^(solid|denim|denimLight|denimDark|knit)$/.test(v.p.pattern)) : list;
+    return ok[R(ok.length)].id;
+  };
+  const WEARABLE = ['#f4f1ec', '#1d1d20', '#2d3a58', '#5b7fae', '#6f7680', '#9db89a', '#5d6b3a', '#b9a27c', '#d8c7a6', '#7a1f2b', '#b4532a', '#e8b04a', '#efe6d6', '#c98a9a', '#3d5a6c', '#8a6a4f'];
+  l.pick.top = plain('top');
+  l.pick.bottom = plain('bottom');
+  l.pick.shoes = plain('shoes');
   l.pick.beard = Math.random() < 0.35 ? R(100) : null;
   l.pick.lashes = Math.random() < 0.6 ? R(100) : null;
-  l.pick.outer = Math.random() < 0.4 ? R(100) : null;
+  l.pick.outer = Math.random() < 0.4 ? plain('outer') : null;
   l.pick.glasses = Math.random() < 0.25 ? R(100) : null;
   l.color.hair = HAIR[R(19)];
   l.color.eyes = EYES[R(EYES.length)];
   l.color.brows = l.color.hair;
   l.color.beard = l.color.hair;
   l.color.lips = LIPS[R(10)];
-  for (const k of ['top', 'outer', 'bottom', 'shoes'] as ColorKey[]) l.color[k] = null;
+  for (const k of ['top', 'outer', 'shoes'] as ColorKey[]) l.color[k] = WEARABLE[R(WEARABLE.length)];
+  l.color.bottom = /^denim/.test((SLOTS.bottom[l.pick.bottom!].p as { pattern: string }).pattern) ? ['#2d3a58', '#5d7fae', '#9db6d8', '#1d1d20'][R(4)] : WEARABLE[R(WEARABLE.length)];
   void CLOTH;
   return l;
 }

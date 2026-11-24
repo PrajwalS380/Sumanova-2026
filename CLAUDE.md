@@ -56,7 +56,10 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   (glasses/hats/head add-ons), `Jewelry` (piercings). Editor `AvatarStudio.tsx` (Style / Face & body / Saved tabs,
   lazy variant thumbnails via one hidden GL canvas in `editor/thumbs.tsx`, persisted in Cache Storage `snv-thumbs-vN`
   (bump the version when the renderer's look changes), colour rail, undo/redo).
-  Visual check: `npx vite --config vite.avatar-test.config.ts` (port 5199, `?slot=hair&ids=1,2&frame=head`, `?random=8`).
+  Cartoon-real style (owner refs: friendly 3D cartoon people, but original): adult proportions (`LEG`, `HEAD_SCALE`,
+  `SHOE` in `Figure.tsx`), sculpted hair (smooth cap + few broad clumps, `sculpt` in `Hair.tsx`), soft three-point light.
+  12 original starter characters in `look/presets.ts` (Looks tab → "Start from a character"); random = wearable outfits.
+  Visual check: `npx vite --config vite.avatar-test.config.ts` (`?presets=1&n=8`) (port 5199, `?slot=hair&ids=1,2&frame=head`, `?random=8`).
   Keep ≤8 canvases per harness page (swiftshader). Python/sed multi-file edits get blocked by the sandbox classifier — use Edit.
 - Features live in `src/features/<feature>`. Shared libs in `src/lib`. Auth state in `src/providers/AuthProvider.tsx`.
 - Auth uses **6-digit email OTP** (`verifyOtp` types `signup`/`recovery`) so it works in APK/iOS/web without deep links.

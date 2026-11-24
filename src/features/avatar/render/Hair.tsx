@@ -13,11 +13,14 @@ export function Hair({ h, p, color, tip, seed, hatOn }: { h: HeadShape; p: HairP
   const geo = useMemo(() => buildHair(h, p, color, tip ?? null, seed, hatOn), [h, p, color, tip, seed, hatOn]);
   const base = useMemo(() => new THREE.Color(color), [color]);
   const sheen = useMemo(() => '#' + base.clone().lerp(new THREE.Color('#ffe8d0'), 0.18).getHexString(), [base]);
+  // dark hair keeps its depth: less sheen/coat so black reads as black, not grey
+  const lum = base.r * 0.3 + base.g * 0.59 + base.b * 0.11;
+  const gloss = 0.15 + Math.min(1, lum * 1.6) * 0.45;
   return (
     <group>
       {geo.shell && (
         <mesh geometry={geo.shell} castShadow>
-          <meshPhysicalMaterial color={geo.shellColor} roughness={0.55} sheen={0.3} sheenRoughness={0.4} sheenColor={sheen} />
+          <meshPhysicalMaterial color={geo.shellColor} roughness={0.55} sheen={gloss * 0.6} sheenRoughness={0.4} sheenColor={sheen} />
         </mesh>
       )}
       {geo.fade && (
@@ -27,7 +30,7 @@ export function Hair({ h, p, color, tip, seed, hatOn }: { h: HeadShape; p: HairP
       )}
       {geo.locks && (
         <mesh geometry={geo.locks} castShadow>
-          <meshPhysicalMaterial vertexColors roughness={0.5} sheen={0.5} sheenRoughness={0.3} sheenColor={sheen} clearcoat={0.25} clearcoatRoughness={0.35} side={THREE.DoubleSide} />
+          <meshPhysicalMaterial vertexColors roughness={0.5 + (1 - Math.min(1, lum * 2)) * 0.2} envMapIntensity={0.35 + Math.min(1, lum * 2) * 0.65} sheen={gloss} sheenRoughness={0.3} sheenColor={sheen} clearcoat={gloss * 0.4} clearcoatRoughness={0.35} side={THREE.DoubleSide} />
         </mesh>
       )}
       {geo.extras.map((e, i) => (

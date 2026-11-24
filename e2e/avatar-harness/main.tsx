@@ -3,6 +3,7 @@ import { AvatarStage, type Framing } from '@/features/avatar/AvatarStage';
 import { DEFAULT_LOOK, type Look, type Slot } from '@/features/avatar/look/config';
 import { rng } from '@/features/avatar/look/rng';
 import { HAIR, SKIN, LIPS } from '@/features/avatar/look/palettes';
+import { PRESETS } from '@/features/avatar/look/presets';
 
 /**
  * Visual harness.
@@ -14,7 +15,10 @@ const q = new URLSearchParams(location.search);
 const frame = (q.get('frame') ?? 'full') as Framing;
 const n = +(q.get('n') ?? 8);
 const looks: Look[] = [];
-if (q.get('slot')) {
+if (q.get('presets')) {
+  const from = +(q.get('from') ?? 0);
+  looks.push(...PRESETS.slice(from, from + n).map((p) => p.look));
+} else if (q.get('slot')) {
   const slot = q.get('slot') as Slot;
   const from = +(q.get('from') ?? 0);
   const ids = q.get('ids') ? q.get('ids')!.split(',').map(Number) : Array.from({ length: n }, (_, i) => from + i);

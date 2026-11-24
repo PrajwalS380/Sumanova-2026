@@ -110,7 +110,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
 
   const torsoSkin = useMemo(() => lathe(torsoProfile(body, 1.0, -0.004), 40), [body]);
   // Pelvis: tapers into the crotch so trouser legs flow out of it (no "brief" outline).
-  const hips = useMemo(() => lathe([[0.0, 0.78], [0.08 * body.hips, 0.785], [0.17 * body.hips, 0.83], [0.226 * body.hips, 0.9], [0.246 * body.hips, 0.97], [0.242 * body.hips, 1.04], [0.0, 1.05]], 40), [body]);
+  const hips = useMemo(() => lathe([[0.0, 0.83], [0.1 * body.hips, 0.835], [0.18 * body.hips, 0.86], [0.226 * body.hips, 0.91], [0.246 * body.hips, 0.97], [0.242 * body.hips, 1.04], [0.0, 1.05]], 40), [body]);
 
   const head = (
     <group ref={refs.head} position={[0, only === 'head' ? HEAD_Y : HEAD_Y_BODY, 0.01]} scale={only === 'head' ? 1 : HEAD_SCALE}>
@@ -210,7 +210,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
           return (
             <group key={side} ref={side < 0 ? refs.armL : refs.armR} position={[side * (0.255 * b * body.shoulders + 0.035), 1.53, 0]}>
               <mesh castShadow>
-                <sphereGeometry args={[0.08 * Math.min(b, 1.1) * (sl.len === 'none' ? 0.9 : 1 + sl.puff * 0.3), 24, 18]} />
+                <sphereGeometry args={[R * (sl.len === 'none' ? 1.02 : 1.08 + sl.puff * 0.3), 24, 18]} />
                 {sl.len === 'none' ? <SkinMat color={skin} /> : <Cloth w={sleeveCol} />}
               </mesh>
               <mesh position={[0, -0.175, 0]} castShadow>
@@ -225,7 +225,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
               )}
               <group ref={side < 0 ? refs.foreL : refs.foreR} position={[0, -0.35, 0]}>
                 <mesh>
-                  <sphereGeometry args={[0.068, 18, 14]} />
+                  <sphereGeometry args={[0.061, 18, 14]} />
                   {sl.len === 'long' ? <Cloth w={sleeveCol} /> : <SkinMat color={skin} />}
                 </mesh>
                 <mesh position={[0, -0.14, 0]} castShadow>
@@ -257,7 +257,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
 
 function Hand({ skin, side, thumbsUp, wave }: { skin: string; side: number; thumbsUp: boolean; wave: boolean }) {
   return (
-    <group position={[0, -0.33, 0]} rotation={[0, wave ? side * -0.4 : 0, 0]} scale={1.2}>
+    <group position={[0, -0.34, 0]} rotation={[0, wave ? side * -0.4 : 0, 0]} scale={1.45}>
       <mesh scale={[0.05, 0.066, 0.03]} castShadow>
         <sphereGeometry args={[1, 18, 14]} />
         <SkinMat color={skin} />
