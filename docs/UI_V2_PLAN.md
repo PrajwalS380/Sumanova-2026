@@ -12,7 +12,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
       Active tab = indigo icon in a pale pill + label; dark translucent variant on camera/spotlight.
 - [x] `/` = camera (CameraScreen) inside the shell with the dock; widget HomeScreen + Drawer + MenuButton removed
       (old routes such as /home redirect to /). Memories reachable from the camera (grid button left of shutter).
-- [ ] (partly: MeButton face replaces the old menu button in ScreenHeader, Camera, Map, Spotlight) `components/TopBar.tsx`: left = my avatar FACE button (→ /profile) + search circle; centred title;
+- [x] (TopBar component done and used on Chat; adopt it on Stories/Map/Spotlight in phase 3. MeButton face replaces the old menu button in ScreenHeader, Camera, Map, Spotlight) `components/TopBar.tsx`: left = my avatar FACE button (→ /profile) + search circle; centred title;
       right = add-friend (→ /friends/add or existing add screen) + one screen-specific action.
       Used on Chat, Stories, Map (floating, white buttons), Spotlight/Camera (dark translucent buttons).
 - [ ] Notifications reachable: bell in Chat top bar right slot + row on Profile.
@@ -27,7 +27,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [x] New users: after sign-up go straight to the studio ("design your avatar"), starter characters first.
 
 ## Phase 3 — Screens (match wireframes)
-- [ ] Chat list: filter chips (All / Unread / Groups / Streaks); rows = face 52, name, status line with small
+- [x] Chat list (camera reply button skipped until the camera can send straight to a chat): filter chips (All / Unread / Groups / Streaks); rows = face 52, name, status line with small
       square (filled indigo = new snap, teal = new chat, outlined = sent/opened, grey = received) + time + streak
       with flame; camera button on the right (quick snap reply).
 - [ ] Chat thread: header face + name + streak line, voice & video buttons; bubbles (mine indigo right, theirs

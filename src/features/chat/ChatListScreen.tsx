@@ -2,15 +2,15 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { streaksApi, type StreakInfo } from '@/lib/social/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BellOff, Clock3, Eye, Phone, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info } from 'lucide-react';
-import { ScreenHeader } from '@/components/ScreenHeader';
+import { BellOff, Clock3, Eye, MessageSquarePlus, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info, X } from 'lucide-react';
+import { TopBar, BarButton } from '@/components/TopBar';
 import { Avatar } from '@/components/Avatar';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInbox } from '@/providers/InboxProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { chatApi } from '@/lib/chat/api';
-import { conversationName, previewText } from '@/lib/chat/preview';
+import { chatStatus, conversationName, type ChatStatusTone } from '@/lib/chat/preview';
 import { shortTime } from '@/lib/chat/time';
 import type { ConversationSummary } from '@/lib/chat/types';
 import { haptic } from '@/lib/haptics';
@@ -23,6 +23,8 @@ export default function ChatListScreen() {
   const me = session!.user.id;
   const { conversations, loading, error, pendingRequests, online, patch, refresh } = useInbox();
   const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [chip, setChip] = useState<'all' | 'unread' | 'groups' | 'streaks'>('all');
   const [menu, setMenu] = useState<ConversationSummary | null>(null);
   const [newGroup, setNewGroup] = useState(false);
   const [streaks, setStreaks] = useState<Record<string, StreakInfo>>({});
@@ -34,14 +36,15 @@ export default function ChatListScreen() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q
+    let list = q
       ? conversations.filter((c) => conversationName(c).toLowerCase().includes(q) || (c.other_username ?? '').includes(q) || (c.last_body ?? '').toLowerCase().includes(q))
       : conversations;
-    return {
-      favourites: q ? [] : list.filter((c) => c.favourite),
-      rest: list,
-    };
-  }, [conversations, query]);
+    if (chip === 'unread') list = list.filter((c) => c.unread_count > 0);
+    if (chip === 'groups') list = list.filter((c) => c.kind === 'group');
+    if (chip === 'streaks') list = list.filter((c) => !!c.other_user_id && (streaks[c.other_user_id]?.count ?? 0) > 0);
+    return { rest: list };
+  }, [conversations, query, chip, streaks]);
+  const unreadCount = conversations.filter((c) => c.unread_count > 0).length;
 
   async function setPref(c: ConversationSummary, p: Partial<ConversationSummary>, msg: string) {
     patch(c.id, p);
@@ -57,43 +60,32 @@ export default function ChatListScreen() {
   }
 
   return (
-    <div className="pb-36">
-      <ScreenHeader
-        title="Chats"
-        kicker={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+    <div className="min-h-full bg-white pb-6">
+      <TopBar
+        title="Chat"
+        onSearch={() => setSearching((v) => !v)}
+        friendBadge={pendingRequests}
         right={
-          <div className="flex gap-2">
-            <Link to="/calls" className="glass grid h-10 w-10 place-items-center rounded-full" aria-label="Call history">
-              <Phone className="h-5 w-5" />
-            </Link>
-            <button onClick={() => setNewGroup(true)} className="glass grid h-10 w-10 place-items-center rounded-full" aria-label="New group">
-              <Users className="h-5 w-5" />
-            </button>
-            <Link to="/friends" className="glass relative grid h-10 w-10 place-items-center rounded-full" aria-label={`Friends${pendingRequests ? `, ${pendingRequests} requests` : ''}`}>
-              <UserPlus className="h-5 w-5" />
-              {pendingRequests > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-ember-rose px-1 text-[10px] font-bold">{pendingRequests}</span>}
-            </Link>
-          </div>
+          <BarButton label="New group chat" onClick={() => setNewGroup(true)}>
+            <MessageSquarePlus className="h-5 w-5" />
+          </BarButton>
         }
       />
       <div className="mx-auto max-w-lg px-4">
-        <label className="glass flex h-11 items-center gap-2 rounded-2xl px-4">
-          <Search className="h-4 w-4 text-ink-mute" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search chats" className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search chats" />
-        </label>
-
-        {filtered.favourites.length > 0 && (
-          <div className="no-scrollbar -mx-4 mt-4 flex gap-2.5 overflow-x-auto px-4 pb-1">
-            {filtered.favourites.map((c) => (
-              <Link key={c.id} to={`/chat/${c.id}`} className="glass relative flex w-[92px] shrink-0 flex-col items-center gap-1.5 rounded-[22px] px-2 pb-2.5 pt-3 active:scale-95">
-                <Avatar name={conversationName(c)} url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} aura={c.other_aura ?? 'violet'} size={50} />
-                <span className="w-full truncate text-center text-xs font-bold">{conversationName(c).split(' ')[0]}</span>
-                {c.other_user_id && streaks[c.other_user_id]?.count ? <span className="text-[10px] font-bold text-ember-gold">🔥 {streaks[c.other_user_id].count}</span> : <span className="text-[10px] text-ink-faint">{c.unread_count ? `${c.unread_count} new` : 'Pinned'}</span>}
-                {c.unread_count > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-ember-rose" />}
-              </Link>
-            ))}
-          </div>
+        {searching && (
+          <label className="mb-2 flex h-11 items-center gap-2 rounded-full bg-ink/[0.06] px-4">
+            <Search className="h-4 w-4 text-ink-mute" />
+            <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search chats" className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search chats" />
+            <button onClick={() => { setQuery(''); setSearching(false); }} aria-label="Close search" className="text-ink-mute"><X className="h-4 w-4" /></button>
+          </label>
         )}
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 pt-1" role="tablist" aria-label="Filter chats">
+          {([['all', 'All'], ['unread', unreadCount ? `Unread · ${unreadCount}` : 'Unread'], ['groups', 'Groups'], ['streaks', 'Streaks']] as const).map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={chip === id} onClick={() => setChip(id)} className={cn('shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-bold', chip === id ? 'bg-ink text-white' : 'bg-ink/[0.06] text-ink')}>
+              {label}
+            </button>
+          ))}
+        </div>
 
         {error && (
           <button onClick={() => void refresh()} className="mt-4 w-full rounded-2xl bg-ember-rose/10 px-4 py-3 text-left text-sm text-ember-rose">
@@ -101,7 +93,7 @@ export default function ChatListScreen() {
           </button>
         )}
 
-        <ul className="mt-4 space-y-1.5">
+        <ul className="mt-2">
           {loading && conversations.length === 0
             ? [0, 1, 2, 3].map((i) => <li key={i} className="h-[72px] animate-pulse rounded-3xl bg-ink/[0.04]" />)
             : filtered.rest.map((c, i) => (
@@ -142,12 +134,13 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
   });
   const unread = c.unread_count > 0;
   const name = conversationName(c);
+  const status = chatStatus(c, me);
   return (
     <motion.li initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index, 10) * 0.025 }}>
       <button
         {...press}
         onClick={() => !press.wasLongPress() && onOpen()}
-        className={cn('flex w-full select-none items-center gap-3 rounded-3xl p-2.5 text-left transition-colors active:bg-ink/10', unread ? 'bg-ink/[0.06]' : 'hover:bg-ink/[0.04]')}
+        className="flex w-full select-none items-center gap-3 px-1 py-2.5 text-left transition-colors active:bg-ink/[0.06]"
       >
         <span className="relative">
           {c.kind === 'group' && !c.avatar_url ? (
@@ -155,31 +148,48 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
               <Users className="h-5 w-5" />
             </span>
           ) : (
-            <Avatar name={name} url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} aura={c.other_aura ?? 'violet'} size={52} />
+            <Avatar name={name} url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} aura={c.other_aura ?? 'violet'} size={54} />
           )}
           {online && <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-ember-sage ring-[3px] ring-noir" aria-label="Online" />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className={cn('truncate text-[15px]', unread ? 'font-bold text-ink' : 'font-semibold')}>{name}</span>
+            <span className={cn('truncate text-base', unread ? 'font-extrabold text-ink' : 'font-semibold')}>{name}</span>
             {c.pinned && <Pin className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.muted && <BellOff className="h-3 w-3 shrink-0 text-ink-faint" />}
-            {c.disappear_mode !== 'never' && (c.disappear_mode === 'after_view' ? <Eye className="h-3 w-3 shrink-0 text-ember-peach" /> : <Clock3 className="h-3 w-3 shrink-0 text-ember-peach" />)}
+            {c.disappear_mode !== 'never' && (c.disappear_mode === 'after_view' ? <Eye className="h-3 w-3 shrink-0 text-ink-faint" /> : <Clock3 className="h-3 w-3 shrink-0 text-ink-faint" />)}
           </span>
-          <span className={cn('mt-0.5 block truncate text-[13px]', unread ? 'text-ink' : 'text-ink-mute')}>{previewText(c, me)}</span>
-        </span>
-        <span className="flex shrink-0 flex-col items-end gap-1.5">
-          <span className="flex items-center gap-1.5">
-            {streak && streak.count > 0 && <span className="text-[11px] font-semibold text-ember-peach" aria-label={`${streak.count} day streak`}>🔥{streak.count}{streak.expiring && '⏳'}</span>}
-            <span className={cn('text-[11px]', unread ? 'text-ember-sage' : 'text-ink-faint')}>{shortTime(c.last_created_at ?? c.last_message_at)}</span>
+          <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-ink-mute">
+            <StatusMark tone={status.tone} />
+            <span className={cn('truncate', TONE_TEXT[status.tone])}>{status.label}</span>
+            <span className="shrink-0">· {shortTime(c.last_created_at ?? c.last_message_at)}</span>
+            {streak && streak.count > 0 && (
+              <span className="flex shrink-0 items-center gap-0.5 font-extrabold text-[#c2410c]" aria-label={`${streak.count} day streak${streak.expiring ? ', ending soon' : ''}`}>
+                {streak.count}
+                <Flame />
+                {streak.expiring && <Clock3 className="h-3 w-3" />}
+              </span>
+            )}
           </span>
-          {unread ? (
-            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember-gradient text-noir px-1.5 text-[11px] font-bold">{c.unread_count > 99 ? '99+' : c.unread_count}</span>
-          ) : (
-            <span className="h-5" />
-          )}
         </span>
       </button>
     </motion.li>
   );
 });
+
+const TONE_TEXT: Record<ChatStatusTone, string> = { snap: 'font-extrabold text-ember-flame', chat: 'font-extrabold text-ember-jade', sent: 'text-ink-mute', received: 'text-ink-mute', none: 'text-ink-mute' };
+
+/** Small square status mark: filled = new for you, outlined = already seen or sent by you. */
+function StatusMark({ tone }: { tone: ChatStatusTone }) {
+  if (tone === 'none') return null;
+  const cls = { snap: 'bg-ember-flame border-ember-flame', chat: 'bg-ember-jade border-ember-jade', sent: 'border-ember-flame', received: 'border-ink-faint' }[tone];
+  return <span aria-hidden className={cn('h-[11px] w-[11px] shrink-0 rounded-[3px] border-2', cls)} />;
+}
+
+function Flame() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="#f97316" aria-hidden>
+      <path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3-1-6 1-9z" />
+    </svg>
+  );
+}

@@ -23,3 +23,20 @@ export function previewText(c: Pick<ConversationSummary, 'last_body' | 'last_kin
 export function conversationName(c: Pick<ConversationSummary, 'kind' | 'title' | 'other_display_name'>): string {
   return c.kind === 'group' ? (c.title ?? 'Group') : (c.other_display_name ?? 'Unknown');
 }
+
+export type ChatStatusTone = 'snap' | 'chat' | 'sent' | 'received' | 'none';
+
+/**
+ * Status line for a chat row: what happened last, as a short label plus a tone
+ * (filled indigo square = new snap, filled teal = new chat, outlined = sent,
+ * grey outline = received).
+ */
+export function chatStatus(c: Pick<ConversationSummary, 'last_kind' | 'last_sender_id' | 'last_deleted' | 'unread_count'>, me: string): { label: string; tone: ChatStatusTone } {
+  if (!c.last_kind) return { label: 'Tap to chat', tone: 'none' };
+  if (c.last_kind === 'system') return { label: 'Group update', tone: 'none' };
+  const media = c.last_kind === 'snap' || c.last_kind === 'image' || c.last_kind === 'video';
+  const what = c.last_kind === 'snap' ? 'snap' : c.last_kind === 'image' ? 'photo' : c.last_kind === 'video' ? 'video' : c.last_kind === 'voice' ? 'voice note' : 'chat';
+  if (c.last_sender_id === me) return { label: c.last_deleted ? 'Deleted' : `Sent ${what === 'chat' ? 'a chat' : `a ${what}`}`, tone: 'sent' };
+  if (c.unread_count > 0) return { label: `New ${what}${c.unread_count > 1 ? 's' : ''}`, tone: media ? 'snap' : 'chat' };
+  return { label: 'Received', tone: 'received' };
+}
