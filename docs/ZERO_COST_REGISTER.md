@@ -16,7 +16,7 @@ Budget: **₹0**. Every service below is used on its free tier with **no credit 
 | Google STUN (`stun.l.google.com`) | WebRTC peer discovery (Phase 3) | Free, no SLA | No | No | Calls fail to connect behind strict NAT | Self-hosted coturn |
 | TURN relay | Calls on restrictive networks (Phase 3) | **No reliable free public TURN** — see limitations | — | — | — | Self-hosted coturn on an always-free VM (requires a VM, which may need card verification — will ask first) |
 | Leaflet + OpenStreetMap data | Social map | BSD-2 library; OSM data ODbL with attribution | No | No | — | MapLibre + self-hosted tiles |
-| CARTO basemaps (dark_all) | Map tiles | Free for light/non-commercial use with attribution (check CARTO terms if usage grows) | No | No | Tiles may be throttled | OSM standard tiles (light use) or self-hosted tiles |
+| OpenStreetMap standard tiles (tile.openstreetmap.org) | Map tiles | Free, no key; light use per OSM tile policy, attribution required (replaced CARTO, which began requiring an API key, 2026-11-24) | No | No | Heavy use may be blocked | Self-hosted tiles or another keyless provider |
 | MediaPipe Tasks Vision | AR face lenses (on-device) | Apache-2.0; wasm via jsDelivr CDN, model via Google Cloud Storage (public, free) | No | No | Lenses can't load offline the first time | Self-host the wasm + model in /public |
 | Supabase Edge Functions | Web Push sender (`push`) | Free plan: 500k invocations/month | — | No | Pushes stop until next cycle | Self-host the same Deno function |
 | pg_cron + pg_net (Supabase) | Housekeeping, streak reminders, push trigger | Included in Supabase free plan | — | No | — | — |

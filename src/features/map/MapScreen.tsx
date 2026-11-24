@@ -55,11 +55,11 @@ export default function MapScreen() {
   useEffect(() => {
     if (!el.current || map.current) return;
     const m = L.map(el.current, { zoomControl: false, attributionControl: true, worldCopyJump: true }).setView([20.6, 78.9], 4);
-    // CARTO dark basemap (OpenStreetMap data) — free with attribution for light use.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    // OpenStreetMap standard tiles: free, no API key (CARTO began requiring one).
+    // Light use only, per the OSM tile usage policy; attribution is required.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(m);
     map.current = m;
     return () => {
