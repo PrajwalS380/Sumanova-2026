@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Dices, Download, Heart, Loader2, Redo2, Shirt, Undo2, Users2, UserRound, X, Ban, Plus } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
-import { Toggle } from '@/components/ui/Toggle';
 import { saveMedia } from '@/lib/saveMedia';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
@@ -38,16 +37,22 @@ export default function AvatarStudio() {
   const [catId, setCatId] = useState('top');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [usePhoto, setUsePhoto] = useState(true);
   const [outfits, setOutfits] = useState<{ id: string; name: string; outfit: SavedOutfit }[]>([]);
   const [gl] = useState(hasWebGL);
   const cat = CATEGORIES.find((c) => c.id === catId) ?? CATEGORIES[0];
 
   useEffect(() => {
+    try {
+      sessionStorage.removeItem('snv-after-auth');
+    } catch {
+      /* storage blocked */
+    }
     void avatarApi
       .get(me)
       .then((a) => {
-        const l = a ?? randomLook();
+        // First visit: start from a ready-made character and show the character picker.
+        const l = a ?? structuredClone(PRESETS[Math.floor(Math.random() * PRESETS.length)].look);
+        if (!a) setMode('saved');
         setHist({ list: [l], i: 0 });
         setSaved(a);
         setLoading(false);
@@ -86,10 +91,12 @@ export default function AvatarStudio() {
     try {
       await avatarApi.save(me, look);
       setSaved(look);
-      if (usePhoto && gl && stage.current) {
-        const png = await stage.current.capture('bust');
-        const url = await avatarApi.publishPhoto(me, png);
-        if (profile) setProfile({ ...profile, avatar_url: url });
+      // Your avatar is your picture everywhere: publish the face (profile picture) and the full body (map, profiles).
+      if (gl && stage.current) {
+        const face = await stage.current.capture('bust');
+        const body = await stage.current.capture('full');
+        const urls = await avatarApi.publishImages(me, face, body);
+        if (profile) setProfile({ ...profile, avatar_url: urls.face, avatar_body_url: urls.body });
       }
       haptic([10, 40, 10]);
       toast('Avatar saved ✦', 'success');
@@ -189,8 +196,6 @@ export default function AvatarStudio() {
                   onWear={(o) => commit((l) => ({ ...l, pick: { ...l.pick, ...o.pick }, color: { ...l.color, ...o.color } }))}
                   onStart={(l) => commit(() => structuredClone(l))}
                   onSave={() => void saveOutfit()}
-                  usePhoto={usePhoto}
-                  setUsePhoto={setUsePhoto}
                   onExport={() => void exportImage()}
                   gl={gl}
                 />
@@ -363,7 +368,7 @@ function TuneSlider({ label, value, onChange }: { label: string; value: number; 
   );
 }
 
-function SavedPanel({ outfits, onWear, onStart, onSave, usePhoto, setUsePhoto, onExport, gl }: { outfits: { id: string; name: string; outfit: SavedOutfit }[]; onWear: (o: SavedOutfit) => void; onStart: (l: Look) => void; onSave: () => void; usePhoto: boolean; setUsePhoto: (v: boolean) => void; onExport: () => void; gl: boolean }) {
+function SavedPanel({ outfits, onWear, onStart, onSave, onExport, gl }: { outfits: { id: string; name: string; outfit: SavedOutfit }[]; onWear: (o: SavedOutfit) => void; onStart: (l: Look) => void; onSave: () => void; onExport: () => void; gl: boolean }) {
   return (
     <div className="space-y-4">
       <div>
@@ -376,7 +381,6 @@ function SavedPanel({ outfits, onWear, onStart, onSave, usePhoto, setUsePhoto, o
         <p className="mt-2 px-1 text-xs text-ink-mute">Tap one to try it on — everything stays editable, and Undo brings your old look back.</p>
       </div>
       <div className="glass overflow-hidden rounded-3xl">
-        {gl && <Toggle label="Use as my profile photo" description="Updates your photo when you save" checked={usePhoto} onChange={setUsePhoto} />}
         {gl && (
           <button onClick={onExport} className="flex w-full items-center gap-3 border-t border-ink/5 px-4 py-3.5 text-left text-[15px]">
             <Download className="h-5 w-5 text-ink-mute" /> Save image to device

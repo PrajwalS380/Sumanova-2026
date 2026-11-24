@@ -68,8 +68,13 @@ function Capturer({ apiRef }: { apiRef: React.MutableRefObject<AvatarStageHandle
     const cam = camera as THREE.PerspectiveCamera;
     const prev = { pos: cam.position.clone(), q: cam.quaternion.clone() };
     if (framing === 'bust') {
-      cam.position.set(0, 2.08, 2.75);
-      cam.lookAt(0, 1.96, 0);
+      // face close-up for the round profile picture
+      cam.position.set(0, 2.1, 1.75);
+      cam.lookAt(0, 2.03, 0);
+    } else {
+      // whole figure, head to toe
+      cam.position.set(0, 1.25, 5.6);
+      cam.lookAt(0, 1.2, 0);
     }
     cam.updateProjectionMatrix();
     gl.render(scene, cam);

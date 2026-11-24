@@ -19,12 +19,12 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [x] Update nav tests.
 
 ## Phase 2 — Avatar faces everywhere
-- [ ] Saving in the avatar studio ALWAYS publishes two PNGs: face/bust → `profiles.avatar_url`,
+- [x] Saving in the avatar studio ALWAYS publishes two PNGs: face/bust → `profiles.avatar_url`,
       full body → new `profiles.avatar_body_url` (migration, nullable text; RLS unchanged).
-- [ ] `components/Avatar.tsx`: shows the face image in a circle on a soft tint; optional indigo story ring
+- [x] `components/Avatar.tsx`: shows the face image in a circle on a soft tint; optional indigo story ring
       (`ringed`); initials fallback. Drop the aura conic ring as default.
-- [ ] `components/AvatarFigure.tsx`: full-body image (avatar_body_url) with face fallback.
-- [ ] New users: after sign-up go straight to the studio ("design your avatar"), starter characters first.
+- [x] `components/AvatarFigure.tsx`: full-body image (avatar_body_url) with face fallback.
+- [x] New users: after sign-up go straight to the studio ("design your avatar"), starter characters first.
 
 ## Phase 3 — Screens (match wireframes)
 - [ ] Chat list: filter chips (All / Unread / Groups / Streaks); rows = face 52, name, status line with small

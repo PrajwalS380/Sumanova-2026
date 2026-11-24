@@ -4,15 +4,18 @@ import { cn } from '@/lib/cn';
 
 interface AvatarProps {
   name: string;
+  /** face image (the person's rendered 3D avatar, or an uploaded photo) */
   url?: string | null;
+  /** tint behind the face */
   aura?: AuraColor;
   size?: number;
+  /** accent ring = there's something new to see (e.g. an unseen story) */
   ring?: boolean;
   className?: string;
 }
 
-/** Profile photo inside a gradient "aura" ring; falls back to initials. */
-export const Avatar = memo(function Avatar({ name, url, aura = 'gold', size = 44, ring = true, className }: AvatarProps) {
+/** Round avatar face on a soft tint; optional accent ring; initials when there's no picture yet. */
+export const Avatar = memo(function Avatar({ name, url, aura = 'gold', size = 44, ring = false, className }: AvatarProps) {
   const a = AURA[aura];
   const initials = name
     .split(/\s+/)
@@ -20,17 +23,16 @@ export const Avatar = memo(function Avatar({ name, url, aura = 'gold', size = 44
     .join('')
     .slice(0, 2)
     .toUpperCase();
+  const pad = ring ? Math.max(2, Math.round(size * 0.055)) : 0;
   return (
     <span
-      className={cn('relative inline-grid shrink-0 place-items-center rounded-full', className)}
-      style={{
-        width: size,
-        height: size,
-        background: ring ? `conic-gradient(from 210deg, ${a.from}, ${a.to}, ${a.from})` : undefined,
-        padding: ring ? Math.max(2, size * 0.05) : 0,
-      }}
+      className={cn('relative inline-grid shrink-0 place-items-center rounded-full', ring && 'bg-ember-flame', className)}
+      style={{ width: size, height: size, padding: pad }}
     >
-      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full ring-2 ring-white" style={{ background: `linear-gradient(160deg, #FFFFFF, ${a.to}66)` }}>
+      <span
+        className={cn('grid h-full w-full place-items-center overflow-hidden rounded-full', ring && 'ring-2 ring-white')}
+        style={{ background: `radial-gradient(circle at 50% 35%, #FFFFFF, ${a.to}55)` }}
+      >
         {url ? (
           <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
         ) : (

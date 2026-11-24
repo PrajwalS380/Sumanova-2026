@@ -66,7 +66,16 @@ function RequireAuth({ children }: { children: ReactNode }) {
 function GuestOnly({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <ScreenLoader />;
-  if (session) return <Navigate to="/" replace />;
+  if (session) {
+    // Brand-new accounts design their avatar first (set by the sign-up page).
+    let next = '/';
+    try {
+      next = sessionStorage.getItem('snv-after-auth') || '/';
+    } catch {
+      /* storage blocked */
+    }
+    return <Navigate to={next} replace />;
+  }
   return <>{children}</>;
 }
 

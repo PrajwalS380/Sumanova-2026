@@ -62,6 +62,11 @@ export default function SignUpPage() {
       if (msg?.toLowerCase().includes('username')) setStep(0);
       return;
     }
+    try {
+      sessionStorage.setItem('snv-after-auth', '/avatar');
+    } catch {
+      /* storage blocked: they land on the camera instead */
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password: form.password });
     setBusy(false);
     if (error) {

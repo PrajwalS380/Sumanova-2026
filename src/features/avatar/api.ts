@@ -22,14 +22,18 @@ export const avatarApi = {
   async save(userId: string, look: Look) {
     must(await supabase.from('avatars').upsert({ user_id: userId, config: look }, { onConflict: 'user_id' }));
   },
-  /** Publish a rendered bust as the profile photo (public avatars bucket). */
-  async publishPhoto(userId: string, png: Blob) {
-    const path = `${userId}/avatar3d-${Date.now()}.png`;
-    const up = await supabase.storage.from('avatars').upload(path, png, { contentType: 'image/png', cacheControl: '31536000' });
-    if (up.error) throw new Error(up.error.message);
-    const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
-    must(await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId));
-    return url;
+  /** Publish the rendered face (profile picture) and full body (public avatars bucket). */
+  async publishImages(userId: string, face: Blob, body: Blob) {
+    const t = Date.now();
+    const put = async (name: string, png: Blob) => {
+      const path = `${userId}/${name}-${t}.png`;
+      const up = await supabase.storage.from('avatars').upload(path, png, { contentType: 'image/png', cacheControl: '31536000' });
+      if (up.error) throw new Error(up.error.message);
+      return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+    };
+    const [faceUrl, bodyUrl] = await Promise.all([put('face', face), put('body', body)]);
+    must(await supabase.from('profiles').update({ avatar_url: faceUrl, avatar_body_url: bodyUrl }).eq('id', userId));
+    return { face: faceUrl, body: bodyUrl };
   },
   outfits: async () => {
     const rows = must(await supabase.from('avatar_outfits').select('id,name,outfit,created_at').order('created_at', { ascending: false })) as { id: string; name: string; outfit: unknown }[];

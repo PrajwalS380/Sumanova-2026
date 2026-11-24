@@ -6,6 +6,8 @@ export interface Profile {
   display_name: string;
   bio: string | null;
   avatar_url: string | null;
+  /** rendered full-body 3D avatar */
+  avatar_body_url?: string | null;
   aura_color: AuraColor;
   created_at: string;
   updated_at: string;
