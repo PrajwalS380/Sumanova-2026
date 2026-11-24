@@ -13,6 +13,30 @@ import { useToast } from '@/providers/ToastProvider';
 import { supabase } from '@/lib/supabase';
 import type { PrivacySettings, UserSettings } from '@/lib/types';
 import { brand } from '@/config/brand';
+import { Check, Palette } from 'lucide-react';
+import { ACCENTS, getAccent, setAccent } from '@/lib/accent';
+
+function AccentPicker() {
+  const [cur, setCur] = useState(() => getAccent().id);
+  return (
+    <div className="grid grid-cols-3 gap-2 p-3">
+      {ACCENTS.map((a) => (
+        <button
+          key={a.id}
+          type="button"
+          aria-pressed={cur === a.id}
+          onClick={() => setCur(setAccent(a.id).id)}
+          className={`flex items-center gap-2 rounded-2xl border px-2.5 py-2 text-left text-sm font-semibold transition-transform active:scale-95 ${cur === a.id ? 'border-ink/30 bg-white' : 'border-ink/5 bg-white/50'}`}
+        >
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-white" style={{ background: `linear-gradient(135deg, ${a.from}, ${a.main} 55%, ${a.to})` }}>
+            {cur === a.id && <Check className="h-4 w-4" />}
+          </span>
+          {a.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function Section({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
@@ -96,6 +120,10 @@ export default function SettingsScreen() {
           ) : (
             <p className="px-4 py-3.5 text-sm text-ink-mute">This browser doesn’t support push. On iPhone, add SUMANOVA to your Home Screen first (iOS 16.4+).</p>
           )}
+        </Section>
+
+        <Section title="Theme colour" icon={<Palette className="h-3.5 w-3.5" />}>
+          <AccentPicker />
         </Section>
 
         {settings && (

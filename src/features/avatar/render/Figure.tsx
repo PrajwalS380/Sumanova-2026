@@ -103,7 +103,8 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
   });
 
   const torsoSkin = useMemo(() => lathe(torsoProfile(body, 1.0, -0.004), 40), [body]);
-  const hips = useMemo(() => lathe([[0.0, 0.8], [0.17 * body.hips, 0.81], [0.232 * body.hips, 0.88], [0.25 * body.hips, 0.96], [0.242 * body.hips, 1.04], [0.0, 1.05]], 40), [body]);
+  // Pelvis: tapers into the crotch so trouser legs flow out of it (no "brief" outline).
+  const hips = useMemo(() => lathe([[0.0, 0.78], [0.08 * body.hips, 0.785], [0.17 * body.hips, 0.83], [0.226 * body.hips, 0.9], [0.246 * body.hips, 0.97], [0.242 * body.hips, 1.04], [0.0, 1.05]], 40), [body]);
 
   const head = (
     <group ref={refs.head} position={[0, HEAD_Y, 0.01]}>
@@ -151,7 +152,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
                 <capsuleGeometry args={[0.094 * Math.min(b, 1.12), 0.26, 8, 20]} />
                 <SkinMat color={skin} />
               </mesh>
-              {bottom && ps && <PantLeg w={bottom} r0={ps.thighR * Math.min(b, 1.12)} r1={short ? ps.thighR * 0.98 : (ps.thighR + ps.ankleR) / 2 + 0.005} y0={0.08} y1={short ? -0.3 : -0.42} />}
+              {bottom && ps && <PantLeg w={bottom} r0={Math.max(ps.thighR * Math.min(b, 1.12), 0.094 * Math.min(b, 1.12) + 0.014)} r1={short ? ps.thighR * 0.98 : (ps.thighR + ps.ankleR) / 2 + 0.005} y0={0.14} y1={short ? -0.3 : -0.42} />}
               <group ref={side < 0 ? refs.kneeL : refs.kneeR} position={[0, -0.4, 0]}>
                 <mesh position={[0, -0.2, 0]} castShadow>
                   <capsuleGeometry args={[0.08, 0.3, 8, 20]} />

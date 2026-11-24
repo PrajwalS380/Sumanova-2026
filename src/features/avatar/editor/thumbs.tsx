@@ -38,6 +38,37 @@ export function mannequin(): Look {
 }
 
 const cache = new Map<string, string>();
+
+/**
+ * Rendered previews are also kept in the browser's Cache Storage so the studio
+ * opens instantly on later visits. Bump the version whenever the renderer
+ * changes how variants look.
+ */
+const STORE = 'snv-thumbs-v3';
+const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
+async function fromStore(key: string): Promise<string | null> {
+  try {
+    if (typeof caches === 'undefined') return null;
+    const res = await (await caches.open(STORE)).match(storeKey(key));
+    return res ? URL.createObjectURL(await res.blob()) : null;
+  } catch {
+    return null;
+  }
+}
+function toStore(key: string, blob: Blob) {
+  try {
+    if (typeof caches === 'undefined') return;
+    void caches.open(STORE).then((c) => c.put(storeKey(key), new Response(blob, { headers: { 'content-type': blob.type } }))).catch(() => undefined);
+  } catch {
+    /* storage unavailable (private mode) — memory cache still works */
+  }
+}
+let pruned = false;
+function pruneOldStores() {
+  if (pruned || typeof caches === 'undefined') return;
+  pruned = true;
+  void caches.keys().then((ks) => ks.filter((k) => k.startsWith('snv-thumbs-') && k !== STORE).forEach((k) => void caches.delete(k))).catch(() => undefined);
+}
 type Job = { key: string; look: Look; frame: ThumbFrame; faceless: boolean; resolve: (url: string) => void };
 const queue: Job[] = [];
 let running = false;
@@ -74,6 +105,13 @@ async function pump() {
       job.resolve(hit);
       continue;
     }
+    pruneOldStores();
+    const stored = await fromStore(job.key);
+    if (stored) {
+      cache.set(job.key, stored);
+      job.resolve(stored);
+      continue;
+    }
     try {
       if (!canvas) {
         extend(THREE as unknown as Record<string, new (...args: unknown[]) => unknown>);
@@ -86,7 +124,15 @@ async function pump() {
         const onReady = (gl: THREE.WebGLRenderer, scene: THREE.Scene, cam: THREE.Camera) => {
           gl.setClearColor(0x000000, 0);
           gl.render(scene, cam);
-          resolve(canvas!.toDataURL('image/webp', 0.85));
+          canvas!.toBlob(
+            (blob) => {
+              if (!blob) return resolve(canvas!.toDataURL('image/webp', 0.85));
+              toStore(job.key, blob);
+              resolve(URL.createObjectURL(blob));
+            },
+            'image/webp',
+            0.85,
+          );
         };
         const headOnly = job.frame === 'head' || job.frame === 'face';
         root!.render(

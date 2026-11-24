@@ -144,7 +144,8 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
     if (frontness > 0.4 && p.fringe > 0) dir.lerp(tmp.set(p.part ? Math.sign(-ux) * 0.2 : 0, -0.7, 0.5), 0.7);
     dir.normalize();
 
-    const steps = p.curl > 0.8 ? 16 : 10;
+    // Curls need several points per turn to read as smooth coils instead of crumples.
+    const steps = p.curl > 0.8 ? Math.min(44, Math.ceil(p.curlF * 5)) : 10;
     const seg = L / steps;
     const pts: THREE.Vector3[] = [v.clone()];
     const cur = v.clone();
@@ -159,7 +160,7 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
       cur.addScaledVector(d, seg);
       if (p.curl > 0) {
         const ang = curlPhase + t * p.curlF * Math.PI * 2;
-        tmp.set(Math.cos(ang), Math.sin(ang) * 0.5, Math.sin(ang)).multiplyScalar(p.curl * (p.curl > 0.8 ? 0.05 : 0.07) * h.rx * Math.min(1, t * 3));
+        tmp.set(Math.cos(ang), Math.sin(ang) * 0.5, Math.sin(ang)).multiplyScalar(p.curl * (p.curl > 0.8 ? 0.032 : 0.07) * h.rx * Math.min(1, t * 3));
         cur.add(tmp);
       }
       // fringe stops above the brows; everything else stays off the face
@@ -201,9 +202,9 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
     locks.push(
       taperTube(pts, {
         radius: (t) => w * (1 - (1 - tipK) * Math.pow(t, 1.3)) * (t < 0.08 ? 0.6 + t * 5 : 1),
-        flat: p.locs ? 1 : p.curl > 0.8 ? 0.75 : 0.42,
+        flat: p.locs || p.curl > 0.8 ? 1 : 0.42,
         radial: p.locs ? 6 : 5,
-        segments: p.curl > 0.8 ? 28 : 14,
+        segments: p.curl > 0.8 ? steps * 3 : 14,
         color: (t) => rootJ.clone().lerp(tipJ, smooth(0.35, 1, t)),
         hint: (pt, out) => out.copy(pt).normalize(),
       }),
@@ -270,7 +271,7 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
         const n = 12;
         for (let i = 0; i < n; i++) {
           const c = curve.getPoint(i / (n - 1));
-          const sc = 0.055 * h.rx * 2.4 * 0.42 * (1 - i * 0.03);
+          const sc = 0.048 * (1 - i * 0.025); // chunky, clearly braided beads
           const g = new THREE.SphereGeometry(1, 14, 10).scale(sc * 1.15, sc * 0.95, sc).rotateZ((i % 2 ? 0.5 : -0.5)).translate(c.x, c.y, c.z);
           g.deleteAttribute('uv');
           extras.push(colorize(g, root.clone().lerp(tipC, i / n)));

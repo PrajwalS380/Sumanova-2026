@@ -42,7 +42,7 @@ const FAMILIES: Fam[] = [
   { name: 'Curtains', make: (i) => ({ top: step(i, 5, 0.4, 0.62), sides: 0.3, backL: 0.26, flow: 'part', part: 0.0001, fringe: step(i, 5, 0.28, 0.42), lift: 0.4, spiky: 0.45, count: 320, front: 0.44 }) },
   { name: 'Spiky', make: (i) => ({ top: step(i, 5, 0.28, 0.5), sides: 0.1, backL: 0.1, flow: 'out', lift: 1, spiky: 1, width: 1.2, count: 160 + i * 20, undercut: 0.3 }) },
   { name: 'Undercut', make: (i) => ({ top: step(i, 5, 0.5, 0.8), sides: 0.03, backL: 0.05, flow: 'side', sweep: 0.9, fringe: step(i, 5, 0.3, 0.55), lift: 0.6, undercut: 1, spiky: 0.65, count: 300 }) },
-  { name: 'Curly', make: (i) => ({ top: step(i, 5, 0.22, 0.5), sides: step(i, 5, 0.16, 0.4), backL: step(i, 5, 0.18, 0.45), flow: 'out', curl: 1, curlF: 5 + i, lift: 0.6, spiky: 0.2, width: 1.3, count: 340, shell: 0.06, front: 0.44 }) },
+  { name: 'Curly', make: (i) => ({ top: step(i, 5, 0.22, 0.5), sides: step(i, 5, 0.16, 0.4), backL: step(i, 5, 0.18, 0.45), flow: 'out', curl: 1, curlF: 4 + i * 0.8, lift: 0.6, spiky: 0.15, width: 0.75, count: 260, shell: 0.07, front: 0.44 }) },
   { name: 'Afro', make: (i) => ({ afro: step(i, 5, 0.3, 0.62), shell: 0.04, count: 0, front: 0.36, back: -0.42, side: 0.06 }) },
   { name: 'Locs', make: (i) => ({ locs: 1, top: step(i, 5, 0.45, 1.2), sides: step(i, 5, 0.4, 1.1), backL: step(i, 5, 0.5, 1.3), flow: 'down', width: 0.8, count: 90, spiky: 0.1, tie: i === 4 ? 'topbun' : 'none', front: 0.48 }) },
   { name: 'Pixie', make: (i) => ({ top: step(i, 5, 0.25, 0.42), sides: 0.12, backL: 0.12, flow: 'side', sweep: 0.7, fringe: step(i, 5, 0.22, 0.4), spiky: 0.6, count: 300, front: 0.45 }) },

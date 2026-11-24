@@ -1,6 +1,6 @@
 -- Account deletion RPC. Kept separate from the foundation migration because
 -- it deletes from auth.users and needs explicit approval to apply.
--- STATUS: not yet applied to the hosted project.
+-- STATUS: applied to the hosted project (2026-11-24).
 
 -- Deletes the auth user; every user-owned row cascades from auth.users.
 -- ---------------------------------------------------------------------------

@@ -45,14 +45,17 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   player) keep white-on-dark overlays; everything else uses `ink/…` overlays, never `white/…`.
   Navigation: NO tab bar. Home `/` = widget dashboard (`features/home/HomeScreen.tsx`, reorder/hide saved per device);
   side drawer (`components/Drawer.tsx`, menu button in `ScreenHeader`/`MenuButton`, left-edge swipe); camera at `/camera`.
-  Spotlight lands on a ranked list, tap opens the full-screen player. Must not copy Snapchat's layout/IA.
+  Spotlight lands on a ranked list, tap opens the full-screen player.
+  Accent colour is user-selectable (Settings → Theme colour, `lib/accent.ts`): `ember-flame`/`ember-amber`/`bg-ember-gradient`
+  read CSS vars `--accent`/`--accent-from`/`--accent-to` (RGB channels). Never hard-code #3D4FE0 in new UI. Must not copy Snapchat's layout/IA.
 - Avatar v2 (owner wants Snapchat-level depth, ~100 variants per category, all original & free, no brands):
   `features/avatar/look/` = data (`config.ts` Look v2 + v1 migration, `face.ts`/`hair.ts`/`fashion.ts`/`extras.ts`
   100-variant catalogues as families × params, `palettes.ts`, `tube.ts` tapered-strand builder);
   `render/` = `Figure` (body/poses), `Face` (eyes/lids/lashes/brows/nose/lips/ears/beard/makeup), `Hair` (scalp cap +
   hundreds of tapered locks, ombré tips), `Clothes` (lathed garments, `patterns.ts` canvas fabrics), `Accessories`
   (glasses/hats/head add-ons), `Jewelry` (piercings). Editor `AvatarStudio.tsx` (Style / Face & body / Saved tabs,
-  lazy variant thumbnails via one hidden GL canvas in `editor/thumbs.tsx`, colour rail, undo/redo).
+  lazy variant thumbnails via one hidden GL canvas in `editor/thumbs.tsx`, persisted in Cache Storage `snv-thumbs-vN`
+  (bump the version when the renderer's look changes), colour rail, undo/redo).
   Visual check: `npx vite --config vite.avatar-test.config.ts` (port 5199, `?slot=hair&ids=1,2&frame=head`, `?random=8`).
   Keep ≤8 canvases per harness page (swiftshader). Python/sed multi-file edits get blocked by the sandbox classifier — use Edit.
 - Features live in `src/features/<feature>`. Shared libs in `src/lib`. Auth state in `src/providers/AuthProvider.tsx`.
@@ -70,11 +73,10 @@ MCP (`web_fetch_vercel_url`) to verify. No Android SDK locally — Android build
 ## Status (all phases built)
 - Built & pushed: foundation, chat, calls, snaps/editor/filters, avatar studio, stories/streaks/friendship, memories,
   Spotlight, map, AR lenses (MediaPipe), notifications + web push (Edge Function `push`, VAPID in Vault), hardening.
-- Migrations 0100–1500 applied EXCEPT pending owner approval: `20261113000300_account_deletion.sql`,
-  `20261113000500_social_and_chat_removals.sql` (contain DELETE → approval card times out; owner can paste them in the SQL editor).
+- All migrations applied (incl. `20261113000300_account_deletion.sql`, `20261113000500_social_and_chat_removals.sql`, 2026-11-24).
   Never put DELETE statements in new migrations; use soft-delete columns. Avoid UPDATE without WHERE in test SQL.
 - Edge Function `push` (verify_jwt=false by design; validates by id + freshness with service role).
 - Cron jobs: `sumanova-housekeeping` (*/10), `sumanova-streak-reminders` (16:00 UTC).
 - Owner handbook with every manual step: `docs/OWNER_HANDBOOK.txt`.
-- Owner to-dos: Supabase Site URL/redirects, Gmail SMTP + templates, GitHub signing secrets, apply 2 pending SQL files,
+- Owner to-dos: Supabase Site URL/redirects, Gmail SMTP + templates, GitHub signing secrets,
   optional Firebase for closed-app Android push, optional TURN for strict networks.

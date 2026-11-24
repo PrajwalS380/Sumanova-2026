@@ -304,8 +304,9 @@ export function DressGarment({ w, body }: { w: Wear; body: BodyP }) {
 
 export function pantsStyle(cut: string) {
   return {
-    thighR: { 'Skinny jeans': 0.095, 'Baggy jeans': 0.13, 'Wide trousers': 0.13, Cargo: 0.12, Joggers: 0.115, 'Lounge pants': 0.12 }[cut] ?? 0.108,
-    ankleR: { 'Skinny jeans': 0.07, 'Flared jeans': 0.135, 'Baggy jeans': 0.125, 'Wide trousers': 0.145, Joggers: 0.075, Cargo: 0.105, 'Lounge pants': 0.11 }[cut] ?? 0.095,
+    // Always wider than the skin limbs underneath (thigh 0.094, shin 0.08) so skin never pokes through.
+    thighR: { 'Skinny jeans': 0.112, 'Baggy jeans': 0.14, 'Wide trousers': 0.138, Cargo: 0.128, Joggers: 0.122, 'Lounge pants': 0.128 }[cut] ?? 0.118,
+    ankleR: { 'Skinny jeans': 0.092, 'Flared jeans': 0.135, 'Baggy jeans': 0.128, 'Wide trousers': 0.145, Joggers: 0.092, Cargo: 0.11, 'Lounge pants': 0.115 }[cut] ?? 0.1,
     short: cut === 'Shorts',
     cuff: cut === 'Joggers',
     cargo: cut === 'Cargo',

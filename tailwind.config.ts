@@ -15,8 +15,8 @@ export default {
       colors: {
         noir: { DEFAULT: '#F4F6FD', 950: '#FFFFFF', 900: '#F4F6FD', 800: '#FFFFFF', 700: '#EEF1FA', 600: '#E3E8F6', 500: '#D3DAEE' },
         ember: {
-          flame: '#3D4FE0',
-          amber: '#4453E6',
+          flame: 'rgb(var(--accent) / <alpha-value>)',
+          amber: 'rgb(var(--accent) / <alpha-value>)',
           gold: '#C78A0B',
           rose: '#E5487F',
           peach: '#FF9EC0',
@@ -35,12 +35,12 @@ export default {
       },
       borderRadius: { '4xl': '2rem', '5xl': '2.5rem' },
       boxShadow: {
-        glass: '0 1px 0 0 rgba(255,255,255,0.9) inset, 0 18px 40px -22px rgba(61,79,224,0.35)',
-        glow: '0 12px 30px -12px rgba(61,79,224,0.55)',
+        glass: '0 1px 0 0 rgba(255,255,255,0.9) inset, 0 18px 40px -22px rgb(var(--accent) / 0.35)',
+        glow: '0 12px 30px -12px rgb(var(--accent) / 0.55)',
         card: '0 1px 0 0 rgba(255,255,255,0.9) inset, 0 12px 30px -20px rgba(30,42,74,0.35)',
       },
       backgroundImage: {
-        'ember-gradient': 'linear-gradient(115deg, #6E7BFF 0%, #3D4FE0 48%, #8E5BEA 100%)',
+        'ember-gradient': 'linear-gradient(115deg, rgb(var(--accent-from)) 0%, rgb(var(--accent)) 48%, rgb(var(--accent-to)) 100%)',
         'pearl-sheen': 'conic-gradient(from 210deg, #9FB8FF, #FFB3D9, #A8F0DC, #C9B6FF, #9FB8FF)',
       },
       keyframes: {

@@ -1,6 +1,6 @@
 -- SUMANOVA Phase 2 (part 2): functions and policies that remove rows.
 -- Split out because statements containing DELETE need explicit owner approval to apply.
--- STATUS: not yet applied to the hosted project.
+-- STATUS: applied to the hosted project (2026-11-24).
 
 create or replace function public.remove_friend(p_user uuid)
 returns void language plpgsql security definer set search_path = '' as $$

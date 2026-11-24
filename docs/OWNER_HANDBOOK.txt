@@ -68,23 +68,11 @@ lands in spam. Use a free Gmail account instead (~500 emails/day).
  Alternative without Gmail: Brevo free (300/day): host smtp-relay.brevo.com,
  port 587, login + SMTP key from Brevo -> "SMTP & API".
 
-STEP 4. Apply the 2 pending database files  (3 min)
----------------------------------------------------
-These contain "delete" statements, so Supabase asks for approval and the
-approval card kept timing out. Paste them yourself — it is safe; they only
-CREATE functions (nothing is deleted when you run them).
- For EACH file below:
-   a. Open it on GitHub (branch SUM-202601), tap the copy icon.
-   b. Open https://supabase.com/dashboard/project/wssfbcscijpwfohhkerz/sql/new
-   c. Paste -> Run -> if asked "destructive operation?", confirm.
-   d. You should see "Success. No rows returned".
- Files:
-   supabase/migrations/20261113000300_account_deletion.sql
-       -> enables Settings > "Delete my account"
-   supabase/migrations/20261113000500_social_and_chat_removals.sql
-       -> enables Remove friend, Block/Unblock, Leave group, Delete group,
-          Delete message for everyone
- Until you do this, those buttons show "still being enabled".
+STEP 4. Database files  (DONE - nothing to do)
+----------------------------------------------
+Both extra database files (account deletion; remove friend / block /
+leave group / delete group / delete message) were applied on 2026-11-24.
+Those buttons work now.
 
 STEP 5. Install on your Android phone  (3 min)
 ----------------------------------------------
@@ -208,7 +196,7 @@ FULLY WORKING (built and tested; real-device testing is your next step)
 
 PARTIALLY WORKING / NEEDS YOUR ACTION
  - Block, unblock, remove friend, leave/delete group, delete message,
-   delete account: built — enable with PART 1 STEP 4.
+   delete account: built and enabled.
  - Emails: work now but slow/limited until PART 1 STEP 3.
  - Android notifications when the APK is FULLY CLOSED: needs Firebase
    (optional, PART 6). Today the APK notifies while open or in the
@@ -265,8 +253,8 @@ PART 7 — TROUBLESHOOTING
                                 signing key changes), then install.
 "Push not arriving"          -> Settings in app -> Push ON; browser site
                                 settings -> Notifications allowed.
-"Button says still being     -> PART 1 STEP 4.
- enabled"
+"Button says still being     -> Update the app (newest release / refresh
+ enabled"                       the website) — the database side is done.
 "Lenses not loading"         -> needs internet the first time (downloads
                                 the face-tracking model, then cached).
 
