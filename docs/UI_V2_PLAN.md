@@ -8,15 +8,15 @@ This supersedes the earlier "no tab bar / widget dashboard / drawer" decision.
 Tick each box when done (commit after each phase; keep CI green; deploy to Vercel after each phase).
 
 ## Phase 1 — Navigation shell
-- [ ] `components/BottomDock.tsx`: 5 tabs Map `/map` · Chat `/chat` · Camera `/` · Stories `/stories` · Spotlight `/spotlight`.
+- [x] `components/BottomDock.tsx`: 5 tabs Map `/map` · Chat `/chat` · Camera `/` · Stories `/stories` · Spotlight `/spotlight`.
       Active tab = indigo icon in a pale pill + label; dark translucent variant on camera/spotlight.
-- [ ] `/` = camera (CameraScreen) inside the shell with the dock; widget HomeScreen + Drawer + MenuButton removed
+- [x] `/` = camera (CameraScreen) inside the shell with the dock; widget HomeScreen + Drawer + MenuButton removed
       (old routes such as /home redirect to /). Memories reachable from the camera (grid button left of shutter).
-- [ ] `components/TopBar.tsx`: left = my avatar FACE button (→ /profile) + search circle; centred title;
+- [ ] (partly: MeButton face replaces the old menu button in ScreenHeader, Camera, Map, Spotlight) `components/TopBar.tsx`: left = my avatar FACE button (→ /profile) + search circle; centred title;
       right = add-friend (→ /friends/add or existing add screen) + one screen-specific action.
       Used on Chat, Stories, Map (floating, white buttons), Spotlight/Camera (dark translucent buttons).
 - [ ] Notifications reachable: bell in Chat top bar right slot + row on Profile.
-- [ ] Update nav tests.
+- [x] Update nav tests.
 
 ## Phase 2 — Avatar faces everywhere
 - [ ] Saving in the avatar studio ALWAYS publishes two PNGs: face/bust → `profiles.avatar_url`,

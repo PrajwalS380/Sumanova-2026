@@ -9,10 +9,9 @@ import { AppShell } from '@/components/AppShell';
 import { ScreenLoader } from '@/components/ScreenLoader';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import HomeScreen from '@/features/home/HomeScreen';
 import { ROOTS } from '@/components/nav';
 
-// Everything except the home dashboard is code-split.
+// Every screen is code-split.
 const CameraScreen = lazy(() => import('@/features/camera/CameraScreen'));
 const SignInPage = lazy(() => import('@/features/auth/SignInPage'));
 const SignUpPage = lazy(() => import('@/features/auth/SignUpPage'));
@@ -90,8 +89,8 @@ export default function App() {
           <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
           <Route path="/auth/reset" element={<ResetPasswordPage />} />
           <Route element={<RequireAuth><InboxProvider><NotificationsProvider><CallProvider><AppShell /></CallProvider></NotificationsProvider></InboxProvider></RequireAuth>}>
-            <Route index element={<HomeScreen />} />
-            <Route path="camera" element={<CameraScreen />} />
+            <Route index element={<CameraScreen />} />
+            <Route path="camera" element={<Navigate to="/" replace />} />
             <Route path="chat" element={<ChatListScreen />} />
             <Route path="chat/:id" element={<ChatThreadScreen />} />
             <Route path="chat/:id/info" element={<ChatInfoScreen />} />

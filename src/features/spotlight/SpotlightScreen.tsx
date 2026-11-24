@@ -1,4 +1,4 @@
-import { MenuButton } from '@/components/MenuButton';
+import { MeButton } from '@/components/MeButton';
 import { AppBackground } from '@/components/AppBackground';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -228,7 +228,7 @@ function ChartList({ videos, category, setCategory, query, setQuery, onOpen, onI
       <AppBackground />
       <div className="sticky top-0 z-10 bg-gradient-to-b from-noir via-noir/90 to-transparent px-4 pb-3 pt-safe">
         <div className="flex items-center gap-2.5">
-          <MenuButton />
+          <MeButton />
           <h1 className="flex-1 font-display text-[32px] leading-tight">Spotlight</h1>
           <button onClick={onInterests} aria-label="Interests" className="glass grid h-10 w-10 place-items-center rounded-2xl"><SlidersHorizontal className="h-5 w-5" /></button>
           <button onClick={onUpload} aria-label="Post a video" className="grid h-10 w-10 place-items-center rounded-2xl bg-ember-gradient text-white shadow-glow"><Plus className="h-5 w-5" /></button>

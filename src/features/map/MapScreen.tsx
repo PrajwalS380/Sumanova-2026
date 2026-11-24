@@ -1,4 +1,4 @@
-import { MenuButton } from '@/components/MenuButton';
+import { MeButton } from '@/components/MeButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
@@ -196,7 +196,7 @@ export default function MapScreen() {
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] bg-gradient-to-b from-noir/90 to-transparent px-4 pb-10 pt-safe">
         <div className="pointer-events-auto flex items-center gap-2">
-          <MenuButton />
+          <MeButton />
           <h1 className="flex-1 font-display text-[32px] leading-tight">Map</h1>
           <button onClick={() => void locate()} className="glass grid h-11 w-11 place-items-center rounded-full" aria-label="Find me"><LocateFixed className="h-5 w-5" /></button>
         </div>
@@ -210,7 +210,7 @@ export default function MapScreen() {
       </div>
 
       {/* Floating widget card: who's out + your sharing control */}
-      <div className="absolute inset-x-3 bottom-[max(1rem,var(--safe-bottom))] z-[500]">
+      <div className="absolute inset-x-3 bottom-[calc(84px+var(--safe-bottom)+0.75rem)] z-[500]">
         <div className="glass-strong rounded-[26px] p-4">
           <div className="flex items-center justify-between">
             <p className="eyebrow">Out right now · {friendsOnMap.length}</p>
