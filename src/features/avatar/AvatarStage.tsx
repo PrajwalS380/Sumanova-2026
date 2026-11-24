@@ -15,7 +15,7 @@ export type Framing = 'full' | 'head' | 'upper' | 'feet';
 const FRAMES: Record<Framing, { pos: [number, number, number]; target: [number, number, number] }> = {
   full: { pos: [0, 1.42, 5.6], target: [0, 1.26, 0] },
   head: { pos: [0, 2.12, 2.3], target: [0, 2.05, 0] },
-  upper: { pos: [0, 1.9, 3.6], target: [0, 1.72, 0] },
+  upper: { pos: [0, 1.95, 3.7], target: [0, 1.78, 0] },
   feet: { pos: [0, 0.55, 2.6], target: [0, 0.35, 0] },
 };
 

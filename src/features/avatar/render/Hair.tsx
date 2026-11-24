@@ -27,7 +27,7 @@ export function Hair({ h, p, color, tip, seed, hatOn }: { h: HeadShape; p: HairP
       )}
       {geo.locks && (
         <mesh geometry={geo.locks} castShadow>
-          <meshPhysicalMaterial vertexColors roughness={0.42} sheen={0.35} sheenRoughness={0.4} sheenColor={sheen} side={THREE.DoubleSide} />
+          <meshPhysicalMaterial vertexColors roughness={0.5} sheen={0.5} sheenRoughness={0.3} sheenColor={sheen} clearcoat={0.25} clearcoatRoughness={0.35} side={THREE.DoubleSide} />
         </mesh>
       )}
       {geo.extras.map((e, i) => (
@@ -48,9 +48,15 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
   const root = new THREE.Color(color);
   const tipC = tip ? new THREE.Color(tip) : root.clone().lerp(new THREE.Color('#ffffff'), 0.08);
   const mask = (uy: number, az: number) => {
-    const line = hairline(az, p.front, p.back, p.side);
+    // natural hairline: recessed temples + a soft centre point instead of a straight "bowl" edge
+    const temple = p.fringe > 0 ? 0 : 0.09 * Math.exp(-(((Math.abs(az) - 0.62) / 0.2) ** 2)) - 0.035 * Math.exp(-((az / 0.16) ** 2));
+    const line = hairline(az, p.front, p.back, p.side) + temple;
     return smooth(line - 0.05, line + 0.05, uy);
   };
+  // Sculpted look: a few dozen broad, overlapping clumps over a thick cap read as a
+  // solid, stylised hairdo (cartoon-film style) instead of hundreds of thin strands.
+  const sculpt = !p.locs;
+  const capPad = sculpt && p.count > 0 ? 0.03 : 0;
   const isUndercut = (uy: number, az: number) => p.undercut > 0 && Math.abs(az) > 0.75 && Math.abs(az) < 2.7 && uy < 0.42 + (1 - p.undercut) * -0.25;
 
   // 1. Base cap
@@ -62,9 +68,12 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
       return 0.985 + (0.015 + afro * (0.75 + 0.25 * uy) + 0.045 * wobble(ux, uy, uz, 2.4) + 0.02 * wobble(uz, ux, uy, 5)) * m;
     }
     const m = mask(uy, az);
-    let off = hatOn ? Math.min(p.shell, 0.03) : p.shell;
+    // smooth crown volume: the top of a sculpted style is one clean mass, not loose bits
+    let off = hatOn ? Math.min(p.shell, 0.03) : p.shell + capPad + (sculpt && p.count > 0 ? 0.05 * smooth(0.25, 0.95, uy) * Math.min(1, p.top / 0.4) * (1 + p.lift * 0.6) : 0);
     if (isUndercut(uy, az)) off = 0.004;
-    return 0.985 + (off + 0.015) * m;
+    // soft comb grooves running with the flow give the sculpted mass its texture
+    const groove = sculpt && p.count > 0 && !hatOn ? 0.009 * Math.sin(az * (p.flow === 'side' || p.flow === 'part' ? 11 : 15) + uy * 2.5 + (p.part || 0) * 4) * smooth(-0.2, 0.5, uy) : 0;
+    return 0.985 + (off + 0.015 + groove) * m;
   }, 96, 64);
   const fade = p.undercut > 0 ? shellGeometry(h, (_ux, uy, _uz, az) => {
     const m = mask(uy, az) * (isUndercut(uy, az) ? 1 : 0);
@@ -79,7 +88,8 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
     tmp.copy(pt).normalize();
     return deform(h, tmp.x, tmp.y, tmp.z, new THREE.Vector3()).length();
   };
-  const count = hatOn ? Math.min(p.count, 120) : p.count;
+  const rawCount = sculpt && p.count > 0 ? Math.round(p.count * 0.24) + 18 : p.count;
+  const count = hatOn ? Math.min(rawCount, sculpt ? 40 : 120) : rawCount;
   const golden = Math.PI * (3 - Math.sqrt(5));
   const N = count * 3;
   let made = 0;
@@ -92,18 +102,23 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
     const az = Math.atan2(ux, uz);
     if (mask(uy, az) < 0.6 || isUndercut(uy, az)) continue;
     if (hatOn && uy > 0.25) continue;
+    const smoothCrown = sculpt && p.flow !== 'up' && p.flow !== 'out' && p.curl < 0.5;
+    if (smoothCrown && uy > 0.66) continue;
     made++;
     const a = Math.abs(az) / Math.PI; // 0 front … 1 back
     const frontness = Math.max(0, 1 - a * 2.2) * smooth(0.95, 0.55, uy);
     const sideness = Math.sin(Math.PI * a) * smooth(0.6, 0.1, uy);
     let L = p.top * (1 - a) * (uy > 0.4 ? 1 : 0.7) + p.backL * a + p.sides * sideness;
     if (p.fringe > 0) L = Math.max(L * (1 - frontness), p.fringe * frontness + L * (1 - frontness));
+    // short hair on sculpted styles is carried by the cap itself (clean, no frilly ring)
+    const smoothShort = smoothCrown && L < 0.4 && !(p.fringe > 0 && frontness > 0.4) && p.spiky < 0.7;
+    if (smoothShort) continue;
     if (p.layers) L *= 0.55 + 0.45 * r() + 0.2 * p.layers * (1 - uy);
-    L *= 0.85 + 0.3 * r();
+    L *= sculpt ? 0.94 + 0.12 * r() : 0.85 + 0.3 * r();
     if (hatOn) L = Math.min(L, Math.max(p.sides, 0.12));
     L *= h.rx; // scale with head size
 
-    deform(h, ux, uy, uz, v, 1 + p.shell * 0.6);
+    deform(h, ux, uy, uz, v, 1 + (p.shell + capPad) * 0.6);
     nrm.set(ux, uy, uz).normalize();
     // tangent pointing "backwards" around the head (toward az = π) and sideways (toward ±x)
     const tBack = new THREE.Vector3(ux * uy, -(1 - uy * uy), uz * uy); // downhill on sphere
@@ -179,7 +194,7 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
         }
       }
       // keep outside the scalp
-      const minR = surfR(cur) * (1.015 + p.shell * 0.4);
+      const minR = surfR(cur) * (1.015 + (p.shell + capPad) * 0.6);
       const len = cur.length();
       if (len < minR && cur.y > -h.ry * 0.85) cur.multiplyScalar(minR / len);
       // keep long hair off the shoulders/neck
@@ -194,7 +209,7 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
       }
       pts.push(cur.clone());
     }
-    const w = (p.locs ? 0.1 : 0.15) * p.width * h.rx * (0.75 + 0.5 * r()) * (p.locs ? 1 : 0.5 + 0.5 * Math.min(1, L / (0.45 * h.rx)));
+    const w = (p.locs ? 0.1 : 0.15 * 2.7) * p.width * h.rx * (sculpt ? 0.88 + 0.24 * r() : 0.75 + 0.5 * r()) * (p.locs ? 1 : 0.5 + 0.5 * Math.min(1, L / (0.45 * h.rx)));
     const tipK = p.locs ? 0.75 : 1 - p.spiky * 0.95;
     const jitter = 0.94 + r() * 0.12;
     const rootJ = root.clone().multiplyScalar(jitter);
@@ -202,10 +217,11 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
     locks.push(
       taperTube(pts, {
         radius: (t) => w * (1 - (1 - tipK) * Math.pow(t, 1.3)) * (t < 0.08 ? 0.6 + t * 5 : 1),
-        flat: p.locs || p.curl > 0.8 ? 1 : 0.42,
-        radial: p.locs ? 6 : 5,
+        flat: p.locs ? 1 : p.curl > 0.8 ? 0.9 : 0.6,
+        radial: p.locs ? 6 : 9,
         segments: p.curl > 0.8 ? steps * 3 : 14,
-        color: (t) => rootJ.clone().lerp(tipJ, smooth(0.35, 1, t)),
+        // darker roots fake the soft occlusion between clumps → reads as one sculpted mass
+        color: (t) => (t < 0.3 ? rootJ.clone().multiplyScalar(0.72 + 0.28 * smooth(0, 0.3, t)) : rootJ.clone().lerp(tipJ, smooth(0.35, 1, t))),
         hint: (pt, out) => out.copy(pt).normalize(),
       }),
     );
@@ -302,7 +318,7 @@ export function buildHair(h: HeadShape, p: HairP, color: string, tip: string | n
   }
   if (p.locs && p.tie === 'topbun') addLump(new THREE.Vector3(0, h.ry * 1.05, -h.rz * 0.2), 0.11);
 
-  const shellColor = '#' + root.clone().multiplyScalar(0.9).getHexString();
+  const shellColor = '#' + root.clone().multiplyScalar(0.72).getHexString();
   const locksGeo = mergeAll(locks);
   return { shell: p.count === 0 && afro === 0 && p.shell < 0.02 ? shell : shell, shellColor, fade, locks: locksGeo, extras };
 }
