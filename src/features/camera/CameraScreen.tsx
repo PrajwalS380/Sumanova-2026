@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { MeButton } from '@/components/MeButton';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, UserPlus, CameraOff, Images, ImagePlus, Loader2, RefreshCw, ScanFace, Settings2, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
+import { Bell, UserPlus, CameraOff, Images, ImagePlus, Loader2, RefreshCw, ScanFace, Search, Settings2, Smile, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
 import { LENSES } from './lenses';
 import { useLens } from './useLens';
 import { useNotificationsOptional } from '@/providers/NotificationsProvider';
@@ -173,39 +173,41 @@ export default function CameraScreen() {
         )}
       </AnimatePresence>
 
-      {/* Top bar */}
-      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between bg-gradient-to-b from-black/50 to-transparent px-4 pb-10 pt-safe">
-        <div className="flex items-center gap-2">
-          <MeButton size={44} className="shrink-0 rounded-full ring-2 ring-white/30" />
-          <Link to="/friends" aria-label="Add friends" className="grid h-11 w-11 place-items-center rounded-full bg-black/25 text-white ring-1 ring-white/10 backdrop-blur-md active:scale-90">
-            <UserPlus className="h-5 w-5" />
-          </Link>
-          <Link to="/notifications" aria-label={`Activity${unreadActivity ? `, ${unreadActivity} new` : ''}`} className="relative grid h-11 w-11 place-items-center rounded-full bg-black/25 text-white ring-1 ring-white/10 backdrop-blur-md active:scale-90">
-            <Bell className="h-5 w-5" />
-            {unreadActivity > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-ember-rose px-1 text-[10px] font-bold">{unreadActivity > 9 ? '9+' : unreadActivity}</span>}
-          </Link>
-        </div>
-        <div className="flex flex-col gap-2 rounded-full bg-black/25 p-1.5 ring-1 ring-white/10 backdrop-blur-md">
-          {cam.hasMultiple && (
-            <CamButton label="Switch camera" onClick={cam.flip} disabled={recorder.recording}>
-              <SwitchCamera className="h-5 w-5" />
-            </CamButton>
-          )}
-          {cam.caps.torch && (
-            <CamButton label={cam.torch ? 'Flash off' : 'Flash on'} onClick={() => cam.setTorch(!cam.torch)} active={cam.torch}>
-              {cam.torch ? <Zap className="h-5 w-5" /> : <ZapOff className="h-5 w-5" />}
-            </CamButton>
-          )}
-          <CamButton label={`Timer ${timer ? `${timer}s` : 'off'}`} onClick={() => setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length])} active={timer > 0}>
-            <span className="relative">
-              <Timer className="h-5 w-5" />
-              {timer > 0 && <span className="absolute -right-2 -top-2 rounded-full bg-ember-flame px-1 text-[9px] font-bold">{timer}</span>}
-            </span>
-          </CamButton>
-          <Link to="/settings" aria-label="Settings" className="grid h-10 w-10 place-items-center rounded-full text-white active:scale-90">
-            <Settings2 className="h-5 w-5" />
-          </Link>
-        </div>
+      {/* Top bar (wireframe 1): my face, search, activity · add friend, flip */}
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2.5 px-3.5 pt-safe">
+        <MeButton size={44} className="shrink-0 rounded-full" />
+        <Link to="/friends" aria-label="Search people" className={TOP}>
+          <Search className="h-[22px] w-[22px]" />
+        </Link>
+        <Link to="/notifications" aria-label={`Activity${unreadActivity ? `, ${unreadActivity} new` : ''}`} className={cn(TOP, 'relative')}>
+          <Bell className="h-[22px] w-[22px]" />
+          {unreadActivity > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-ember-flame px-1 text-[10px] font-bold">{unreadActivity > 9 ? '9+' : unreadActivity}</span>}
+        </Link>
+        <span className="flex-1" />
+        <Link to="/friends" aria-label="Add friends" className={TOP}>
+          <UserPlus className="h-[22px] w-[22px]" />
+        </Link>
+        {cam.hasMultiple && (
+          <button onClick={() => { haptic(6); cam.flip(); }} disabled={recorder.recording} aria-label="Flip camera" className={cn(TOP, 'disabled:opacity-40')}>
+            <SwitchCamera className="h-[22px] w-[22px]" />
+          </button>
+        )}
+      </div>
+
+      {/* Right tool rail */}
+      <div className="absolute right-3.5 top-[calc(var(--safe-top)+62px)] z-10 flex flex-col gap-2.5">
+        {cam.caps.torch && (
+          <button onClick={() => { haptic(6); cam.setTorch(!cam.torch); }} aria-label={cam.torch ? 'Flash off' : 'Flash on'} aria-pressed={cam.torch} className={cn(TOP, cam.torch && 'bg-white/30')}>
+            {cam.torch ? <Zap className="h-[22px] w-[22px]" /> : <ZapOff className="h-[22px] w-[22px]" />}
+          </button>
+        )}
+        <button onClick={() => { haptic(6); setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length]); }} aria-label={`Timer ${timer ? `${timer}s` : 'off'}`} aria-pressed={timer > 0} className={cn(TOP, 'relative', timer > 0 && 'bg-white/30')}>
+          <Timer className="h-[22px] w-[22px]" />
+          {timer > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-ember-flame px-1 text-[9px] font-bold">{timer}</span>}
+        </button>
+        <Link to="/settings" aria-label="Camera settings" className={TOP}>
+          <Settings2 className="h-[22px] w-[22px]" />
+        </Link>
       </div>
 
       {/* Zoom */}
@@ -234,13 +236,14 @@ export default function CameraScreen() {
         ))}
       </div>
 
-      {/* Capture row */}
-      <div className="absolute inset-x-0 bottom-[calc(84px+var(--safe-bottom)+1.25rem)] z-10 flex items-center justify-center gap-10">
-        <div className="flex flex-col gap-2">
-          <Link to="/memories" aria-label="Memories" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
-            <Images className="h-5 w-5" />
-          </Link>
-        </div>
+      {/* Capture row (wireframe 1): memories · gallery · shutter · lenses · lens off */}
+      <div className="absolute inset-x-0 bottom-[calc(84px+var(--safe-bottom)+1.5rem)] z-10 flex items-center justify-center gap-3.5">
+        <Link to="/memories" aria-label="Memories" className={BOTTOM}>
+          <Images className="h-[22px] w-[22px]" />
+        </Link>
+        <button onClick={() => gallery.current?.click()} aria-label="Upload from gallery" className="grid h-[46px] w-[46px] place-items-center rounded-full border-2 border-white/70 bg-gradient-to-br from-[#ffb3d9] to-[#9fb8ff] text-white active:scale-90">
+          <ImagePlus className="h-5 w-5" />
+        </button>
         <button
           onPointerDown={(e) => { e.stopPropagation(); onShutterDown(); }}
           onPointerUp={(e) => { e.stopPropagation(); onShutterUp(); }}
@@ -248,28 +251,27 @@ export default function CameraScreen() {
           onContextMenu={(e) => e.preventDefault()}
           disabled={cam.status !== 'live' || countdown > 0}
           aria-label="Tap for photo, hold for video"
-          className="group relative grid h-20 w-20 touch-none select-none place-items-center rounded-full disabled:opacity-40"
+          className="group relative grid h-[82px] w-[82px] touch-none select-none place-items-center rounded-full disabled:opacity-40"
         >
-          <motion.span animate={{ scale: recorder.recording ? 1.25 : 1 }} className={cn('absolute inset-0 rounded-full', recorder.recording ? '' : 'ring-ember opacity-90')} />
+          <motion.span animate={{ scale: recorder.recording ? 1.2 : 1 }} className="absolute inset-0 rounded-full border-[6px] border-white" />
           {recorder.recording && (
             <svg className="absolute inset-[-10px] h-[calc(100%+20px)] w-[calc(100%+20px)] -rotate-90" viewBox="0 0 100 100" aria-hidden>
               <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="5" />
               <circle cx="50" cy="50" r="46" fill="none" stroke="#fb7185" strokeWidth="5" strokeLinecap="round" strokeDasharray={289} strokeDashoffset={289 * (1 - recProgress)} />
             </svg>
           )}
-          <span className="absolute inset-[4px] rounded-full bg-black/40 backdrop-blur-sm" />
-          <motion.span animate={{ scale: recorder.recording ? 0.55 : 1, borderRadius: recorder.recording ? '30%' : '50%' }} className={cn('absolute inset-[9px]', recorder.recording ? 'bg-ember-rose' : 'bg-white')} />
+          <span className="absolute inset-[6px] rounded-full bg-white/[0.08]" />
+          {recorder.recording && <motion.span initial={{ scale: 0.4 }} animate={{ scale: 0.55 }} className="absolute inset-[9px] rounded-[30%] bg-ember-rose" />}
         </button>
-        <div className="flex gap-2">
-          <button onClick={() => setLensTray((v) => !v)} aria-label="Face lenses" aria-pressed={lensTray} className={cn('grid h-12 w-12 place-items-center rounded-2xl ring-1 backdrop-blur-md active:scale-90', lensTray || lensId ? 'bg-ember-gradient text-noir ring-transparent' : 'bg-black/30 ring-white/15')}>
-            <ScanFace className="h-5 w-5" />
-          </button>
-          <button onClick={() => gallery.current?.click()} aria-label="Upload from gallery" className="grid h-12 w-12 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md active:scale-90">
-            <ImagePlus className="h-5 w-5" />
-          </button>
-        </div>
+        <button onClick={() => setLensTray((v) => !v)} aria-label="Face lenses" aria-pressed={lensTray} className={cn('grid h-[46px] w-[46px] place-items-center rounded-full border-2 border-white/70 bg-gradient-to-br from-[#a8f0dc] to-[#c9b6ff] text-white active:scale-90', (lensTray || lensId) && 'ring-2 ring-white')}>
+          <ScanFace className="h-5 w-5" />
+        </button>
+        <button onClick={() => { setLensId(null); setLensTray(false); }} aria-label="Lenses off" disabled={!lensId} className={cn(BOTTOM, 'disabled:opacity-40')}>
+          <Smile className="h-[22px] w-[22px]" />
+        </button>
         <input ref={gallery} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => { onPick(e.target.files?.[0]); e.target.value = ''; }} />
       </div>
+      <p className="pointer-events-none absolute inset-x-0 bottom-[calc(84px+var(--safe-bottom)+0.25rem)] z-10 text-center text-xs font-bold text-white/80">Tap for photo · hold for video</p>
 
       <AnimatePresence>
         {captured && (
@@ -282,13 +284,9 @@ export default function CameraScreen() {
   );
 }
 
-function CamButton({ children, label, onClick, active, disabled }: { children: React.ReactNode; label: string; onClick: () => void; active?: boolean; disabled?: boolean }) {
-  return (
-    <button onClick={() => { haptic(6); onClick(); }} disabled={disabled} aria-label={label} aria-pressed={active} className={cn('grid h-10 w-10 place-items-center rounded-full text-white transition-colors active:scale-90 disabled:opacity-40', active && 'bg-white/20')}>
-      {children}
-    </button>
-  );
-}
+const TOP = 'grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white active:scale-90';
+const BOTTOM = 'grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.16] text-white active:scale-90';
+
 
 function CameraState({ status, onRetry }: { status: string; onRetry: () => void }) {
   const copy: Record<string, { title: string; body: string }> = {
