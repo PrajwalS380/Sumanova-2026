@@ -37,14 +37,19 @@ You received a private file: SUMANOVA-signing-key-PRIVATE.txt
  uninstall the old SUMANOVA app once before installing it. After that,
  updates install directly.
 
-STEP 2. Supabase sign-in URLs  (2 min)
+NOTE (2026-11-24): Sign-up no longer needs email. New accounts are created
+instantly by the Edge Function "signup", so STEPS 2 and 3 are OPTIONAL.
+Without STEP 3, "Forgot password" emails only reach your own Supabase
+team email address.
+
+STEP 2. Supabase sign-in URLs  (2 min, optional)
 --------------------------------------
  1. Open https://supabase.com/dashboard/project/wssfbcscijpwfohhkerz/auth/url-configuration
  2. Site URL:            https://sumanova.vercel.app
  3. Redirect URLs (Add): https://sumanova.vercel.app/**
  4. Save.
 
-STEP 3. Reliable emails (sign-up & password-reset codes)  (10 min)
+STEP 3. Reliable emails (password-reset codes)  (10 min, optional)
 ------------------------------------------------------------------
 Supabase's built-in email sends only a few emails per hour and often
 lands in spam. Use a free Gmail account instead (~500 emails/day).

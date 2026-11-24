@@ -47,25 +47,28 @@ export default function SignUpPage() {
     }
     if (!validateStep(1)) return;
     setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: form.email.trim(),
-      password: form.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: {
-          username: form.username.trim().toLowerCase(),
-          display_name: form.displayName.trim(),
-          date_of_birth: form.dateOfBirth,
-        },
-      },
+    const email = form.email.trim();
+    // Instant sign-up: the `signup` Edge Function creates a ready-to-use account
+    // (no email code needed), then we sign straight in.
+    const { data: made, error: fnErr } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>('signup', {
+      body: { email, password: form.password, username: form.username.trim().toLowerCase(), display_name: form.displayName.trim(), date_of_birth: form.dateOfBirth },
     });
-    setBusy(false);
-    if (error) {
-      setErrors({ form: friendlyAuthError(error.message) });
-      if (error.message.toLowerCase().includes('database error')) setStep(0);
+    if (fnErr || !made?.ok) {
+      setBusy(false);
+      let msg = made?.error;
+      const ctx = (fnErr as { context?: Response } | null)?.context;
+      if (!msg && ctx && typeof ctx.json === 'function') msg = ((await ctx.json().catch(() => null)) as { error?: string } | null)?.error;
+      setErrors({ form: msg ?? 'Couldn’t reach SUMANOVA — check your connection and try again.' });
+      if (msg?.toLowerCase().includes('username')) setStep(0);
       return;
     }
-    if (!data.session) setSentTo(form.email.trim());
+    const { error } = await supabase.auth.signInWithPassword({ email, password: form.password });
+    setBusy(false);
+    if (error) {
+      // Account exists but needs confirming (only if email confirmation is switched back on later).
+      if (error.message.toLowerCase().includes('confirm')) return setSentTo(email);
+      setErrors({ form: friendlyAuthError(error.message) });
+    }
   }
 
   if (sentTo) return <VerifyEmailStep email={sentTo} onBack={() => setSentTo(null)} />;

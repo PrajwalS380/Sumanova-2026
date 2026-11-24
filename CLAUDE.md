@@ -62,7 +62,11 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   Visual check: `npx vite --config vite.avatar-test.config.ts` (`?presets=1&n=8`) (port 5199, `?slot=hair&ids=1,2&frame=head`, `?random=8`).
   Keep ≤8 canvases per harness page (swiftshader). Python/sed multi-file edits get blocked by the sandbox classifier — use Edit.
 - Features live in `src/features/<feature>`. Shared libs in `src/lib`. Auth state in `src/providers/AuthProvider.tsx`.
-- Auth uses **6-digit email OTP** (`verifyOtp` types `signup`/`recovery`) so it works in APK/iOS/web without deep links.
+- Sign-up is **instant** (owner chose, 2026-11-24): Edge Function `signup` (verify_jwt=false) re-validates input, caps 30
+  sign-ups/hour, and creates a confirmed user via the service role; the client then signs in with the password. The free
+  built-in mailer only reaches team emails, so password reset uses 6-digit email OTP (`verifyOtp` type `recovery`) and
+  only works for everyone once custom SMTP is set (owner step, optional). Owner declined adding api.supabase.com to the
+  session network; don't re-propose it.
 - DB: migrations in `supabase/migrations/` (timestamped). Apply via Supabase MCP `apply_migration` with the same SQL.
   RLS on every table; verify with rolled-back SQL tests in `supabase/tests/`. Statements that delete from `auth.users`
   trigger an approval prompt the owner often misses — keep such statements in separate small migrations.
@@ -81,5 +85,5 @@ MCP (`web_fetch_vercel_url`) to verify. No Android SDK locally — Android build
 - Edge Function `push` (verify_jwt=false by design; validates by id + freshness with service role).
 - Cron jobs: `sumanova-housekeeping` (*/10), `sumanova-streak-reminders` (16:00 UTC).
 - Owner handbook with every manual step: `docs/OWNER_HANDBOOK.txt`.
-- Owner to-dos: Supabase Site URL/redirects, Gmail SMTP + templates, GitHub signing secrets,
+- Owner to-dos (all optional for testing): Gmail SMTP + templates (password reset for everyone), Site URL, GitHub signing secrets,
   optional Firebase for closed-app Android push, optional TURN for strict networks.
