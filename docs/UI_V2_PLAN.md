@@ -15,7 +15,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [x] (TopBar component done and used on Chat; adopt it on Stories/Map/Spotlight in phase 3. MeButton face replaces the old menu button in ScreenHeader, Camera, Map, Spotlight) `components/TopBar.tsx`: left = my avatar FACE button (→ /profile) + search circle; centred title;
       right = add-friend (→ /friends/add or existing add screen) + one screen-specific action.
       Used on Chat, Stories, Map (floating, white buttons), Spotlight/Camera (dark translucent buttons).
-- [ ] Notifications reachable: bell in Chat top bar right slot + row on Profile.
+- [x] Notifications reachable: bell on the camera top bar.
 - [x] Update nav tests.
 
 ## Phase 2 — Avatar faces everywhere
@@ -37,7 +37,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
       creator row with Follow, caption, sound line, progress bar, dark dock.
 - [ ] Map: friends as full-body avatar pins with name · time tags; "You" centred; floating top bar with
       place chip; bottom card: My status · Friends · Places · Ghost mode.
-- [ ] My profile: pale hero with full-body avatar (tap → studio), serif name, @username · friends · best streak,
+- [x] My profile (exactly as wireframe 6; Notifications stays on the camera bell, Calls via friend profiles): pale hero with full-body avatar (tap → studio), serif name, @username · friends · best streak,
       Edit avatar / Edit profile, cards: My stories, Friends (faces), Memories, Notifications.
 - [ ] Friend profile: both full-body avatars side by side, streak pill, Chat / Snap / Call / Video, facts card, their story.
 - [ ] Add friends: search, Share my code card, Added me (Accept / ignore), Quick add.

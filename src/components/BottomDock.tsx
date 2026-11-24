@@ -31,7 +31,7 @@ export const BottomDock = memo(function BottomDock() {
             aria-current={on ? 'page' : undefined}
             className={cn('flex flex-1 flex-col items-center gap-0.5 pt-2 text-[11px] font-bold', on ? (dark ? 'text-white' : 'text-ember-flame') : dark ? 'text-white/70' : 'text-ink-mute')}
           >
-            <span className={cn('relative grid h-[30px] w-12 place-items-center rounded-full transition-colors', on && (dark ? 'bg-white/20' : 'bg-ember-flame/12'))}>
+            <span className={cn('relative grid h-[30px] w-12 place-items-center rounded-full transition-colors', on && (dark ? 'bg-white/20' : 'bg-ember-flame/[0.12]'))}>
               <svg viewBox="0 0 24 24" className="h-[26px] w-[26px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d={t.d} />
               </svg>
