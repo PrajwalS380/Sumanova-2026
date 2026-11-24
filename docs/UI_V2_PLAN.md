@@ -32,7 +32,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
       with flame; camera button on the right (quick snap reply).
 - [ ] Chat thread: header face + name + streak line, voice & video buttons; bubbles (mine indigo right, theirs
       grey left with small face); snap card "New snap · tap to view"; composer = camera button, field, mic, stickers.
-- [ ] Stories: "Friends" row of faces (indigo ring = unseen, "My story" with +), "For you" 2-column tall tiles.
+- [x] Stories: "Friends" row of faces (indigo ring = unseen, "My story" with +), "For you" 2-column tall tiles.
 - [ ] Spotlight: full-screen player, top bar (face, search, Following / For you, more), right action rail,
       creator row with Follow, caption, sound line, progress bar, dark dock.
 - [ ] Map: friends as full-body avatar pins with name · time tags; "You" centred; floating top bar with
