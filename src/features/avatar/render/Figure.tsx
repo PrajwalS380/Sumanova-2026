@@ -11,6 +11,12 @@ import { Glasses, Hat, HeadExtra } from './Accessories';
 import { Bag, Cloth, DressGarment, PantLeg, Shoe, Sock, TorsoGarment, pantsStyle, sleeveStyle, sockHeight, torsoProfile } from './Clothes';
 
 const HEAD_Y = 1.98;
+/** Cartoon-adult proportions: longer legs, smaller head (≈ 1/4.5 of height). */
+const LEG = 1.14;
+const LIFT = 0.88 * (LEG - 1);
+const HEAD_SCALE = 0.8;
+const SHOE = 1.2; // adult-sized feet
+const HEAD_Y_BODY = 1.945 + LIFT;
 const BASE_TEE: Wear = { cut: 'Tank', pattern: 'solid', c1: '#e9e2d6', c2: '#e9e2d6', c3: '#e9e2d6' };
 const BASE_SHORTS: Wear = { cut: 'Shorts', pattern: 'solid', c1: '#4a433d', c2: '#4a433d', c3: '#4a433d' };
 
@@ -24,7 +30,7 @@ function wear(look: Look, slot: 'top' | 'outer' | 'bottom' | 'dress' | 'shoes' |
 /** Eye placement, shared with glasses. */
 export function eyeMetrics(look: Look, hx: { rx: number }) {
   const e = variant(look, 'eyes')!.p;
-  return { ex: 0.132 * (hx.rx / 0.35) * (1 + look.tune.eyeGap * 0.14), ey: -0.025, er: 0.08 * e.size * (1 + look.tune.eyeSize * 0.16) };
+  return { ex: 0.127 * (hx.rx / 0.35) * (1 + look.tune.eyeGap * 0.14), ey: -0.025, er: 0.071 * e.size * (1 + look.tune.eyeSize * 0.16) };
 }
 
 export const Figure = memo(function Figure({ look, animate = true, poseOverride, mirror = false, only, faceless = false }: { look: Look; animate?: boolean; poseOverride?: Pose; mirror?: boolean; only?: 'head'; faceless?: boolean }) {
@@ -107,7 +113,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
   const hips = useMemo(() => lathe([[0.0, 0.78], [0.08 * body.hips, 0.785], [0.17 * body.hips, 0.83], [0.226 * body.hips, 0.9], [0.246 * body.hips, 0.97], [0.242 * body.hips, 1.04], [0.0, 1.05]], 40), [body]);
 
   const head = (
-    <group ref={refs.head} position={[0, HEAD_Y, 0.01]}>
+    <group ref={refs.head} position={[0, only === 'head' ? HEAD_Y : HEAD_Y_BODY, 0.01]} scale={only === 'head' ? 1 : HEAD_SCALE}>
       <Face
         h={h}
         skin={skin}
@@ -147,21 +153,21 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
         {[-1, 1].map((side) => {
           const short = !dress && ps?.short;
           return (
-            <group key={side} ref={side < 0 ? refs.legL : refs.legR} position={[side * 0.115 * b * body.hips, 0.88, 0]}>
-              <mesh position={[0, -0.19, 0]} castShadow>
-                <capsuleGeometry args={[0.094 * Math.min(b, 1.12), 0.26, 8, 20]} />
+            <group key={side} ref={side < 0 ? refs.legL : refs.legR} position={[side * 0.115 * b * body.hips, 0.88 * LEG, 0]}>
+              <mesh position={[0, -0.19 * LEG, 0]} castShadow>
+                <capsuleGeometry args={[0.094 * Math.min(b, 1.12), 0.26 * LEG, 8, 20]} />
                 <SkinMat color={skin} />
               </mesh>
-              {bottom && ps && <PantLeg w={bottom} r0={Math.max(ps.thighR * Math.min(b, 1.12), 0.094 * Math.min(b, 1.12) + 0.014)} r1={short ? ps.thighR * 0.98 : (ps.thighR + ps.ankleR) / 2 + 0.005} y0={0.14} y1={short ? -0.3 : -0.42} />}
-              <group ref={side < 0 ? refs.kneeL : refs.kneeR} position={[0, -0.4, 0]}>
-                <mesh position={[0, -0.2, 0]} castShadow>
-                  <capsuleGeometry args={[0.08, 0.3, 8, 20]} />
+              {bottom && ps && <PantLeg w={bottom} r0={Math.max(ps.thighR * Math.min(b, 1.12), 0.094 * Math.min(b, 1.12) + 0.014)} r1={short ? ps.thighR * 0.98 : (ps.thighR + ps.ankleR) / 2 + 0.005} y0={0.14} y1={(short ? -0.3 : -0.42) * LEG} />}
+              <group ref={side < 0 ? refs.kneeL : refs.kneeR} position={[0, -0.4 * LEG, 0]}>
+                <mesh position={[0, -0.2 * LEG, 0]} castShadow>
+                  <capsuleGeometry args={[0.08, 0.3 * LEG, 8, 20]} />
                   <SkinMat color={skin} />
                 </mesh>
-                {socks && <Sock w={socks} height={sockHeight(socks.cut)} />}
-                {bottom && ps && !short && <PantLeg w={bottom} r0={(ps.thighR + ps.ankleR) / 2 + 0.005} r1={ps.ankleR} y0={0.03} y1={ps.cuff ? -0.38 : -0.42} flareOut={bottom.cut === 'Flared jeans' ? 0.03 : 0} />}
+                {socks && <group position={[0, -0.415 * (LEG - 1), 0]}><Sock w={socks} height={sockHeight(socks.cut)} /></group>}
+                {bottom && ps && !short && <PantLeg w={bottom} r0={(ps.thighR + ps.ankleR) / 2 + 0.005} r1={ps.ankleR} y0={0.03} y1={(ps.cuff ? -0.38 : -0.42) * LEG} flareOut={bottom.cut === 'Flared jeans' ? 0.03 : 0} />}
                 {bottom && ps?.cuff && (
-                  <mesh position={[0, -0.4, 0]}>
+                  <mesh position={[0, -0.4 * LEG, 0]}>
                     <cylinderGeometry args={[0.082, 0.082, 0.05, 24]} />
                     <Cloth color={mix(bottom.c1, '#000000', 0.1)} />
                   </mesh>
@@ -172,8 +178,8 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
                     <Cloth w={bottom} shade={-0.08} />
                   </mesh>
                 )}
-                {shoes ? <Shoe w={shoes} skin={skin} /> : (
-                  <mesh position={[0, -0.415, 0.035]} scale={[0.07, 0.045, 0.13]}>
+                {shoes ? <group position={[0, -0.415 * (LEG - 1) - 0.415 * (1 - SHOE), 0.02]} scale={SHOE}><Shoe w={shoes} skin={skin} /></group> : (
+                  <mesh position={[0, -0.415 * LEG, 0.035]} scale={[0.07, 0.045, 0.13]}>
                     <sphereGeometry args={[1, 18, 12]} />
                     <SkinMat color={skin} />
                   </mesh>
@@ -183,6 +189,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
           );
         })}
 
+        <group position={[0, LIFT, 0]}>
         {/* Pelvis + torso */}
         <mesh geometry={hips} scale={[b, 1, 0.7]} castShadow>
           {bottom ? <Cloth w={bottom} /> : <SkinMat color={skin} />}
@@ -203,11 +210,11 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
           return (
             <group key={side} ref={side < 0 ? refs.armL : refs.armR} position={[side * (0.255 * b * body.shoulders + 0.035), 1.53, 0]}>
               <mesh castShadow>
-                <sphereGeometry args={[0.088 * Math.min(b, 1.1) * (sl.len === 'none' ? 0.9 : 1 + sl.puff * 0.3), 24, 18]} />
+                <sphereGeometry args={[0.08 * Math.min(b, 1.1) * (sl.len === 'none' ? 0.9 : 1 + sl.puff * 0.3), 24, 18]} />
                 {sl.len === 'none' ? <SkinMat color={skin} /> : <Cloth w={sleeveCol} />}
               </mesh>
-              <mesh position={[0, -0.16, 0]} castShadow>
-                <capsuleGeometry args={[R, 0.22, 8, 20]} />
+              <mesh position={[0, -0.175, 0]} castShadow>
+                <capsuleGeometry args={[R, 0.25, 8, 20]} />
                 <SkinMat color={skin} />
               </mesh>
               {sl.len !== 'none' && (
@@ -216,13 +223,13 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
                   <Cloth w={sleeveCol} side={THREE.DoubleSide} />
                 </mesh>
               )}
-              <group ref={side < 0 ? refs.foreL : refs.foreR} position={[0, -0.32, 0]}>
+              <group ref={side < 0 ? refs.foreL : refs.foreR} position={[0, -0.35, 0]}>
                 <mesh>
                   <sphereGeometry args={[0.068, 18, 14]} />
                   {sl.len === 'long' ? <Cloth w={sleeveCol} /> : <SkinMat color={skin} />}
                 </mesh>
-                <mesh position={[0, -0.13, 0]} castShadow>
-                  <capsuleGeometry args={[0.064, 0.2, 8, 20]} />
+                <mesh position={[0, -0.14, 0]} castShadow>
+                  <capsuleGeometry args={[0.06, 0.22, 8, 20]} />
                   <SkinMat color={skin} />
                 </mesh>
                 {(sl.len === 'long' || sl.len === 'elbow') && (
@@ -237,10 +244,11 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
           );
         })}
 
-        <mesh position={[0, 1.68, 0]} castShadow>
-          <cylinderGeometry args={[0.072, 0.085, 0.16, 24]} />
+        <mesh position={[0, 1.7, 0]} castShadow>
+          <cylinderGeometry args={[0.064, 0.08, 0.2, 24]} />
           <SkinMat color={skin} />
         </mesh>
+        </group>
         {head}
       </group>
     </group>
@@ -249,7 +257,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
 
 function Hand({ skin, side, thumbsUp, wave }: { skin: string; side: number; thumbsUp: boolean; wave: boolean }) {
   return (
-    <group position={[0, -0.31, 0]} rotation={[0, wave ? side * -0.4 : 0, 0]} scale={1.25}>
+    <group position={[0, -0.33, 0]} rotation={[0, wave ? side * -0.4 : 0, 0]} scale={1.2}>
       <mesh scale={[0.05, 0.066, 0.03]} castShadow>
         <sphereGeometry args={[1, 18, 14]} />
         <SkinMat color={skin} />

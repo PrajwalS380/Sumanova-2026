@@ -40,9 +40,9 @@ export interface FaceProps {
 export function Face(f: FaceProps) {
   const { h, skin } = f;
   const headGeo = useMemo(() => shellGeometry(f.h, () => 1), [f.h]);
-  const ex = 0.132 * (h.rx / 0.35) * (1 + f.tune.eyeGap * 0.14);
+  const ex = 0.127 * (h.rx / 0.35) * (1 + f.tune.eyeGap * 0.14);
   const ey = -0.025;
-  const er = 0.08 * f.eyes.size * (1 + f.tune.eyeSize * 0.16);
+  const er = 0.071 * f.eyes.size * (1 + f.tune.eyeSize * 0.16);
   const noseY = ey - 0.12 * f.nose.len;
   const mouthY = -0.205 * (h.ry / 0.39);
   const lipColor = f.colors.lips ?? mix(skin, '#b0525a', 0.45);
@@ -145,7 +145,8 @@ function Eyes({ f, ex, ey, er }: { f: FaceProps; ex: number; ey: number; er: num
   const upper = useRef<(THREE.Group | null)[]>([]);
   const seed = useMemo(() => Math.random() * 10, []);
   const closedEye = (s: number) => e === 'sleeping' || e === 'laughing' || (e === 'winking' && s > 0);
-  const open = e === 'surprised' ? Math.min(p.open, -1.05) : e === 'angry' ? p.open + 0.32 : e === 'sad' || e === 'crying' ? p.open + 0.24 : e === 'tongue' ? p.open + 0.1 : p.open;
+  // Bright, wide-awake eyes by default (lids sit a little higher than the raw catalogue value).
+  const open = (e === 'surprised' ? Math.min(p.open, -1.05) : e === 'angry' ? p.open + 0.32 : e === 'sad' || e === 'crying' ? p.open + 0.24 : e === 'tongue' ? p.open + 0.1 : p.open) - 0.14;
   const lower = e === 'happy' || e === 'blushing' || e === 'tongue' ? p.lower - 0.5 : e === 'angry' ? p.lower - 0.45 : p.lower;
   const lid = f.colors.shadow ? mix(skin, f.colors.shadow, 0.62) : skin;
   const liner = f.colors.liner ?? '#1a1110';
@@ -165,12 +166,12 @@ function Eyes({ f, ex, ey, er }: { f: FaceProps; ex: number; ey: number; er: num
         const closed = closedEye(s);
         return (
           <group key={s}>
-            <group position={[s * ex, ey, z]} rotation={[0, s * 0.2, s * -p.tilt]} scale={[1, p.squash, 1]}>
+            <group position={[s * ex, ey, z]} rotation={[0, s * 0.2, s * -p.tilt]} scale={[1.06, p.squash * 0.9, 1]}>
               {!closed && (
                 <>
                   <mesh>
                     <sphereGeometry args={[er, 32, 24]} />
-                    <meshPhysicalMaterial color="#f8f2ec" roughness={0.2} clearcoat={1} clearcoatRoughness={0.08} />
+                    <meshPhysicalMaterial color="#fbf8f4" roughness={0.2} clearcoat={1} clearcoatRoughness={0.08} emissive="#ffffff" emissiveIntensity={0.12} />
                   </mesh>
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
                     <sphereGeometry args={[er * 1.004, 32, 8, 0, Math.PI * 2, 0, p.iris + 0.1]} />
@@ -206,7 +207,7 @@ function Eyes({ f, ex, ey, er }: { f: FaceProps; ex: number; ey: number; er: num
                 </mesh>
                 {!closed && (
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <torusGeometry args={[er * 1.075, 0.004 + (f.lashes?.liner ?? 0.2) * 0.0045, 6, 28, Math.PI]} />
+                    <torusGeometry args={[er * 1.075, 0.0075 + (f.lashes?.liner ?? 0.2) * 0.005, 8, 32, Math.PI]} />
                     <meshStandardMaterial color={liner} roughness={0.6} />
                   </mesh>
                 )}
@@ -374,7 +375,7 @@ function Nose({ h, p, skin, y, pierce }: { h: HeadShape; p: NoseP; skin: string;
   const col = mix(skin, '#c06050', 0.04);
   const tipY = y + p.up * 0.008;
   return (
-    <group>
+    <group scale={1.18} position={[0, -y * 0.18, -z * 0.18]}>
       <mesh position={[0, tipY, z + 0.004]} rotation={[-p.up * 0.3, 0, 0]} scale={[0.034 * p.tipW, 0.032 * p.tipS, 0.042 * p.tipS]} castShadow>
         <sphereGeometry args={[1, 24, 18]} />
         <SkinMat color={col} />
@@ -422,9 +423,9 @@ function Blush({ h, ex, ey, strength, color }: { h: HeadShape; ex: number; ey: n
 /* ---------------------------------------------------------------- Mouth */
 
 function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShape; p: MouthP; y: number; lip: string; skin: string; e: Expression; lipPierce: PiercingP | null; tonguePierce: PiercingP | null }) {
-  const w = 0.07 * p.width;
+  const w = 0.09 * p.width; // generous, friendly mouth
   const parts = useMemo(() => {
-    const open = e === 'laughing' || e === 'surprised' || e === 'tongue' || (e === 'happy' && p.corner >= 0.3);
+    const open = e === 'laughing' || e === 'surprised' || e === 'tongue' || (e === 'happy' && p.corner >= 0);
     if (open) {
       const ww = e === 'surprised' ? w * 0.45 : w * (e === 'laughing' || e === 'tongue' ? 1.12 : 1.02);
       const top = e === 'surprised' ? 0.03 : 0.012;
@@ -530,7 +531,7 @@ function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string
   const geo = useMemo(() => {
     if (p.beard <= 0 && p.stubble <= 0) return null;
     const my = mouthY / (h.ry * h.chinLow);
-    const thick = p.beard > 0 ? p.beard : 0.006;
+    const thick = p.beard > 0 ? p.beard * 0.6 : 0.006; // close-trimmed, sculpted
     return shellGeometry(h, (ux, uy, uz, az) => {
       let m: number;
       if (p.chinOnly > 0) {
@@ -538,8 +539,8 @@ function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string
         if (p.soul) m = Math.max(m, smooth(0.08, 0.04, Math.abs(ux)) * smooth(my - 0.04, my - 0.08, uy) * smooth(my - 0.2, my - 0.14, uy));
       } else {
         const front = smooth(-0.35, -0.1, uz);
-        const below = smooth(my + 0.1 + p.cheekLine, my + p.cheekLine * 0.5, uy) * (1 - 0.6 * smooth(0.45, 0.2, Math.abs(ux)) * smooth(my + 0.12, my + 0.22, uy));
-        const side = smooth(0.85, 1.15, Math.abs(az)) * smooth(1.9, 1.6, Math.abs(az)) * smooth(0.12, -0.02, uy) * p.sides;
+        const below = smooth(my + 0.03 + p.cheekLine * 0.35, my - 0.03 + p.cheekLine * 0.15, uy) * (1 - 0.6 * smooth(0.45, 0.2, Math.abs(ux)) * smooth(my + 0.12, my + 0.22, uy));
+        const side = smooth(1.12, 1.4, Math.abs(az)) * smooth(1.9, 1.65, Math.abs(az)) * smooth(0.02, -0.1, uy) * p.sides; // sideburns stay by the ears
         const mouthHole = 1 - smooth(0.24, 0.17, Math.abs(ux)) * smooth(0.075, 0.035, Math.abs(uy - my + 0.005));
         const chinGap = p.chinOnly < 0 ? 1 - smooth(0.3, 0.15, Math.abs(ux)) : 1; // mutton chops leave the chin bare
         m = Math.max(front * below, side) * mouthHole * chinGap;

@@ -8,7 +8,7 @@ export const SKIN: string[] = (() => {
     const L = 84 - band * 6.6;
     for (let k = 0; k < 10; k++) {
       const hue = 22 + (k - 5) * 2.2 + (band > 6 ? 2 : 0);
-      const sat = 48 + band * 1.6 + (k % 3) * 5 - (band > 7 ? 10 : 0);
+      const sat = 36 + band * 1.8 + (k % 3) * 4 - (band > 7 ? 8 : 0); // natural, not orange
       const l = L - k * 0.55;
       out.push(hsl(hue, sat, l));
     }

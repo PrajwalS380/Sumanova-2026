@@ -27,8 +27,9 @@ export function Cloth({ w, color, rough = 0.8, side, shade = 0, repeat }: { w?: 
 export function torsoProfile(body: BodyP, from: number, pad = 0): [number, number][] {
   const sh = body.shoulders, hp = body.hips, bl = body.belly;
   const pts: [number, number][] = [
-    [0.25 * hp, 0.82], [0.258 * hp, 0.9], [0.252 * hp + bl * 0.03, 0.98], [0.24 + bl * 0.05, 1.08], [0.236 + bl * 0.045, 1.16],
-    [0.248 + bl * 0.02, 1.28], [0.268 * sh, 1.42], [0.262 * sh, 1.52], [0.21 * sh, 1.6], [0.13, 1.645], [0.085, 1.66],
+    // Natural adult silhouette: hips → nipped waist → fuller chest → sloped shoulders.
+    [0.25 * hp, 0.82], [0.256 * hp, 0.9], [0.242 * hp + bl * 0.035, 0.98], [0.222 + bl * 0.055, 1.08], [0.224 + bl * 0.05, 1.16],
+    [0.244 + bl * 0.02, 1.28], [0.262 * sh, 1.4], [0.258 * sh, 1.5], [0.215 * sh, 1.58], [0.14, 1.635], [0.085, 1.66],
   ];
   return pts.filter(([, y]) => y >= from - 1e-6).map(([r, y]) => [r + pad, y] as [number, number]);
 }

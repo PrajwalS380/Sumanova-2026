@@ -16,10 +16,10 @@ const SIZE = 192;
 const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
   head: { pos: [0.35, 2.06, 1.55], target: [0, 1.99, 0], fov: 30 },
   face: { pos: [0, 1.98, 0.95], target: [0, 1.94, 0], fov: 30 },
-  upper: { pos: [0, 1.5, 2.6], target: [0, 1.36, 0], fov: 30 },
-  lower: { pos: [0, 0.6, 2.7], target: [0, 0.6, 0], fov: 30 },
+  upper: { pos: [0, 1.6, 2.7], target: [0, 1.46, 0], fov: 30 },
+  lower: { pos: [0, 0.66, 2.9], target: [0, 0.66, 0], fov: 30 },
   feet: { pos: [0.6, 0.35, 1.4], target: [0, 0.18, 0], fov: 30 },
-  full: { pos: [0, 1.2, 4.6], target: [0, 1.15, 0], fov: 30 },
+  full: { pos: [0, 1.26, 4.8], target: [0, 1.2, 0], fov: 30 },
 };
 
 export const CLAY = '#efe4d6';
@@ -44,7 +44,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v3';
+const STORE = 'snv-thumbs-v4';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {
@@ -137,9 +137,10 @@ async function pump() {
         const headOnly = job.frame === 'head' || job.frame === 'face';
         root!.render(
           <>
-            <hemisphereLight args={['#fff4e8', '#3a2a20', 0.9]} />
-            <directionalLight position={[2, 4, 3]} intensity={2.2} color="#fff0e0" />
-            <directionalLight position={[-3, 2, -2]} intensity={1.0} color="#cfe0ff" />
+            <hemisphereLight args={['#fff6ec', '#6a5446', 1.0]} />
+            <directionalLight position={[2.2, 3.6, 3.4]} intensity={2.2} color="#fff0e0" />
+            <directionalLight position={[-2.6, 1.9, 3]} intensity={0.9} color="#ffe2d2" />
+            <directionalLight position={[-2, 3, -3.5]} intensity={1.4} color="#c4dcff" />
             <group key={job.key}>
               <Figure look={job.look} animate={false} only={headOnly ? 'head' : undefined} faceless={job.faceless} />
             </group>

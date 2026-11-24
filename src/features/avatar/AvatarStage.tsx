@@ -13,9 +13,9 @@ export interface AvatarStageHandle {
 
 export type Framing = 'full' | 'head' | 'upper' | 'feet';
 const FRAMES: Record<Framing, { pos: [number, number, number]; target: [number, number, number] }> = {
-  full: { pos: [0, 1.4, 5.5], target: [0, 1.22, 0] },
-  head: { pos: [0, 2.04, 2.75], target: [0, 1.97, 0] },
-  upper: { pos: [0, 1.8, 3.6], target: [0, 1.62, 0] },
+  full: { pos: [0, 1.42, 5.6], target: [0, 1.26, 0] },
+  head: { pos: [0, 2.12, 2.3], target: [0, 2.05, 0] },
+  upper: { pos: [0, 1.9, 3.6], target: [0, 1.72, 0] },
   feet: { pos: [0, 0.55, 2.6], target: [0, 0.35, 0] },
 };
 
@@ -28,7 +28,7 @@ function StudioEnvironment() {
     const pmrem = new THREE.PMREMGenerator(gl);
     const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = env;
-    scene.environmentIntensity = 0.45;
+    scene.environmentIntensity = 0.6;
     return () => {
       scene.environment = null;
       env.dispose();
@@ -68,8 +68,8 @@ function Capturer({ apiRef }: { apiRef: React.MutableRefObject<AvatarStageHandle
     const cam = camera as THREE.PerspectiveCamera;
     const prev = { pos: cam.position.clone(), q: cam.quaternion.clone() };
     if (framing === 'bust') {
-      cam.position.set(0, 2.02, 2.75);
-      cam.lookAt(0, 1.9, 0);
+      cam.position.set(0, 2.08, 2.75);
+      cam.lookAt(0, 1.96, 0);
     }
     cam.updateProjectionMatrix();
     gl.render(scene, cam);
@@ -97,11 +97,12 @@ export const AvatarStage = forwardRef<AvatarStageHandle, { configs: Look[]; pose
       camera={{ position: start.pos, fov: 30 }}
       onCreated={({ camera }) => camera.lookAt(...start.target)}
     >
-      <hemisphereLight args={['#fff1e0', '#2a1a12', 0.6]} />
-      <directionalLight position={[2.2, 4, 3.2]} intensity={2.1} color="#ffe6cc" castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} shadow-normalBias={0.02} />
-      <directionalLight position={[-2.5, 1.8, 2.5]} intensity={0.55} color="#ffd2b8" />
-      <directionalLight position={[-2, 3, -3.5]} intensity={1.5} color="#bcd4ff" />
-      <directionalLight position={[2.5, 1, -3]} intensity={0.7} color="#ff9a5c" />
+      {/* Cinematic three-point light: warm key, soft frontal fill, cool + warm rims that outline the silhouette. */}
+      <hemisphereLight args={['#fff6ec', '#6a5446', 0.95]} />
+      <directionalLight position={[2.2, 3.6, 3.4]} intensity={2.3} color="#fff0e0" castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} shadow-normalBias={0.02} />
+      <directionalLight position={[-2.6, 1.9, 3]} intensity={1.0} color="#ffe2d2" />
+      <directionalLight position={[-2, 3, -3.5]} intensity={1.8} color="#c4dcff" />
+      <directionalLight position={[2.5, 1.4, -3]} intensity={0.9} color="#ffb07a" />
       <Suspense fallback={null}>
         {configs.map((c, i) => (
           <group key={i} position={[duo ? (i === 0 ? -0.55 : 0.55) : 0, 0, 0]} rotation={[0, duo ? (i === 0 ? 0.35 : -0.35) : 0, 0]}>
