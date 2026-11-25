@@ -9,6 +9,9 @@ import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
 import { PRESETS } from './look/presets';
 
+/** Starter characters that have a pre-rendered picture in public/presets (index into PRESETS). */
+export const PICTURED = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11];
+
 const skipKey = (uid: string) => `snv-avatar-skipped-${uid}`;
 
 /** True when this person chose "Skip" on this device (they can still create one from their profile). */
@@ -66,7 +69,7 @@ export default function AvatarOnboardingScreen() {
       </div>
 
       <div className="grid flex-1 grid-cols-3 content-start gap-2.5 px-5 pb-36 pt-5" role="radiogroup" aria-label="Starter characters">
-        {PRESETS.map((p, i) => (
+        {PICTURED.map((i) => ({ p: PRESETS[i], i })).filter((x) => x.p).map(({ p, i }) => (
           <motion.button
             key={p.name}
             role="radio"

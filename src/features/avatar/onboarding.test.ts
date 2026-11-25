@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { avatarSkipped } from './AvatarOnboardingScreen';
+import { avatarSkipped, PICTURED } from './AvatarOnboardingScreen';
 import { PRESETS } from './look/presets';
 
 describe('avatar onboarding', () => {
@@ -10,7 +10,11 @@ describe('avatar onboarding', () => {
     expect(avatarSkipped('u1')).toBe(true);
     expect(avatarSkipped('u2')).toBe(false);
   });
-  it('has a pre-rendered picture slot for every starter character', () => {
-    expect(PRESETS.length).toBe(12);
+  it('only offers characters that exist and have a picture', () => {
+    const fs = require('node:fs') as typeof import('node:fs');
+    for (const i of PICTURED) {
+      expect(PRESETS[i]).toBeTruthy();
+      expect(fs.existsSync(`public/presets/${i}.webp`)).toBe(true);
+    }
   });
 });
