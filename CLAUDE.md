@@ -80,6 +80,11 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   12 original starter characters in `look/presets.ts` (Looks tab → "Start from a character"); random = wearable outfits.
   Visual check: `npx vite --config vite.avatar-test.config.ts` (`?presets=1&n=8`) (port 5199, `?slot=hair&ids=1,2&frame=head`, `?random=8`).
   Keep ≤8 canvases per harness page (swiftshader). Python/sed multi-file edits get blocked by the sandbox classifier — use Edit.
+- **Nova emoji** (owner: "don't just use prebuilt emojis"): our own SVG emoji set in `components/emoji/novaEmoji.ts`
+  (squircle faces, bold #111 outline; `NovaEmoji` component, `novaEmojiImage` for canvas). Used for badges (`badgeArt`),
+  streak flame/hourglass, lens tray icons, chat + editor stickers (stored as `nova:<id>`). Face lenses in
+  `features/camera/lenses.ts` draw with it; visual check: `npx vite --config vite.lens-test.config.ts` then
+  `?photo=/portrait.jpg` (put any frontal photo in e2e/lens-harness, git-ignored). New UI: prefer Nova emoji over system emoji.
 - Features live in `src/features/<feature>`. Shared libs in `src/lib`. Auth state in `src/providers/AuthProvider.tsx`.
 - Sign-up is **instant** (owner chose, 2026-11-24): Edge Function `signup` (verify_jwt=false) re-validates input, caps 30
   sign-ups/hour, and creates a confirmed user via the service role; the client then signs in with the password. The free

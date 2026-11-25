@@ -13,6 +13,7 @@ import { friendBirthdays, type FriendBirthday } from '@/lib/birthdays';
 import { formatDayMonth, monthDay, signFor } from '@/lib/zodiac';
 import type { Friend } from '@/lib/chat/types';
 import { cn } from '@/lib/cn';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
 
 const btn = 'grid h-10 w-10 place-items-center rounded-2xl bg-white/90 text-ink active:scale-90';
 const tile = cn('block rounded-tile bg-white px-4 py-3.5', GHOST_HOST);
@@ -102,7 +103,7 @@ export default function ProfileScreen() {
             <Link to="/settings" className={cn(chip, 'bg-white text-ink')}>🎂 Add birthday</Link>
           )}
           {sign && <Link to="/birthdays?tab=zodiac" className={cn(chip, 'bg-[#111111] text-white')}>{sign.glyph} {sign.name}</Link>}
-          {best > 0 && <span className={cn(chip, 'bg-ember-gold text-ink')}>🔥 {best} best</span>}
+          {best > 0 && <span className={cn(chip, 'bg-ember-gold text-ink')}><NovaEmoji id="flame" size={16} /> {best} best</span>}
           {friends && <Link to="/friends" className={cn(chip, 'bg-white text-ink')}>{friends.length} {friends.length === 1 ? 'friend' : 'friends'}</Link>}
         </div>
 

@@ -9,6 +9,8 @@ import { Avatar } from '@/components/Avatar';
 import { ImageView, VideoView, VoiceView } from './MediaView';
 import { useLongPress } from './useLongPress';
 import { SnapTile, type SnapTileState } from '@/features/snaps/SnapTile';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
+import { novaStickerId } from '@/components/emoji/novaEmoji';
 
 export type Receipt = 'sending' | 'failed' | 'sent' | 'delivered' | 'seen' | null;
 
@@ -99,7 +101,11 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           ) : m.kind === 'snap' ? (
             p.snap ? <SnapTile kind={m.body ?? 'image'} state={p.snap.state} screenshot={p.snap.screenshot} mine={mine} onOpen={p.snap.onOpen} /> : null
           ) : m.kind === 'sticker' ? (
-            <span className="block pb-1 text-[64px] leading-none drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker">{m.body}</span>
+            novaStickerId(m.body) ? (
+              <NovaEmoji id={novaStickerId(m.body)!} size={104} label="Sticker" className="pb-1 drop-shadow-[0_6px_16px_rgba(0,0,0,0.18)]" />
+            ) : (
+              <span className="block pb-1 text-[64px] leading-none drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker">{m.body}</span>
+            )
           ) : m.kind === 'image' ? (
             <ImageView path={m.media_path} localUrl={m.localUrl} meta={m.media_meta} onOpen={p.onOpenImage} />
           ) : m.kind === 'video' ? (

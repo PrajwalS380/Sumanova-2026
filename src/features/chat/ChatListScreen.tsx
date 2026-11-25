@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { streaksApi, type StreakInfo } from '@/lib/social/api';
 import { rowBadges, topFriendIds } from '@/lib/badges';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BellOff, Clock3, Eye, MessageSquarePlus, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info, X } from 'lucide-react';
@@ -35,7 +36,7 @@ export default function ChatListScreen() {
     try {
       const n = await streaksApi.restore(friendId);
       haptic(14);
-      toast(`Streak of ${n} restored 🔥`, 'success');
+      toast(`Streak of ${n} restored`, 'success');
       void loadStreaks();
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -170,7 +171,7 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, top, onOpe
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
             <span className={cn('truncate text-base', unread ? 'font-extrabold text-ink' : 'font-semibold')}>{name}</span>
-            {rowBadges(streak, !!top).map((b) => <span key={b.emoji} role="img" aria-label={b.label} title={b.label} className="shrink-0 text-[13px] leading-none">{b.emoji}</span>)}
+            {rowBadges(streak, !!top).map((b) => <NovaEmoji key={b.id} id={b.id} size={17} label={b.label} />)}
             {c.pinned && <Pin className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.muted && <BellOff className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.disappear_mode !== 'never' && (c.disappear_mode === 'after_view' ? <Eye className="h-3 w-3 shrink-0 text-ink-faint" /> : <Clock3 className="h-3 w-3 shrink-0 text-ink-faint" />)}
@@ -182,8 +183,8 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, top, onOpe
             {streak && streak.count > 0 && (
               <span className="flex shrink-0 items-center gap-0.5 font-extrabold text-[#c2410c]" aria-label={`${streak.count} day streak${streak.expiring ? ', ending soon' : ''}`}>
                 {streak.count}
-                <Flame />
-                {streak.expiring && <Clock3 className="h-3 w-3" />}
+                <NovaEmoji id="flame" size={15} />
+                {streak.expiring && <NovaEmoji id="hourglass" size={14} label="Ending soon" />}
               </span>
             )}
           </span>
@@ -207,10 +208,3 @@ function StatusMark({ tone }: { tone: ChatStatusTone }) {
   return <span aria-hidden className={cn('h-[11px] w-[11px] shrink-0 rounded-[3px] border-2', cls)} />;
 }
 
-function Flame() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="#f97316" aria-hidden>
-      <path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3-1-6 1-9z" />
-    </svg>
-  );
-}

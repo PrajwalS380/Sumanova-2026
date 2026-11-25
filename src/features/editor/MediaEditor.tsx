@@ -11,6 +11,8 @@ import { saveMedia } from '@/lib/saveMedia';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
 import { STICKERS } from '@/features/chat/themes';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
+import { NOVA_EMOJI_IDS, NOVA_STICKER_PREFIX, novaStickerId } from '@/components/emoji/novaEmoji';
 import type { Captured } from '@/features/camera/CameraScreen';
 import { cropRotate, exportImage, exportOverlay, TEXT_FONT, type OverlayItem, type Stroke } from './compose';
 import { SendSheet, type Prepared } from './SendSheet';
@@ -257,7 +259,7 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
             className={cn('absolute -translate-x-1/2 -translate-y-1/2 cursor-move whitespace-pre text-center', selected === it.id && 'outline-dashed outline-1 outline-white/60')}
             style={{ left: `${it.x * 100}%`, top: `${it.y * 100}%`, fontSize: it.size * box.w, lineHeight: 1.2, ...itemStyle(it) }}
           >
-            {it.content}
+            {novaStickerId(it.content) ? <NovaEmoji id={novaStickerId(it.content)!} size={it.size * box.w * 1.15} /> : it.content}
           </div>
         ))}
       </div>
@@ -339,6 +341,13 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
       <AnimatePresence>{editing && <TextEditor item={editing} onDone={commitText} />}</AnimatePresence>
 
       <Sheet open={stickers} onClose={() => setStickers(false)} title="Stickers">
+        <div className="grid grid-cols-5 gap-1 px-4 pb-3">
+          {NOVA_EMOJI_IDS.map((id) => (
+            <button key={id} onClick={() => { setItems((l) => [...l, { id: crypto.randomUUID(), type: 'sticker', content: NOVA_STICKER_PREFIX + id, x: 0.5, y: 0.5, size: 0.22, color: '#fff', style: 'plain' }]); setStickers(false); haptic(8); }} className="grid aspect-square place-items-center rounded-2xl hover:bg-white/5 active:scale-90" aria-label={`Add ${id}`}>
+              <NovaEmoji id={id} size={48} />
+            </button>
+          ))}
+        </div>
         <div className="grid grid-cols-6 gap-1 px-4 pb-6">
           {STICKERS.map((s) => (
             <button key={s} onClick={() => { setItems((l) => [...l, { id: crypto.randomUUID(), type: 'sticker', content: s, x: 0.5, y: 0.5, size: 0.18, color: '#fff', style: 'plain' }]); setStickers(false); haptic(8); }} className="grid aspect-square place-items-center rounded-2xl text-4xl hover:bg-white/5 active:scale-90" aria-label={`Add ${s}`}>

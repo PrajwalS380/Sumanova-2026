@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Camera, ChevronLeft, ChevronRight, Flame, Loader2, MessageCircle, MoreHorizontal, Phone, Play, Sparkles, UserPlus, Video } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, Loader2, MessageCircle, MoreHorizontal, Phone, Play, Sparkles, UserPlus, Video } from 'lucide-react';
 import { AvatarFigure } from '@/components/AvatarFigure';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useCalls } from '@/providers/CallProvider';
@@ -21,6 +21,8 @@ import { spotlightApi, storiesApi, streaksApi, type Creator, type FriendshipProf
 import { publicUrl } from '@/lib/storageUrl';
 import { StoryViewer } from '@/features/stories/StoryViewer';
 import type { Story } from '@/lib/social/api';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
+import { badgeArt } from '@/components/emoji/novaEmoji';
 
 export default function PersonScreen() {
   const { username = '' } = useParams();
@@ -120,7 +122,7 @@ export default function PersonScreen() {
       <div className="mx-auto max-w-md px-3.5">
         {(fp?.streak || bday || c.bio) && (
           <div className="no-scrollbar -mx-3.5 flex gap-2 overflow-x-auto px-3.5 pt-3">
-            {fp && fp.streak > 0 && <span className={cn(CHIP, 'bg-ember-gold text-ink')}><Flame className="h-[14px] w-[14px] fill-current" />{fp.streak} days{fp.streak_expiring ? ' · ends soon' : ''}</span>}
+            {fp && fp.streak > 0 && <span className={cn(CHIP, 'bg-ember-gold text-ink')}><NovaEmoji id="flame" size={17} />{fp.streak} days{fp.streak_expiring ? ' · ends soon' : ''}</span>}
             {bday && <button onClick={() => navigate('/birthdays')} className={cn(CHIP, bday.inDays === 0 ? 'bg-ember-rose text-white' : 'bg-white text-ink')}>🎂 {bday.inDays === 0 ? 'Today!' : formatDayMonth(bday.month, bday.day)}</button>}
             {bday && <button onClick={() => navigate('/birthdays?tab=zodiac')} className={cn(CHIP, 'bg-[#111111] text-white')}>{bday.sign.glyph} {bday.sign.name}</button>}
           </div>
@@ -172,7 +174,7 @@ export default function PersonScreen() {
               <div className="pt-2">
                 <span className="text-sm text-ink-mute">Badges</span>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {fp.badges.map((b) => <span key={b} className="rounded-full bg-[#F1F1F4] px-2.5 py-1 text-[12px] font-extrabold">{b}</span>)}
+                  {fp.badges.map((b) => { const a = badgeArt(b); return <span key={b} className="flex items-center gap-1.5 rounded-full bg-[#F1F1F4] py-1 pl-1.5 pr-3 text-[12px] font-extrabold"><NovaEmoji id={a.id} size={22} />{a.text}</span>; })}
                 </div>
               </div>
             )}
@@ -244,8 +246,8 @@ function RestoreStreak({ friendId, onDone }: { friendId: string; onDone: () => v
   }, [friendId]);
   if (!restorable) return null;
   return (
-    <button onClick={async () => { try { const n = await streaksApi.restore(friendId); toast(`Streak of ${n} restored 🔥`, 'success'); onDone(); } catch (e) { toast((e as Error).message, 'error'); } }} className="mt-4 w-full rounded-2xl bg-ink/10 py-2.5 text-sm font-semibold">
-      🔥 Restore your streak (once every 30 days)
+    <button onClick={async () => { try { const n = await streaksApi.restore(friendId); toast(`Streak of ${n} restored`, 'success'); onDone(); } catch (e) { toast((e as Error).message, 'error'); } }} className="mt-4 w-full rounded-2xl bg-ink/10 py-2.5 text-sm font-semibold">
+      <NovaEmoji id="flame" size={18} className="mr-1" /> Restore your streak (once every 30 days)
     </button>
   );
 }

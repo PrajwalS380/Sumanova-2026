@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, UserPlus, CameraOff, Images, ImagePlus, Loader2, RefreshCw, ScanFace, Search, Settings2, Smile, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
 import { LENSES } from './lenses';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
 import { useLens } from './useLens';
 import { useNotificationsOptional } from '@/providers/NotificationsProvider';
 import { useToast } from '@/providers/ToastProvider';
@@ -223,7 +224,7 @@ export default function CameraScreen() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="no-scrollbar absolute inset-x-0 bottom-[15.5rem] z-10 flex gap-2 overflow-x-auto px-4" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
             <button onClick={() => setLensId(null)} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-xs font-bold text-white ring-2', !lensId ? 'bg-white/30 ring-white' : 'bg-black/45 ring-transparent')}>Off</button>
             {LENSES.map((l) => (
-              <button key={l.id} onClick={() => { haptic(6); setLensId(l.id); }} aria-label={l.name} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl ring-2 transition-transform', lensId === l.id ? 'scale-110 bg-white/30 ring-white' : 'bg-black/45 ring-transparent')}>{l.emoji}</button>
+              <button key={l.id} onClick={() => { haptic(6); setLensId(l.id); }} aria-label={l.name} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl ring-2 transition-transform', lensId === l.id ? 'scale-110 bg-white/30 ring-white' : 'bg-black/45 ring-transparent')}><NovaEmoji id={l.icon} size={38} /></button>
             ))}
           </motion.div>
         )}

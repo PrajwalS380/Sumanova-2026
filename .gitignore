@@ -16,3 +16,4 @@ test-results/
 *.p12
 *.mobileprovision
 keystore.b64
+e2e/lens-harness/*.jpg

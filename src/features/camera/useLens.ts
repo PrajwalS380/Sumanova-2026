@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { LENSES, loadLandmarker } from './lenses';
+import { LENSES, loadLandmarker, preloadLensArt } from './lenses';
 
 /**
  * Runs face tracking on the live preview and draws the active lens onto an
@@ -26,6 +26,7 @@ export function useLens(videoRef: React.RefObject<HTMLVideoElement>, overlayRef:
     let lastTs = -1;
     let lastFaces = -1;
     setState('loading');
+    preloadLensArt();
     loadLandmarker()
       .then((lm) => {
         if (!alive) return;

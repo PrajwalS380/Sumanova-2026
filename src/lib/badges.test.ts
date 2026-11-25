@@ -9,8 +9,8 @@ describe('friendship badges', () => {
     expect([...top].sort()).toEqual(['a', 'c', 'd']);
   });
   it('labels long streaks', () => {
-    expect(rowBadges(s('a', 120), true).map((b) => b.emoji)).toEqual(['⭐', '💯']);
-    expect(rowBadges(s('a', 3, 45), false).map((b) => b.emoji)).toEqual(['🏆']);
+    expect(rowBadges(s('a', 120), true).map((b) => b.id)).toEqual(['star', 'hundred']);
+    expect(rowBadges(s('a', 3, 45), false).map((b) => b.id)).toEqual(['trophy']);
     expect(rowBadges(undefined, false)).toEqual([]);
   });
 });

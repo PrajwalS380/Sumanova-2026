@@ -8,6 +8,8 @@ import { formatDuration } from '@/lib/chat/time';
 import type { LocalMessage, MediaMeta, MessageKind } from '@/lib/chat/types';
 import { haptic } from '@/lib/haptics';
 import { STICKERS } from './themes';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
+import { NOVA_EMOJI_IDS, NOVA_STICKER_PREFIX } from '@/components/emoji/novaEmoji';
 
 export interface ComposerSend {
   kind: MessageKind;
@@ -201,6 +203,15 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
       )}
 
       <Sheet open={stickers} onClose={() => setStickers(false)} title="Stickers">
+        <p className="eyebrow px-5 pb-1">Nova</p>
+        <div className="grid grid-cols-5 gap-1 px-4 pb-3">
+          {NOVA_EMOJI_IDS.map((id) => (
+            <button key={id} onClick={() => { haptic(8); onSend({ kind: 'sticker', body: NOVA_STICKER_PREFIX + id, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); }} className="grid aspect-square place-items-center rounded-2xl transition-transform hover:bg-ink/5 active:scale-90" aria-label={`Send ${id} sticker`}>
+              <NovaEmoji id={id} size={48} />
+            </button>
+          ))}
+        </div>
+        <p className="eyebrow px-5 pb-1">Emoji</p>
         <div className="grid grid-cols-6 gap-1 px-4 pb-6">
           {STICKERS.map((s) => (
             <button key={s} onClick={() => { haptic(8); onSend({ kind: 'sticker', body: s, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); }} className="grid aspect-square place-items-center rounded-2xl text-4xl transition-transform hover:bg-ink/5 active:scale-90" aria-label={`Send ${s} sticker`}>
