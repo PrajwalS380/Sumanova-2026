@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Archive, ArchiveRestore, CalendarSearch, Check, Download, FolderPlus, Heart, Loader2, Play, Sparkles, Trash2, X } from 'lucide-react';
-import { ScreenHeader } from '@/components/ScreenHeader';
+import { Archive, ArchiveRestore, CalendarSearch, Check, ChevronDown, ChevronLeft, Download, FolderPlus, Heart, Loader2, Play, Sparkles, Trash2, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
@@ -15,8 +15,11 @@ import { cn } from '@/lib/cn';
 import { useLongPress } from '@/features/chat/useLongPress';
 
 type Tab = 'all' | 'favourites' | 'albums' | 'archived';
+const TAB_LABEL: Record<Tab, string> = { all: 'Snaps', favourites: 'Favourites', albums: 'Albums', archived: 'Archived' };
+const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90';
 
 export default function MemoriesScreen() {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const me = session!.user.id;
   const toast = useToast();
@@ -104,6 +107,15 @@ export default function MemoriesScreen() {
   };
 
   const selecting = selected.size > 0;
+  // "N years ago today": memories taken on this calendar day in earlier years (from what's loaded).
+  const flashback = useMemo(() => {
+    const now = new Date();
+    const hits = (items ?? []).filter((m) => {
+      const d = new Date(m.taken_at);
+      return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() < now.getFullYear();
+    });
+    return hits.length ? { items: hits, years: now.getFullYear() - new Date(hits[0].taken_at).getFullYear() } : null;
+  }, [items]);
   const toggle = (id: string) => setSelected((s) => {
     const n = new Set(s);
     if (n.has(id)) n.delete(id);
@@ -124,29 +136,36 @@ export default function MemoriesScreen() {
   }
 
   return (
-    <div className="pb-36">
-      <ScreenHeader
-        title={album ? album.title : 'Memories'}
-        kicker={album ? 'Album' : 'Only you can see these'}
-        back={!!album}
-        right={
-          <label className="glass relative grid h-10 w-10 cursor-pointer place-items-center rounded-full" aria-label="Jump to month">
-            <CalendarSearch className="h-5 w-5" />
-            <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="absolute inset-0 opacity-0" />
-          </label>
-        }
-      />
+    <div className="min-h-full bg-white pb-36">
+      <header className="flex items-center gap-2 px-3.5 pb-3 pt-safe">
+        <button onClick={() => (album ? setAlbum(null) : navigate(-1))} aria-label={album ? 'Back to albums' : 'Back to camera'} className={CIRCLE}>{album ? <ChevronLeft className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}</button>
+        <h1 className="min-w-0 flex-1 truncate text-center text-lg font-extrabold">{album ? album.title : 'Memories'}</h1>
+        <label className={cn(CIRCLE, 'relative cursor-pointer')} aria-label="Jump to month">
+          <CalendarSearch className="h-5 w-5" />
+          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="absolute inset-0 opacity-0" />
+        </label>
+      </header>
       <div className="mx-auto max-w-lg px-4">
-        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-3">
           {(['all', 'favourites', 'albums', 'archived'] as Tab[]).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-4 py-2 text-sm capitalize', tab === t ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 text-ink-soft ring-1 ring-ink/10')}>{t}</button>
+            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold', tab === t ? 'bg-ink text-white' : 'bg-[#eef1fa] text-ink')}>{TAB_LABEL[t]}</button>
           ))}
           {month && (
-            <button onClick={() => setMonth('')} className="flex shrink-0 items-center gap-1 rounded-full bg-ember-flame/25 px-3 text-xs">
+            <button onClick={() => setMonth('')} className="flex shrink-0 items-center gap-1 rounded-full bg-ember-flame/[0.12] px-3 text-xs font-bold text-ember-flame">
               {new Date(`${month}-01`).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} <X className="h-3 w-3" />
             </button>
           )}
         </div>
+
+        {flashback && tab === 'all' && !month && (
+          <button onClick={() => setViewer(flashback.items[0])} className="mb-3.5 flex w-full items-center gap-3 rounded-[20px] bg-[#fff1e6] p-3 text-left">
+            <span className="grid h-20 w-16 shrink-0 place-items-center rounded-xl bg-[#b06a3b] text-white"><Sparkles className="h-5 w-5" /></span>
+            <span className="flex-1">
+              <span className="block text-xs font-extrabold uppercase tracking-[0.08em] text-[#c2410c]">{flashback.years === 1 ? '1 year' : `${flashback.years} years`} ago today</span>
+              <span className="text-xs text-ink-mute">{flashback.items.length} {flashback.items.length === 1 ? 'snap' : 'snaps'} · tap to relive</span>
+            </span>
+          </button>
+        )}
 
         {usage && tab === 'all' && !month && (
           <div className="mb-4 px-1">
@@ -177,7 +196,7 @@ export default function MemoriesScreen() {
         ) : (
           groups.map((g) => (
             <section key={g.label} id={`mem-${monthOf(g.items[0].taken_at)}`} className="mb-4 scroll-mt-28">
-              <h3 className="mb-2 px-1 text-xs font-semibold text-ink-mute">{g.label}</h3>
+              <h3 className="mb-2 mt-1 text-sm font-extrabold">{g.label}</h3>
               <div className="grid grid-cols-3 gap-1.5">
                 {g.items.map((m) => (
                   <Tile key={m.id} m={m} selected={selected.has(m.id)} selecting={selecting} onTap={() => (selecting ? toggle(m.id) : setViewer(m))} onLong={() => { haptic(12); toggle(m.id); }} />
@@ -253,7 +272,7 @@ function Tile({ m, selected, selecting, onTap, onLong }: { m: Memory; selected: 
     if (m.kind === 'image') privateUrl('memories', m.media_path).then(setUrl).catch(() => undefined);
   }, [m]);
   return (
-    <button {...press} onClick={() => !press.wasLongPress() && onTap()} className={cn('relative aspect-square select-none overflow-hidden rounded-xl bg-ink/5 transition-transform', selected && 'scale-[0.92] ring-2 ring-ember-amber')}>
+    <button {...press} onClick={() => !press.wasLongPress() && onTap()} className={cn('relative aspect-[3/4] h-full w-full select-none overflow-hidden rounded-xl bg-ink/5 transition-transform', selected && 'scale-[0.92] ring-2 ring-ember-flame')}>
       {m.kind === 'image' ? (url ? <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <span className="block h-full animate-pulse bg-ink/5" />) : (
         <span className="grid h-full place-items-center bg-gradient-to-br from-ember-flame/30 to-ember-jade/20"><Play className="h-7 w-7" /></span>
       )}

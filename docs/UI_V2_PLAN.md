@@ -45,7 +45,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [ ] Snap editor: right tool rail, caption bar, bottom = Save, "Story" (my face), "Send to →".
 - [ ] Send to: My story / Close friends / recents with tick circles; indigo bottom bar listing picks + send.
 - [ ] Story viewer: segmented progress, header face + name + place, reply bar (camera, field, react).
-- [ ] Memories: tabs Snaps / Stories / Camera roll / Private, "1 year ago today" card, month grids.
+- [x] Memories (tabs are the real ones: Snaps / Favourites / Albums / Archived; flashback card appears when a memory matches today's date): tabs Snaps / Stories / Camera roll / Private, "1 year ago today" card, month grids.
 - [x] Welcome (/auth/welcome is the signed-out landing; figures are pre-rendered starter characters in public/welcome): wordmark, tagline, three full-body avatars, Create account / Log in.
 - [x] Settings (privacy choices stay as segmented controls so they can be changed in place): grouped cards (Account, Privacy, Look & feel with theme colour dots, Support/Log out).
 
