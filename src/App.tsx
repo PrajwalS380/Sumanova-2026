@@ -38,6 +38,7 @@ const PersonScreen = lazy(() => import('@/features/people/PersonScreen'));
 const BirthdaysScreen = lazy(() => import('@/features/friends/BirthdaysScreen'));
 const ProfileCodeScreen = lazy(() => import('@/features/profile/ProfileCodeScreen'));
 const AccountsScreen = lazy(() => import('@/features/auth/AccountsScreen'));
+const AvatarOnboardingScreen = lazy(() => import('@/features/avatar/AvatarOnboardingScreen'));
 const AvatarHomeScreen = lazy(() => import('@/features/avatar/AvatarHomeScreen'));
 const ProfilePhotoScreen = lazy(() => import('@/features/profile/ProfilePhotoScreen'));
 
@@ -73,10 +74,10 @@ function GuestOnly({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <ScreenLoader />;
   if (session) {
-    // Brand-new accounts design their avatar first (set by the sign-up page).
-    let next = '/';
+    // After sign-up / log-in: the avatar step (it forwards to the camera when an avatar exists or was skipped).
+    let next = '/onboarding/avatar';
     try {
-      next = sessionStorage.getItem('snv-after-auth') || '/';
+      next = sessionStorage.getItem('snv-after-auth') || '/onboarding/avatar';
     } catch {
       /* storage blocked */
     }
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="/auth/sign-up" element={<GuestOnly><SignUpPage /></GuestOnly>} />
           <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
           <Route path="/accounts" element={<AccountsScreen />} />
+          <Route path="/onboarding/avatar" element={<AvatarOnboardingScreen />} />
           <Route path="/auth/reset" element={<ResetPasswordPage />} />
           <Route element={<RequireAuth><InboxProvider><NotificationsProvider><CallProvider><AppShell /></CallProvider></NotificationsProvider></InboxProvider></RequireAuth>}>
             <Route index element={<CameraScreen />} />

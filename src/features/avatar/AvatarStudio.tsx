@@ -53,9 +53,12 @@ export default function AvatarStudio() {
     void avatarApi
       .get(me)
       .then((a) => {
-        // First visit: start from a ready-made character and show the character picker.
-        const l = a ?? structuredClone(PRESETS[Math.floor(Math.random() * PRESETS.length)].look);
-        if (!a) setMode('saved');
+        // Picked on the "Choose your avatar" step → start from that character and edit it.
+        const picked = Number(new URLSearchParams(location.search).get('preset'));
+        const preset = Number.isInteger(picked) && PRESETS[picked] ? PRESETS[picked] : null;
+        // First visit without a pick: start from a ready-made character and show the character picker.
+        const l = preset ? structuredClone(preset.look) : a ?? structuredClone(PRESETS[Math.floor(Math.random() * PRESETS.length)].look);
+        if (!a && !preset) setMode('saved');
         setHist({ list: [l], i: 0 });
         setSaved(a);
         setLoading(false);

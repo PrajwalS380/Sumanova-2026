@@ -63,7 +63,7 @@ export default function SignUpPage() {
       return;
     }
     try {
-      sessionStorage.setItem('snv-after-auth', '/avatar');
+      sessionStorage.setItem('snv-after-auth', '/onboarding/avatar');
     } catch {
       /* storage blocked: they land on the camera instead */
     }

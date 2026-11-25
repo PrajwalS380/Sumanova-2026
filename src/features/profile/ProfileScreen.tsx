@@ -64,14 +64,24 @@ export default function ProfileScreen() {
             <Settings className="h-5 w-5" />
           </Link>
         </header>
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }} className="absolute bottom-0 right-4">
-          <Link to="/avatar/home" aria-label="Open my avatar" className="block active:scale-[0.98]">
-            <AvatarFigure name={profile.display_name} bodyUrl={profile.avatar_body_url} faceUrl={profile.avatar_face_url ?? profile.avatar_url} aura={profile.aura_color} height={290} />
+        {profile.avatar_body_url ? (
+          <>
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }} className="absolute bottom-0 right-4">
+              <Link to="/avatar/home" aria-label="Open my avatar" className="block active:scale-[0.98]">
+                <AvatarFigure name={profile.display_name} bodyUrl={profile.avatar_body_url} faceUrl={profile.avatar_face_url ?? profile.avatar_url} aura={profile.aura_color} height={290} />
+              </Link>
+            </motion.div>
+            <Link to="/avatar/home" className="absolute right-6 top-[calc(var(--safe-top)+64px)] rounded-xl bg-white/90 px-2.5 py-1.5 text-[11px] font-extrabold text-ink">
+              Tap me to dress up
+            </Link>
+          </>
+        ) : (
+          <Link to="/onboarding/avatar?from=profile" className="absolute right-4 top-[calc(var(--safe-top)+70px)] w-[168px] overflow-hidden rounded-tile bg-white p-3 text-ink shadow-glass active:scale-[0.98]">
+            <img src="/presets/1.webp" alt="" className="mx-auto h-[150px] w-auto object-contain" />
+            <span className="mt-1 block text-[15px] font-black leading-tight">Create your avatar</span>
+            <span className="block text-xs font-semibold text-ink-mute">Pick a character and make it yours →</span>
           </Link>
-        </motion.div>
-        <Link to="/avatar/home" className="absolute right-6 top-[calc(var(--safe-top)+64px)] rounded-xl bg-white/90 px-2.5 py-1.5 text-[11px] font-extrabold text-ink">
-          Tap me to dress up
-        </Link>
+        )}
         <div className="absolute bottom-[18px] left-[18px] text-white">
           <Link to="/profile/photo" aria-label="Change profile picture" className="relative inline-block rounded-full border-4 border-white">
             <Avatar name={profile.display_name} url={profile.avatar_url} aura={profile.aura_color} size={84} />
