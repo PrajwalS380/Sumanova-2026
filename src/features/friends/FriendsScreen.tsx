@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Loader2, MessageCircle, Search, UserCheck, UserPlus, X } from 'lucide-react';
-import { ScreenHeader } from '@/components/ScreenHeader';
+import { ChevronLeft, Loader2, MessageCircle, Plus, Search, Share2, UserCheck, X } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInbox } from '@/providers/InboxProvider';
@@ -13,11 +12,23 @@ import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
 
 export default function FriendsScreen() {
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const me = session!.user.id;
   const { pendingRequests } = useInbox();
   const toast = useToast();
   const navigate = useNavigate();
+  async function shareCode() {
+    const text = `Add me on SUMANOVA: @${profile?.username ?? ''}`;
+    try {
+      if (navigator.share) await navigator.share({ title: 'SUMANOVA', text, url: location.origin });
+      else {
+        await navigator.clipboard.writeText(`${text} ${location.origin}`);
+        toast('Copied — paste it to a friend', 'success');
+      }
+    } catch {
+      /* cancelled */
+    }
+  }
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -93,12 +104,16 @@ export default function FriendsScreen() {
   const outgoing = requests.filter((r) => r.sender_id === me);
 
   return (
-    <div className="pb-16">
-      <ScreenHeader title="Friends" />
+    <div className="min-h-full bg-white pb-16">
+      <header className="flex items-center gap-2 px-3.5 pb-3 pt-safe">
+        <button onClick={() => navigate(-1)} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
+        <h1 className="flex-1 text-center text-lg font-extrabold">Add friends</h1>
+        <span className="w-10" aria-hidden />
+      </header>
       <div className="mx-auto max-w-lg px-4">
-        <label className="glass flex h-12 items-center gap-2 rounded-2xl px-4 focus-within:ring-2 focus-within:ring-ember-amber/60">
+        <label className="flex h-[46px] items-center gap-2.5 rounded-full bg-[#eef1fa] px-3.5 focus-within:ring-2 focus-within:ring-ember-flame/40">
           <Search className="h-5 w-5 text-ink-mute" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find by username or name" autoCapitalize="none" spellCheck={false} className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search people" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or username" autoCapitalize="none" spellCheck={false} className="h-full flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:text-ink-mute" aria-label="Search people" />
           {searching && <Loader2 className="h-4 w-4 animate-spin text-ink-mute" />}
           {query && !searching && (
             <button onClick={() => setQuery('')} aria-label="Clear search" className="text-ink-mute">
@@ -106,6 +121,14 @@ export default function FriendsScreen() {
             </button>
           )}
         </label>
+
+        {!query && profile && (
+          <button onClick={() => void shareCode()} className="mt-3.5 flex w-full items-center gap-3 rounded-[20px] bg-ember-flame/[0.12] p-3.5 text-left">
+            <Avatar name={profile.display_name} url={profile.avatar_url} aura={profile.aura_color} size={48} />
+            <span className="flex-1"><span className="block font-extrabold">Share my code</span><span className="text-xs text-ink-soft">Friends tap your link or search @{profile.username} to add you</span></span>
+            <Share2 className="h-[22px] w-[22px] text-ember-flame" />
+          </button>
+        )}
 
         <AnimatePresence mode="wait">
           {query.trim().length >= 2 ? (
@@ -121,7 +144,7 @@ export default function FriendsScreen() {
                     ) : p.relation === 'incoming' ? (
                       <RowButton primary loading={busy === p.id} onClick={() => run(p.id, () => friendsApi.send(p.id), 'You’re now friends!')} icon={<UserCheck className="h-4 w-4" />} label="Accept" />
                     ) : (
-                      <RowButton primary loading={busy === p.id} onClick={() => run(p.id, () => friendsApi.send(p.id), 'Request sent')} icon={<UserPlus className="h-4 w-4" />} label="Add" />
+                      <RowButton loading={busy === p.id} onClick={() => run(p.id, () => friendsApi.send(p.id), 'Request sent')} icon={<Plus className="h-[15px] w-[15px]" strokeWidth={2.6} />} label="Add" />
                     )}
                   </PersonRow>
                 ))}
@@ -130,16 +153,16 @@ export default function FriendsScreen() {
           ) : (
             <motion.div key="lists" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {incoming.length > 0 && (
-                <Section title={`Requests · ${incoming.length}`}>
+                <Section title={`Added me · ${incoming.length}`}>
                   {incoming.map((r) => {
                     const p = people[r.sender_id];
                     if (!p) return null;
                     return (
                       <PersonRow key={r.id} person={p}>
-                        <button aria-label="Decline" disabled={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, false))} className="grid h-9 w-9 place-items-center rounded-full bg-ink/5 text-ink-mute hover:text-ember-rose">
+                        <RowButton primary loading={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, true), `You and ${p.display_name} are friends`)} label="Accept" />
+                        <button aria-label="Ignore" disabled={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, false))} className="grid h-[34px] w-[34px] place-items-center rounded-full bg-[#eef1fa] text-ink">
                           <X className="h-4 w-4" />
                         </button>
-                        <RowButton primary loading={busy === r.id} onClick={() => run(r.id, () => friendsApi.respond(r.id, true), `You and ${p.display_name} are friends`)} icon={<Check className="h-4 w-4" />} label="Accept" />
                       </PersonRow>
                     );
                   })}
@@ -150,7 +173,7 @@ export default function FriendsScreen() {
                 {friends === null ? (
                   <SkeletonRows />
                 ) : friends.length === 0 ? (
-                  <div className="glass rounded-3xl p-6 text-center">
+                  <div className="mt-2 rounded-3xl bg-[#f4f6fd] p-6 text-center">
                     <p className="font-medium">No friends yet</p>
                     <p className="mt-1 text-sm text-ink-mute">Search for a username above to send your first request.</p>
                   </div>
@@ -186,20 +209,20 @@ export default function FriendsScreen() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-6">
-      <h2 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">{title}</h2>
-      <ul className="space-y-2">{children}</ul>
+    <section className="mt-5">
+      <h2 className="text-[13px] font-extrabold uppercase tracking-[0.08em] text-ink-mute">{title}</h2>
+      <ul>{children}</ul>
     </section>
   );
 }
 
 function PersonRow({ person, children, onClick }: { person: PublicProfile; children: React.ReactNode; onClick?: () => void }) {
   return (
-    <li className="glass flex items-center gap-3 rounded-3xl p-2.5 pr-3">
+    <li className="flex items-center gap-3 py-[9px]">
       <button onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left" disabled={!onClick}>
-        <Avatar name={person.display_name} url={person.avatar_url} aura={person.aura_color} size={46} />
+        <Avatar name={person.display_name} url={person.avatar_url} aura={person.aura_color} size={50} />
         <span className="min-w-0">
-          <span className="block truncate text-[15px] font-semibold">{person.display_name}</span>
+          <span className="block truncate font-extrabold">{person.display_name}</span>
           <span className="block truncate text-xs text-ink-mute">@{person.username}</span>
         </span>
       </button>
@@ -208,9 +231,9 @@ function PersonRow({ person, children, onClick }: { person: PublicProfile; child
   );
 }
 
-function RowButton({ onClick, icon, label, primary, loading }: { onClick: () => void; icon: React.ReactNode; label: string; primary?: boolean; loading?: boolean }) {
+function RowButton({ onClick, icon, label, primary, loading }: { onClick: () => void; icon?: React.ReactNode; label: string; primary?: boolean; loading?: boolean }) {
   return (
-    <button onClick={onClick} disabled={loading} className={cn('flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-transform active:scale-95 disabled:opacity-60', primary ? 'bg-ember-gradient text-noir shadow-glow' : 'bg-ink/10 text-ink')}>
+    <button onClick={onClick} disabled={loading} className={cn('flex items-center gap-1 rounded-full px-3.5 py-[9px] text-[13px] font-extrabold transition-transform active:scale-95 disabled:opacity-60', primary ? 'bg-ember-flame text-white' : 'bg-[#eef1fa] text-ink')}>
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
       {label}
     </button>
@@ -221,8 +244,8 @@ function SkeletonRows() {
   return (
     <>
       {[0, 1, 2].map((i) => (
-        <li key={i} className="glass flex h-[66px] items-center gap-3 rounded-3xl p-2.5">
-          <span className="h-11 w-11 animate-pulse rounded-full bg-ink/10" />
+        <li key={i} className="flex h-[68px] items-center gap-3">
+          <span className="h-[50px] w-[50px] animate-pulse rounded-full bg-ink/10" />
           <span className="flex-1 space-y-2">
             <span className="block h-3 w-32 animate-pulse rounded bg-ink/10" />
             <span className="block h-2.5 w-20 animate-pulse rounded bg-ink/5" />

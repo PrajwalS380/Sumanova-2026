@@ -40,8 +40,8 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [x] My profile (exactly as wireframe 6; Notifications stays on the camera bell, Calls via friend profiles): pale hero with full-body avatar (tap → studio), serif name, @username · friends · best streak,
       Edit avatar / Edit profile, cards: My stories, Friends (faces), Memories, Notifications.
 - [x] Friend profile: both full-body avatars side by side, streak pill, Chat / Snap / Call / Video, facts card, their story.
-- [ ] Add friends: search, Share my code card, Added me (Accept / ignore), Quick add.
-- [ ] Notifications: Today / Earlier with face + coloured badge icon, unread dot.
+- [x] Add friends ("Quick add" shown as "My friends": no suggestion engine; no scan-code button): search, Share my code card, Added me (Accept / ignore), Quick add.
+- [x] Notifications: Today / Earlier with face + coloured badge icon, unread dot.
 - [ ] Snap editor: right tool rail, caption bar, bottom = Save, "Story" (my face), "Send to →".
 - [ ] Send to: My story / Close friends / recents with tick circles; indigo bottom bar listing picks + send.
 - [ ] Story viewer: segmented progress, header face + name + place, reply bar (camera, field, react).
