@@ -1,9 +1,8 @@
 import { MeButton } from '@/components/MeButton';
-import { AppBackground } from '@/components/AppBackground';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bookmark, ChevronLeft, Play, Flag, Heart, Loader2, MessageCircle, MoreHorizontal, Plus, Search, Send, Share2, SlidersHorizontal, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { Bookmark, Flag, Heart, Loader2, MessageCircle, MoreHorizontal, Plus, Search, Send, Share2, SlidersHorizontal, Trash2, Volume2, VolumeX, X } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
@@ -24,7 +23,7 @@ export default function SpotlightScreen() {
   const { session, settings, setSettings } = useAuth();
   const me = session!.user.id;
   const toast = useToast();
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category] = useState<Category | null>(null);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [videos, setVideos] = useState<SpotlightVideo[] | null>(null);
@@ -36,7 +35,9 @@ export default function SpotlightScreen() {
   const [upload, setUpload] = useState(false);
   const [interests, setInterests] = useState(false);
   /** null = ranked list view; a number = full-screen player opened at that index */
-  const [playing, setPlaying] = useState<number | null>(null);
+  const [playing] = useState<number | null>(0); // opens straight into the player (wireframe 4)
+  const [feed, setFeed] = useState<'following' | 'foryou'>('foryou');
+  const [more2, setMore2] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const loadingMore = useRef(false);
 
@@ -132,60 +133,51 @@ export default function SpotlightScreen() {
         ) : videos.length === 0 ? (
           <div className="grid h-full place-items-center px-8 text-center">
             <div>
-              <p className="font-display text-xl">{query ? 'No results' : 'Spotlight is warming up'}</p>
-              <p className="mt-2 text-sm text-ink-mute">{query ? 'Try another word or creator.' : 'Be the first to post a short video for everyone on SUMANOVA.'}</p>
-              <button onClick={() => setUpload(true)} className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-ember-gradient text-noir px-5 text-sm font-semibold"><Plus className="h-4 w-4" /> Post a video</button>
+              <p className="font-display text-xl text-white">{query ? 'No results' : 'Spotlight is warming up'}</p>
+              <p className="mt-2 text-sm text-white/70">{query ? 'Try another word or creator.' : 'Be the first to post a short video for everyone on SUMANOVA.'}</p>
+              <button onClick={() => setUpload(true)} className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-extrabold text-ink"><Plus className="h-4 w-4" /> Post a video</button>
             </div>
           </div>
         ) : (
-          videos.map((v, i) => (
+          (feed === 'following' ? videos.filter((x) => x.following) : videos).map((v, i) => (
             <Card key={v.id} v={v} me={me} active={playing !== null && i === active} near={Math.abs(i - active) <= 1} muted={muted} onMute={() => setMuted((m) => !m)} onLike={(f) => void toggleLike(v, f)} onSave={() => void toggleSave(v)} onFollow={() => void toggleFollow(v)} onComments={() => setComments(v)} onShare={() => void share(v)} onMenu={() => setMenu(v)} />
           ))
         )}
       </div>
 
-      {/* Top bar */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/60 to-transparent pb-8 pt-safe">
-        <div className="pointer-events-auto flex items-center gap-2 px-3">
+      {/* Top bar (wireframe 4): my face, search · Following / For you · more */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/45 to-transparent pb-8 pt-safe">
+        <div className="pointer-events-auto flex items-center gap-2.5 px-3.5">
+          <MeButton size={44} className="shrink-0 rounded-full" />
           {searching ? (
-            <label className="flex h-10 flex-1 items-center gap-2 rounded-full bg-white/15 px-4 backdrop-blur-md">
+            <label className="flex h-11 flex-1 items-center gap-2 rounded-full bg-[rgba(10,12,24,0.38)] px-4">
               <Search className="h-4 w-4 text-white/70" />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search Spotlight" className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/60" />
               <button onClick={() => { setQuery(''); setSearching(false); }} aria-label="Close search"><X className="h-4 w-4 text-white/70" /></button>
             </label>
           ) : (
             <>
-              <button onClick={() => setPlaying(null)} aria-label="Back to the list" className="grid h-10 w-10 place-items-center rounded-2xl bg-black/30 text-white ring-1 ring-white/15 backdrop-blur-md"><ChevronLeft className="h-5 w-5" /></button>
-              <h1 className="flex-1 font-display text-[30px] italic text-white drop-shadow">Spotlight</h1>
-              <TopBtn label="Interests" onClick={() => setInterests(true)}><SlidersHorizontal className="h-5 w-5" /></TopBtn>
-              <TopBtn label="Search" onClick={() => setSearching(true)}><Search className="h-5 w-5" /></TopBtn>
-              <TopBtn label="Post a video" onClick={() => setUpload(true)}><Plus className="h-5 w-5" /></TopBtn>
+              <TopBtn label="Search" onClick={() => setSearching(true)}><Search className="h-[22px] w-[22px]" /></TopBtn>
+              <div className="flex flex-1 justify-center gap-[18px] text-base font-extrabold text-white" role="tablist">
+                <button role="tab" aria-selected={feed === 'following'} onClick={() => setFeed('following')} className={cn('pb-1', feed === 'following' ? 'border-b-[3px] border-white' : 'text-white/65')}>Following</button>
+                <button role="tab" aria-selected={feed === 'foryou'} onClick={() => setFeed('foryou')} className={cn('pb-1', feed === 'foryou' ? 'border-b-[3px] border-white' : 'text-white/65')}>For you</button>
+              </div>
+              <TopBtn label="More" onClick={() => setMore2(true)}><MoreHorizontal className="h-[22px] w-[22px]" /></TopBtn>
             </>
           )}
         </div>
-        <div className="no-scrollbar pointer-events-auto mt-2 flex gap-1.5 overflow-x-auto px-3">
-          {[null, ...CATEGORIES].map((c) => (
-            <button key={c ?? 'all'} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold capitalize backdrop-blur-md', category === c ? 'bg-ember-cream text-noir' : 'bg-white/15 text-white')}>{c ?? 'For you'}</button>
-          ))}
-        </div>
       </div>
-
-      {playing === null && (
-        <ChartList
-          videos={videos}
-          category={category}
-          setCategory={setCategory}
-          query={query}
-          setQuery={setQuery}
-          onOpen={(i) => {
-            setPlaying(i);
-            setActive(i);
-            requestAnimationFrame(() => scroller.current?.scrollTo({ top: i * (scroller.current?.clientHeight ?? 0) }));
-          }}
-          onInterests={() => setInterests(true)}
-          onUpload={() => setUpload(true)}
-        />
+      {feed === 'following' && videos && videos.length > 0 && !videos.some((x) => x.following) && (
+        <div className="absolute inset-0 grid place-items-center px-10 text-center text-white">
+          <p className="text-sm text-white/80">Follow creators from For you and their videos will show up here.</p>
+        </div>
       )}
+      <Sheet open={more2} onClose={() => setMore2(false)}>
+        <div className="pb-3">
+          <SheetItem icon={<Plus className="h-4 w-4" />} label="Post a video" onClick={() => { setMore2(false); setUpload(true); }} />
+          <SheetItem icon={<SlidersHorizontal className="h-4 w-4" />} label="Your interests" onClick={() => { setMore2(false); setInterests(true); }} />
+        </div>
+      </Sheet>
 
       <CommentsSheet video={comments} me={me} onClose={() => setComments(null)} onCount={(id, d) => setVideos((v) => v?.map((x) => (x.id === id ? { ...x, comment_count: x.comment_count + d } : x)) ?? null)} />
       <Sheet open={!!menu} onClose={() => setMenu(null)}>
@@ -217,62 +209,6 @@ export default function SpotlightScreen() {
         </div>
       </Sheet>
       <AnimatePresence>{upload && <UploadSheet onClose={() => setUpload(false)} onPosted={() => { setUpload(false); void load(); }} />}</AnimatePresence>
-    </div>
-  );
-}
-
-/** Ranked chart of videos (the Spotlight landing view). */
-function ChartList({ videos, category, setCategory, query, setQuery, onOpen, onInterests, onUpload }: { videos: SpotlightVideo[] | null; category: Category | null; setCategory: (c: Category | null) => void; query: string; setQuery: (q: string) => void; onOpen: (i: number) => void; onInterests: () => void; onUpload: () => void }) {
-  return (
-    <div className="absolute inset-0 z-20 overflow-y-auto bg-noir">
-      <AppBackground />
-      <div className="sticky top-0 z-10 bg-gradient-to-b from-noir via-noir/90 to-transparent px-4 pb-3 pt-safe">
-        <div className="flex items-center gap-2.5">
-          <MeButton />
-          <h1 className="flex-1 font-display text-[32px] leading-tight">Spotlight</h1>
-          <button onClick={onInterests} aria-label="Interests" className="glass grid h-10 w-10 place-items-center rounded-2xl"><SlidersHorizontal className="h-5 w-5" /></button>
-          <button onClick={onUpload} aria-label="Post a video" className="grid h-10 w-10 place-items-center rounded-2xl bg-ember-gradient text-white shadow-glow"><Plus className="h-5 w-5" /></button>
-        </div>
-        <label className="glass mt-3 flex h-11 items-center gap-2 rounded-2xl px-4">
-          <Search className="h-4 w-4 text-ink-mute" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search videos or creators" className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search Spotlight" />
-        </label>
-        <div className="no-scrollbar -mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4">
-          {[null, ...CATEGORIES].map((c) => (
-            <button key={c ?? 'all'} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold capitalize', category === c ? 'bg-ember-cream text-noir' : 'glass text-ink-soft')}>{c ?? 'Trending'}</button>
-          ))}
-        </div>
-      </div>
-      <div className="px-4 pb-16">
-        {videos === null ? (
-          <div className="space-y-2.5">{[0, 1, 2, 3].map((i) => <div key={i} className="h-[112px] animate-pulse rounded-3xl bg-ink/[0.05]" />)}</div>
-        ) : videos.length === 0 ? (
-          <div className="glass mt-4 rounded-4xl p-8 text-center">
-            <p className="font-display text-[26px]">{query ? 'No results' : 'Spotlight is warming up'}</p>
-            <p className="mt-2 text-sm text-ink-mute">{query ? 'Try another word or creator.' : 'Be the first to post a short video for everyone on SUMANOVA.'}</p>
-            <button onClick={onUpload} className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-ember-gradient px-5 text-sm font-bold text-white shadow-glow"><Plus className="h-4 w-4" /> Post a video</button>
-          </div>
-        ) : (
-          <ol className="space-y-2.5">
-            {videos.map((v, i) => (
-              <li key={v.id}>
-                <button onClick={() => onOpen(i)} className="glass flex w-full items-center gap-3 rounded-3xl p-2.5 text-left active:scale-[0.98]">
-                  <span className="w-7 shrink-0 text-center font-display text-[28px] italic text-ember-flame">{i + 1}</span>
-                  <span className="relative h-[92px] w-[68px] shrink-0 overflow-hidden rounded-2xl bg-pearl-lilac">
-                    {v.poster_path && <img src={publicUrl('spotlight', v.poster_path)} alt="" loading="lazy" className="h-full w-full object-cover" />}
-                    <Play className="absolute bottom-1.5 left-1.5 h-4 w-4 fill-white text-white drop-shadow" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-[15px] font-bold leading-snug">{v.caption || 'Untitled clip'}</span>
-                    <span className="mt-1 flex items-center gap-1.5 text-xs text-ink-mute"><Avatar name={v.display_name} url={v.avatar_url} aura={v.aura_color} size={18} ring={false} /> @{v.username}</span>
-                    <span className="mt-1 block text-[11px] font-semibold text-ink-faint">{v.view_count} views · {v.like_count} likes · <span className="capitalize">{v.category}</span></span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
     </div>
   );
 }
@@ -344,7 +280,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
       {paused && <div className="pointer-events-none absolute inset-0 grid place-items-center"><span className="rounded-full bg-black/40 p-5 text-white">❚❚</span></div>}
 
       {/* Side rail */}
-      <div className="absolute bottom-32 right-3 flex flex-col items-center gap-5 text-white">
+      <div className="absolute bottom-[210px] right-3 flex flex-col items-center gap-5 text-white">
         <Rail label={fmt(v.like_count)} active={v.liked} onClick={() => onLike()}><Heart className={cn('h-7 w-7', v.liked && 'fill-ember-rose text-ember-rose')} /></Rail>
         <Rail label={fmt(v.comment_count)} onClick={onComments}><MessageCircle className="h-7 w-7" /></Rail>
         <Rail label={fmt(v.save_count)} active={v.saved} onClick={onSave}><Bookmark className={cn('h-7 w-7', v.saved && 'fill-ember-gold text-ember-gold')} /></Rail>
@@ -354,7 +290,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
       </div>
 
       {/* Creator + caption */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-4 pb-28 pt-16 text-white">
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-4 pb-[104px] pt-16 text-white">
         <div className="flex items-center gap-2.5 pr-16">
           <Link to={`/u/${v.username}`} className="flex items-center gap-2.5">
             <Avatar name={v.display_name} url={v.avatar_url} aura={v.aura_color} size={38} />
@@ -364,7 +300,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
             </span>
           </Link>
           {v.user_id !== me && (
-            <button onClick={onFollow} className={cn('ml-1 rounded-full px-3 py-1 text-xs font-semibold', v.following ? 'bg-white/20' : 'bg-ember-cream text-noir')}>{v.following ? 'Following' : 'Follow'}</button>
+            <button onClick={onFollow} className={cn('ml-1 rounded-full px-3.5 py-[7px] text-[13px] font-extrabold', v.following ? 'bg-white/20' : 'bg-white text-ink')}>{v.following ? 'Following' : 'Follow'}</button>
           )}
         </div>
         {v.caption && <p className="mt-2 line-clamp-3 pr-16 text-sm">{v.caption}</p>}

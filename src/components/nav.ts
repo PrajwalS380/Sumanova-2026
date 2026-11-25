@@ -24,7 +24,7 @@ export const TABS: Tab[] = [
 export const TAB_PATHS = TABS.map((t) => t.to);
 
 /** Tabs drawn on a dark, full-bleed media background. */
-export const DARK_TABS: string[] = ['/']; // '/spotlight' joins once it opens straight into the player (Phase 3)
+export const DARK_TABS: string[] = ['/', '/spotlight'];
 
 /** Root sections: Android back from these returns to the camera. */
 export const ROOTS = ['/chat', '/stories', '/spotlight', '/map', '/memories', '/friends', '/calls', '/notifications', '/profile'];
