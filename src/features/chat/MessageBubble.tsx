@@ -13,6 +13,9 @@ import { parseNovaSticker } from '@/components/emoji/novaEmoji';
 import { NovaSticker } from '@/components/emoji/NovaSticker';
 import { PollCard } from './extras/PollCard';
 import { LocationCard } from './extras/LocationCard';
+import { HangoutCard } from './extras/HangoutCard';
+import { GameCard } from './extras/GameCard';
+import { E2EText } from './extras/E2EText';
 
 export type Receipt = 'sending' | 'failed' | 'sent' | 'delivered' | 'seen' | null;
 
@@ -20,6 +23,7 @@ interface Props {
   m: LocalMessage;
   mine: boolean;
   sender?: PublicProfile;
+  people?: Record<string, PublicProfile>;
   showSender: boolean;
   groupedWithPrev: boolean;
   groupedWithNext: boolean;
@@ -55,7 +59,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
 
   const avatarSticker = m.kind === 'image' && !!m.media_meta?.sticker;
   const isMedia = (m.kind === 'image' && !avatarSticker) || m.kind === 'video';
-  const isSticker = m.kind === 'sticker' || m.kind === 'snap' || m.kind === 'poll' || m.kind === 'location' || avatarSticker;
+  const isSticker = m.kind === 'sticker' || m.kind === 'snap' || m.kind === 'poll' || m.kind === 'location' || m.kind === 'hangout' || m.kind === 'game' || avatarSticker;
   const deleted = !!m.deleted_at;
   const counts = p.reactions.reduce<Record<string, number>>((acc, r) => ((acc[r.emoji] = (acc[r.emoji] ?? 0) + 1), acc), {});
   const r = 'rounded-[20px]';
@@ -94,13 +98,13 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           {p.reply && !deleted && (
             <button onClick={() => p.onReplyTap(p.reply!.id)} className={cn('mb-1.5 block w-full rounded-xl border-l-2 px-2.5 py-1.5 text-left text-xs', mine ? 'border-ink/70 bg-black/15' : 'border-ember-amber bg-ink/5')}>
               <span className="block font-semibold opacity-90">{p.replySender}</span>
-              <span className="line-clamp-2 opacity-75">{p.reply.deleted_at ? 'Deleted message' : p.reply.body ?? (p.reply.kind === 'image' ? '📷 Photo' : p.reply.kind === 'video' ? '🎬 Video' : p.reply.kind === 'voice' ? '🎙️ Voice note' : '')}</span>
+              <span className="line-clamp-2 opacity-75">{p.reply.deleted_at ? 'Deleted message' : p.reply.body?.startsWith('e2e:') ? 'Encrypted message' : p.reply.body ?? (p.reply.kind === 'image' ? '📷 Photo' : p.reply.kind === 'video' ? '🎬 Video' : p.reply.kind === 'voice' ? '🎙️ Voice note' : '')}</span>
             </button>
           )}
           {deleted ? (
             <span className="text-sm">Message deleted</span>
           ) : m.kind === 'text' ? (
-            <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">{m.body}</p>
+            m.body?.startsWith('e2e:') ? <E2EText body={m.body} mine={mine} senderId={m.sender_id} conversationId={m.conversation_id} /> : <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">{m.body}</p>
           ) : m.kind === 'snap' ? (
             p.snap ? <SnapTile kind={m.body ?? 'image'} state={p.snap.state} screenshot={p.snap.screenshot} mine={mine} onOpen={p.snap.onOpen} /> : null
           ) : m.kind === 'sticker' ? (
@@ -109,6 +113,10 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
             ) : (
               <span className="block pb-1 text-[64px] leading-none drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker">{m.body}</span>
             )
+          ) : m.kind === 'hangout' && m.media_meta?.hangout_id ? (
+            <HangoutCard hangoutId={m.media_meta.hangout_id} />
+          ) : m.kind === 'game' ? (
+            <GameCard messageId={m.id} meta={m.media_meta ?? {}} people={p.people ?? {}} local={!!m.local} />
           ) : m.kind === 'poll' ? (
             <PollCard messageId={m.id} question={m.body ?? ''} options={m.media_meta?.options ?? []} local={!!m.local} />
           ) : m.kind === 'location' ? (

@@ -289,6 +289,7 @@ export default function ChatThreadScreen() {
                     m={r.m!}
                     mine={r.m!.sender_id === me}
                     sender={r.m!.sender_id ? conv.people[r.m!.sender_id] : undefined}
+                    people={conv.people}
                     showSender={isGroup}
                     groupedWithPrev={close(r.m!, r.prev)}
                     groupedWithNext={close(r.m!, r.next)}
@@ -345,6 +346,8 @@ export default function ChatThreadScreen() {
         onCancel={() => { setReplyTo(null); setEditing(null); }}
         accent={theme.accent}
         conversationId={id}
+        peerId={summary?.kind === 'direct' ? summary.other_user_id : null}
+        others={conv.members.filter((x) => x.user_id !== me).map((x) => conv.people[x.user_id]).filter(Boolean)}
         disabled={disabledReason}
       />
 

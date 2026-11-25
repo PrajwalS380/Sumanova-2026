@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CalendarClock, Camera, Mic, PencilLine, Plus, Reply, SendHorizontal, Smile, Square, Trash2, X } from 'lucide-react';
+import { CalendarClock, Camera, Lock, Mic, PencilLine, Plus, Reply, SendHorizontal, Smile, Square, Trash2, X } from 'lucide-react';
+import { currentKeyOf, encryptFor, ensureMyKey, secretMode } from '@/lib/e2e';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/providers/ToastProvider';
 import { MAX_VOICE_SECONDS, prepareMedia, startVoiceRecording, type VoiceRecording } from '@/lib/chat/media';
 import { formatDuration } from '@/lib/chat/time';
-import type { LocalMessage, MediaMeta, MessageKind } from '@/lib/chat/types';
+import type { LocalMessage, MediaMeta, MessageKind, PublicProfile } from '@/lib/chat/types';
 import { haptic } from '@/lib/haptics';
 import { STICKERS } from './themes';
 import { NovaEmoji } from '@/components/emoji/NovaEmoji';
@@ -37,9 +38,31 @@ interface Props {
   accent: string;
   disabled?: string | null;
   conversationId: string;
+  /** Direct chats: the other person (secret chats). */
+  peerId?: string | null;
+  /** Everyone else in the chat (games). */
+  others?: PublicProfile[];
 }
 
-export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing, onCancel, accent, disabled, conversationId }: Props) {
+export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing, onCancel, accent, disabled, conversationId, peerId, others = [] }: Props) {
+  const [secret, setSecret] = useState(() => secretMode.get(conversationId));
+  async function toggleSecret() {
+    if (!peerId || !session) return;
+    if (secret) {
+      secretMode.set(conversationId, false);
+      setSecret(false);
+      return toast('Secret chat off — new messages are normal', 'info');
+    }
+    try {
+      await ensureMyKey(session.user.id);
+      if (!(await currentKeyOf(peerId))) throw new Error('Your friend needs to open the latest SUMANOVA once before secret chats work');
+      secretMode.set(conversationId, true);
+      setSecret(true);
+      toast('Secret chat on — your texts are end-to-end encrypted', 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
   const [text, setText] = useState('');
   const [stickers, setStickers] = useState(false);
   const [tab, setTab] = useState<'nova' | 'gifs' | 'me' | 'emoji'>('nova');
@@ -98,15 +121,20 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
     const body = text.trim();
     if (!body) return;
     haptic(8);
+    const seal = async (t: string) => (secret && peerId && session ? encryptFor(session.user.id, peerId, t) : t);
     if (editing) {
       try {
-        await onEdit(editing.id, body);
+        await onEdit(editing.id, editing.body?.startsWith('e2e:') && peerId && session ? await encryptFor(session.user.id, peerId, body) : body);
       } catch (e) {
         toast((e as Error).message, 'error');
         return;
       }
     } else {
-      onSend({ kind: 'text', body, replyTo: replyTo?.id ?? null });
+      try {
+        onSend({ kind: 'text', body: await seal(body), replyTo: replyTo?.id ?? null });
+      } catch (e) {
+        return toast((e as Error).message, 'error');
+      }
     }
     setText('');
     onCancel();
@@ -205,11 +233,16 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
                 void submit();
               }
             }}
-            placeholder={editing ? 'Edit message' : 'Send a chat'}
+            placeholder={editing ? 'Edit message' : secret ? 'Secret chat (encrypted)' : 'Send a chat'}
             maxLength={4000}
             aria-label="Message"
             className="max-h-[132px] min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] font-semibold leading-snug outline-none placeholder:text-ink-mute"
           />
+          {peerId && !editing && (
+            <button onClick={() => void toggleSecret()} aria-label={secret ? 'Secret chat on — tap to turn off' : 'Turn on secret (end-to-end encrypted) chat'} aria-pressed={secret} className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-xl active:scale-90', secret ? 'text-ember-sage' : 'text-ink-faint')}>
+              <Lock className="h-4 w-4" />
+            </button>
+          )}
           {!editing && (
             <button onClick={() => setExtras(true)} aria-label="Poll, location or schedule" className="-mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-ink-mute active:scale-90">
               <Plus className="h-5 w-5" strokeWidth={2.4} />
@@ -274,6 +307,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
         open={extras}
         onClose={() => setExtras(false)}
         conversationId={conversationId}
+        others={others}
         draft={text}
         onScheduled={() => { setText(''); loadScheduled(); }}
         onSend={(m, live) => {

@@ -1,6 +1,6 @@
 import type { AuraColor } from '@/lib/types';
 
-export type MessageKind = 'text' | 'image' | 'video' | 'voice' | 'sticker' | 'system' | 'snap' | 'poll' | 'location';
+export type MessageKind = 'text' | 'image' | 'video' | 'voice' | 'sticker' | 'system' | 'snap' | 'poll' | 'location' | 'hangout' | 'game';
 export type DisappearMode = 'never' | 'after_view' | '24h';
 export type ChatTheme = 'aurora' | 'sunset' | 'ocean' | 'forest' | 'mono' | 'rose';
 
@@ -21,6 +21,15 @@ export interface MediaMeta {
   acc?: number | null;
   live_until?: string;
   updated_at?: string;
+  /** Hangout card (kind 'hangout'). */
+  hangout_id?: string;
+  /** Mini-game state (kind 'game'), validated on the server. */
+  game?: 'ttt' | 'c4';
+  players?: string[];
+  board?: number[];
+  turn?: number;
+  winner?: string | null;
+  moves?: number;
 }
 
 export interface Message {
