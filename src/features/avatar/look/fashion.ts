@@ -1,4 +1,3 @@
-import { CLOTH } from './palettes';
 import type { Variant } from './face';
 
 /**
@@ -12,19 +11,47 @@ export type Pattern =
 
 export interface Wear { cut: string; pattern: Pattern; c1: string; c2: string; c3: string }
 
-const C = (i: number) => CLOTH[((i % CLOTH.length) + CLOTH.length) % CLOTH.length];
+/**
+ * Every item in a category must look different from every other one — even after the user
+ * picks their own colour from the rail (which only replaces the main colour, c1). So within a
+ * cut each item gets a different, clearly visible pattern, and the trim colours (c2/c3, used
+ * for prints, soles, ribbing, hat bands …) rotate too. Cuts keep their 10-id blocks, so saved
+ * avatars keep the same garment cut. Checked by e2e/avatar-harness/dupes.ts.
+ */
+const BOLD: Pattern[] = ['stripes', 'plaid', 'camo', 'dots', 'hearts', 'stars', 'tiedye', 'colorblock', 'fairisle', 'floral', 'leopard', 'argyle', 'chevron', 'paisley', 'gradient', 'checker', 'zebra', 'gingham'];
+/** Strong trim / print colours: light, dark and brights, so prints stay visible on any main colour. */
+const ACCENT = ['#f6f1ea', '#18151a', '#e5484d', '#ffb547', '#2563eb', '#3fae8c', '#f0b3d8', '#7a4ea0', '#fde68a', '#4fa3d9', '#c4572d', '#9bbf5a'];
+/** Default main colours (before the user picks one): wearable first, a few brights. */
+const MAIN = ['#2d3a58', '#f4f1ec', '#6f7680', '#9db89a', '#b9a27c', '#7a1f2b', '#1d1d20', '#5b7fae', '#e8b04a', '#c98a9a', '#3d5a6c', '#efe6d6', '#5d6b3a', '#b4532a'];
+const lum = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+};
 
-function grid(key: string, cuts: string[], looks: [Pattern, number, number, number][]): Variant<Wear>[] {
+function grid(key: string, cuts: string[], firsts: (cut: string, ci: number) => Pattern[] = () => ['solid'], pool: Pattern[] = BOLD): Variant<Wear>[] {
   const out: Variant<Wear>[] = [];
   cuts.forEach((cut, ci) => {
-    looks.forEach(([pattern, a, b, c], li) => {
-      // rotate colourways per cut so the grid never repeats exactly
-      const shift = ci * 3;
-      out.push({ id: out.length, family: cut, name: `${cut} · ${LOOK_NAME[pattern]}`, p: { cut, pattern, c1: C(a + shift), c2: C(b + shift), c3: C(c + shift) } });
-      void li;
+    const head = firsts(cut, ci);
+    const rest = pool.filter((p) => !head.includes(p));
+    // a different slice of the pool per cut, so neighbouring cuts don't share the same prints
+    const looks = [...head, ...Array.from({ length: 10 - head.length }, (_, j) => rest[(j + ci * 5) % rest.length])];
+    looks.forEach((pattern, j) => {
+      const c1 = MAIN[(ci * 3 + j) % MAIN.length];
+      // trims contrast with the default colour and differ item to item
+      let c2 = ACCENT[(j * 5 + ci) % ACCENT.length];
+      if (Math.abs(lum(c2) - lum(c1)) < 0.25) c2 = ACCENT[(j * 5 + ci + 1) % ACCENT.length];
+      if (Math.abs(lum(c2) - lum(c1)) < 0.25) c2 = lum(c1) > 0.5 ? '#18151a' : '#f6f1ea';
+      const c3 = ACCENT[(j * 7 + ci + 3) % ACCENT.length];
+      out.push({ id: out.length, family: cut, name: `${cut} · ${LOOK_NAME[pattern]}`, p: { cut, pattern, c1, c2, c3 } });
     });
   });
-  if (out.length !== 100) throw new Error(`${key} has ${out.length}`);
+  if (out.length !== cuts.length * 10) throw new Error(`${key} has ${out.length}`);
+  const seen = new Set<string>();
+  for (const v of out) {
+    const k = `${v.p.cut}|${v.p.pattern}`;
+    if (seen.has(k)) throw new Error(`${key}: duplicate ${k}`);
+    seen.add(k);
+  }
   return out;
 }
 
@@ -35,46 +62,28 @@ export const LOOK_NAME: Record<Pattern, string> = {
   gradient: 'Gradient', checker: 'Checker', zebra: 'Stripe wild',
 };
 
-const TEE_LOOKS: [Pattern, number, number, number][] = [
-  ['solid', 0, 9, 20], ['stripes', 0, 37, 46], ['plaid', 46, 9, 0], ['gingham', 0, 34, 0], ['emblem', 35, 20, 9],
-  ['camo', 26, 15, 8], ['dots', 8, 0, 21], ['hearts', 0, 45, 44], ['tiedye', 43, 34, 21], ['colorblock', 8, 0, 20],
-];
-export const TOPS = grid('top', ['Tee', 'V-neck', 'Boxy tee', 'Long sleeve', 'Polo', 'Shirt', 'Lounge shirt', 'Sweatshirt', 'Tank', 'Crop top'], TEE_LOOKS);
+export const TOPS = grid('top', ['Tee', 'V-neck', 'Boxy tee', 'Long sleeve', 'Polo', 'Shirt', 'Lounge shirt', 'Sweatshirt', 'Tank', 'Crop top'], (cut) =>
+  cut === 'Tee' || cut === 'Boxy tee' || cut === 'Sweatshirt' ? ['solid', 'emblem'] : ['solid'],
+);
 
-export const OUTERWEAR = grid('outer', ['Puffer', 'Bomber', 'Denim jacket', 'Biker', 'Shaggy coat', 'Zip hoodie', 'Hoodie', 'Trench', 'Blazer', 'Varsity'], [
-  ['solid', 35, 0, 9], ['solid', 8, 20, 0], ['colorblock', 36, 0, 20], ['camo', 26, 15, 8], ['solid', 12, 0, 8],
-  ['knit', 2, 13, 8], ['solid', 45, 0, 8], ['gradient', 21, 46, 8], ['plaid', 38, 8, 20], ['solid', 27, 0, 9],
-]);
+export const OUTERWEAR = grid('outer', ['Puffer', 'Bomber', 'Denim jacket', 'Biker', 'Shaggy coat', 'Zip hoodie', 'Hoodie', 'Trench', 'Blazer', 'Varsity'], (cut) =>
+  cut === 'Denim jacket' ? ['solid', 'denim', 'denimLight'] : ['solid'],
+);
 
-export const BOTTOMS = grid('bottom', ['Straight jeans', 'Flared jeans', 'Baggy jeans', 'Skinny jeans', 'Cargo', 'Joggers', 'Chinos', 'Shorts', 'Lounge pants', 'Wide trousers'], [
-  ['denim', 37, 0, 0], ['denimLight', 35, 0, 0], ['denimDark', 38, 0, 0], ['solid', 8, 0, 0], ['solid', 2, 0, 0],
-  ['plaid', 46, 8, 0], ['gingham', 8, 0, 0], ['camo', 26, 15, 8], ['fairisle', 47, 0, 26], ['pinstripe', 39, 1, 0],
-]);
+const JEANS = ['Straight jeans', 'Flared jeans', 'Baggy jeans', 'Skinny jeans'];
+export const BOTTOMS = grid('bottom', [...JEANS, 'Cargo', 'Joggers', 'Chinos', 'Shorts', 'Lounge pants', 'Wide trousers'], (cut) =>
+  JEANS.includes(cut) ? ['denim', 'denimLight', 'denimDark', 'solid'] : cut === 'Shorts' ? ['solid', 'denim'] : ['solid'],
+);
 
-export const DRESSES = grid('dress', ['Slip', 'A-line', 'Maxi', 'Saree', 'Lehenga', 'Bodycon', 'Shirt dress', 'Anarkali', 'Tiered', 'Wrap'], [
-  ['solid', 46, 22, 0], ['floral', 0, 44, 26], ['paisley', 20, 22, 48], ['solid', 41, 22, 0], ['gradient', 44, 41, 22],
-  ['dots', 8, 0, 0], ['stripes', 0, 36, 0], ['leopard', 12, 6, 0], ['gingham', 0, 45, 0], ['chevron', 30, 0, 21],
-]);
+export const DRESSES = grid('dress', ['Slip', 'A-line', 'Maxi', 'Saree', 'Lehenga', 'Bodycon', 'Shirt dress', 'Anarkali', 'Tiered', 'Wrap']);
 
-export const SHOES = grid('shoes', ['Low sneaker', 'High-top', 'Runner', 'Slip-on', 'Loafer', 'Chelsea boot', 'Combat boot', 'Sandal', 'Slide', 'Cosy slipper'], [
-  ['solid', 0, 0, 9], ['solid', 9, 0, 0], ['colorblock', 0, 20, 9], ['checker', 0, 9, 0], ['solid', 16, 0, 9],
-  ['solid', 46, 0, 0], ['colorblock', 0, 36, 21], ['plaid', 46, 9, 0], ['solid', 41, 0, 9], ['solid', 3, 0, 9],
-]);
+export const SHOES = grid('shoes', ['Low sneaker', 'High-top', 'Runner', 'Slip-on', 'Loafer', 'Chelsea boot', 'Combat boot', 'Sandal', 'Slide', 'Cosy slipper']);
 
-export const SOCKS = grid('socks', ['Crew', 'Knee', 'Ankle', 'Calf', 'Sport crew', 'Sport knee', 'Ribbed crew', 'Slouch', 'Over-knee', 'Trainer'], [
-  ['solid', 0, 0, 0], ['stripes', 0, 9, 46], ['hearts', 0, 44, 0], ['dots', 9, 0, 0], ['argyle', 38, 0, 46],
-  ['stripes', 9, 0, 0], ['solid', 9, 0, 0], ['stars', 36, 22, 0], ['checker', 0, 9, 0], ['gradient', 21, 45, 0],
-]);
+export const SOCKS = grid('socks', ['Crew', 'Knee', 'Ankle', 'Calf', 'Sport crew', 'Sport knee', 'Ribbed crew', 'Slouch', 'Over-knee', 'Trainer']);
 
-export const BAGS = grid('bag', ['Crossbody', 'Tote', 'Backpack', 'Baguette', 'Bucket', 'Belt bag', 'Clutch', 'Duffle', 'Bowling', 'Mini top-handle'], [
-  ['solid', 16, 15, 22], ['solid', 9, 0, 22], ['solid', 0, 15, 22], ['denim', 35, 0, 22], ['solid', 22, 0, 9],
-  ['checker', 0, 9, 22], ['leopard', 12, 6, 22], ['solid', 44, 0, 22], ['plaid', 46, 9, 22], ['solid', 30, 0, 22],
-]);
+export const BAGS = grid('bag', ['Crossbody', 'Tote', 'Backpack', 'Baguette', 'Bucket', 'Belt bag', 'Clutch', 'Duffle', 'Bowling', 'Mini top-handle']);
 
-export const HATS = grid('hat', ['Cap', 'Beanie', 'Bucket hat', 'Fedora', 'Beret', 'Trapper', 'Hard hat', 'Festive hat', 'Headband', 'Pagdi'], [
-  ['solid', 9, 0, 0], ['solid', 46, 0, 0], ['camo', 26, 15, 8], ['solid', 13, 9, 0], ['solid', 0, 9, 0],
-  ['knit', 2, 13, 0], ['solid', 22, 9, 0], ['solid', 37, 0, 0], ['stripes', 0, 46, 0], ['gradient', 21, 45, 0],
-]);
+export const HATS = grid('hat', ['Cap', 'Beanie', 'Bucket hat', 'Fedora', 'Beret', 'Trapper', 'Hard hat', 'Festive hat', 'Headband', 'Pagdi']);
 
 /** Glasses: frames × lens tints. c1 = frame colour, c2/c3 = lens gradient. */
 export const GLASSES: Variant<Wear>[] = (() => {

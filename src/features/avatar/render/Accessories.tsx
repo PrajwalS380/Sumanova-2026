@@ -15,7 +15,7 @@ export function Glasses({ w, h, ex, ey, er }: { w: Wear; h: HeadShape; ex: numbe
   const lensTex = useMemo(() => lensGradient(w.c2, w.c3), [w.c2, w.c3]);
   const clear = w.c2 === '#ffffff';
   const frameMat = <meshPhysicalMaterial color={w.c1} metalness={cut === 'Aviator' || cut === 'Rimless' || cut === 'Round' ? 0.85 : 0.15} roughness={0.25} clearcoat={0.8} />;
-  const lensMat = <meshPhysicalMaterial map={clear ? null : lensTex} color="#ffffff" transparent opacity={clear ? 0.08 : 0.88} roughness={0.05} metalness={cut === 'Shield visor' || w.c3 === '#f6f6f8' ? 0.5 : 0.1} clearcoat={1} depthWrite={false} side={THREE.DoubleSide} />;
+  const lensMat = <meshPhysicalMaterial key={clear ? 'clear' : 'tint'} map={clear ? null : lensTex} color="#ffffff" transparent opacity={clear ? 0.08 : 0.88} roughness={0.05} metalness={cut === 'Shield visor' || w.c3 === '#f6f6f8' ? 0.5 : 0.1} clearcoat={1} depthWrite={false} side={THREE.DoubleSide} />;
   const shape = (s: number): THREE.Shape => {
     const sh = new THREE.Shape();
     if (cut === 'Heart') {

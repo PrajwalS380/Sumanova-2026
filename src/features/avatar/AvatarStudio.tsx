@@ -13,6 +13,7 @@ import { Avatar2D } from './Avatar2D';
 import { avatarApi, FASHION_SLOTS, type SavedOutfit } from './api';
 import { PRESETS } from './look/presets';
 import { DEFAULT_LOOK, OPTIONAL, SLOTS, normalizeLook, randomLook, type ColorKey, type Look, type Slot } from './look/config';
+import { isHidden } from './look/hidden';
 import { CATEGORIES, EXPRESSIONS, POSES, type Category, type Mode } from './editor/categories';
 import { mannequin, useThumb } from './editor/thumbs';
 
@@ -253,11 +254,13 @@ function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial }: { cat:
 }
 
 function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; look: Look; onPick: (id: number | null) => void }) {
-  const list = SLOTS[slot] as readonly { id: number; name: string; family: string }[];
+  const current = look.pick[slot] ?? null;
+  // Look-alike items are left out (the one you're wearing always stays visible).
+  const all = SLOTS[slot] as readonly { id: number; name: string; family: string }[];
+  const list = useMemo(() => all.filter((v) => !isHidden(slot, v.id) || v.id === current), [all, slot, current]);
   const families = useMemo(() => Array.from(new Set(list.map((v) => v.family))), [list]);
   const [fam, setFam] = useState<string | null>(null);
   const shown = fam ? list.filter((v) => v.family === fam) : list;
-  const current = look.pick[slot] ?? null;
   const color = cat.color ? look.color[cat.color.key] ?? null : null;
   const tip = slot === 'hair' ? look.color.hairTip ?? null : null;
   return (
@@ -310,6 +313,7 @@ const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, ti
       l.pick[slot] = id;
       if (slot === 'dress') l.pick.top = l.pick.bottom = null;
       if (slot === 'tonguePierce') l.expression = 'tongue';
+      if (slot === 'bag') l.pose = 'celebrating'; // arms up, so the bag isn't hidden behind the arm
       if (slot === 'lashes') l.color.liner = color;
       if (slot === 'hair' || slot === 'beard') l.color[slot] = color ?? '#3b2618';
       if (slot === 'hair') l.color.hairTip = tip;

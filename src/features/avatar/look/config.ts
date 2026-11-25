@@ -5,6 +5,7 @@ import { HAIRSTYLES } from './hair';
 import { TOPS, OUTERWEAR, BOTTOMS, DRESSES, SHOES, SOCKS, BAGS, HATS, GLASSES } from './fashion';
 import { EAR_PIERCINGS, NOSE_PIERCINGS, BROW_PIERCINGS, LIP_PIERCINGS, TONGUE_PIERCINGS, HEARING, HEAD_EXTRAS } from './extras';
 import type { Variant } from './face';
+import { isHidden } from './hidden';
 
 export type Expression = 'neutral' | 'happy' | 'sad' | 'angry' | 'surprised' | 'laughing' | 'crying' | 'winking' | 'blushing' | 'sleeping' | 'tongue';
 export type Pose = 'standing' | 'sitting' | 'dancing' | 'waving' | 'walking' | 'thumbsup' | 'celebrating';
@@ -156,7 +157,7 @@ export function randomLook(): Look {
   for (const s of ['head', 'eyes', 'brows', 'nose', 'mouth', 'ears', 'body', 'hair'] as Slot[]) l.pick[s] = R(SLOTS[s].length);
   // Wearable outfits: mostly plain fabrics/denim in real-world colours, the odd print for fun.
   const plain = (s: 'top' | 'outer' | 'bottom' | 'shoes') => {
-    const list = SLOTS[s] as readonly { id: number; p: { pattern: string } }[];
+    const list = (SLOTS[s] as readonly { id: number; p: { pattern: string } }[]).filter((v) => !isHidden(s, v.id));
     const ok = Math.random() < 0.85 ? list.filter((v) => /^(solid|denim|denimLight|denimDark|knit)$/.test(v.p.pattern)) : list;
     return ok[R(ok.length)].id;
   };
@@ -167,7 +168,8 @@ export function randomLook(): Look {
   l.pick.beard = Math.random() < 0.35 ? R(100) : null;
   l.pick.lashes = Math.random() < 0.6 ? R(100) : null;
   l.pick.outer = Math.random() < 0.4 ? plain('outer') : null;
-  l.pick.glasses = Math.random() < 0.25 ? R(100) : null;
+  const glasses = SLOTS.glasses.filter((v) => !isHidden('glasses', v.id));
+  l.pick.glasses = Math.random() < 0.25 ? glasses[R(glasses.length)].id : null;
   l.color.hair = HAIR[R(19)];
   l.color.eyes = EYES[R(EYES.length)];
   l.color.brows = l.color.hair;

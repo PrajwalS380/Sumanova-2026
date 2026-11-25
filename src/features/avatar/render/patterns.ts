@@ -68,15 +68,15 @@ export function fabric(pattern: Pattern, c1: string, c2: string, c3: string): TH
       break;
     case 'dots':
       g.fillStyle = c2;
-      for (let y = 0; y < S; y += 32) for (let x = (y / 32) % 2 ? 16 : 0; x < S; x += 32) circle(g, x + 8, y + 8, 5);
+      for (let y = 0; y < S; y += 64) for (let x = (y / 64) % 2 ? 32 : 0; x < S + 32; x += 64) circle(g, x + 16, y + 16, 13);
       break;
     case 'hearts':
       g.fillStyle = c2;
-      for (let y = 0; y < S; y += 42) for (let x = (y / 42) % 2 ? 21 : 0; x < S + 21; x += 42) heart(g, x + 10, y + 12, 9);
+      for (let y = 0; y < S; y += 64) for (let x = (y / 64) % 2 ? 32 : 0; x < S + 32; x += 64) heart(g, x + 16, y + 18, 18);
       break;
     case 'stars':
       g.fillStyle = c2;
-      for (let i = 0; i < 18; i++) star(g, r() * S, r() * S, 6 + r() * 6);
+      for (let y = 0; y < S; y += 64) for (let x = (y / 64) % 2 ? 32 : 0; x < S + 32; x += 64) star(g, x + 16 + (r() - 0.5) * 10, y + 20 + (r() - 0.5) * 10, 17 + r() * 5);
       break;
     case 'tiedye': {
       for (let i = 0; i < 9; i++) {
@@ -117,25 +117,25 @@ export function fabric(pattern: Pattern, c1: string, c2: string, c3: string): TH
       }
       break;
     case 'floral':
-      for (let i = 0; i < 16; i++) flower(g, r() * S, r() * S, 8 + r() * 8, i % 2 ? c2 : c3);
+      for (let y = 0; y < S; y += 64) for (let x = (y / 64) % 2 ? 32 : 0; x < S + 32; x += 64) flower(g, x + 16 + (r() - 0.5) * 12, y + 22 + (r() - 0.5) * 12, 20 + r() * 5, (x + y) % 128 ? c2 : c3);
       break;
     case 'paisley':
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 16; i++) {
         g.save();
-        g.translate(r() * S, r() * S);
+        g.translate((i % 4) * 64 + 32 + (r() - 0.5) * 16, Math.floor(i / 4) * 64 + 32 + (r() - 0.5) * 16);
         g.rotate(r() * Math.PI * 2);
         g.fillStyle = i % 2 ? c2 : c3;
         g.beginPath();
-        g.ellipse(0, 0, 14, 9, 0, 0, Math.PI * 2);
+        g.ellipse(0, 0, 26, 15, 0, 0, Math.PI * 2);
         g.fill();
         g.fillStyle = c1;
-        circle(g, -3, 0, 4);
+        circle(g, -6, 0, 7);
         g.restore();
       }
       break;
     case 'leopard':
-      for (let i = 0; i < 40; i++) {
-        const x = r() * S, y = r() * S, s = 6 + r() * 6;
+      for (let i = 0; i < 22; i++) {
+        const x = r() * S, y = r() * S, s = 13 + r() * 8;
         g.fillStyle = c2;
         blob(g, x, y, s, r);
         g.fillStyle = c3 || c1;

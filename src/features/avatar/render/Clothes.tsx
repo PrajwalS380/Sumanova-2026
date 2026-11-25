@@ -20,7 +20,9 @@ export function Cloth({ w, color, rough = 0.8, side, shade = 0, repeat }: { w?: 
   const map = useMemo(() => (w && w.pattern !== 'solid' ? fabric(w.pattern, w.c1, w.c2, w.c3) : null), [w]);
   const base = color ?? w?.c1 ?? '#888888';
   const c = shade ? mix(base, shade > 0 ? '#ffffff' : '#000000', Math.abs(shade)) : base;
-  return <meshPhysicalMaterial map={map} color={map ? (shade ? mix('#ffffff', shade > 0 ? '#ffffff' : '#000000', Math.abs(shade)) : '#ffffff') : c} roughness={rough} sheen={0.9} sheenRoughness={0.7} sheenColor={mix(base, '#ffffff', 0.3)} side={side} />;
+  // three.js only compiles texture support into a material when it's created, so a solid ↔ patterned
+  // switch must build a new material — otherwise the pattern silently disappears (plain white garment).
+  return <meshPhysicalMaterial key={map ? 'pattern' : 'plain'} map={map} color={map ? (shade ? mix('#ffffff', shade > 0 ? '#ffffff' : '#000000', Math.abs(shade)) : '#ffffff') : c} roughness={rough} sheen={0.9} sheenRoughness={0.7} sheenColor={mix(base, '#ffffff', 0.3)} side={side} />;
 }
 
 /** Torso silhouette (radius, y) bottom → top for a given body; `pad` inflates for layering. */
@@ -36,10 +38,12 @@ export function torsoProfile(body: BodyP, from: number, pad = 0): [number, numbe
 
 /* ------------------------------------------------------------------ tops & outerwear */
 
-export interface GarmentProps { w: Wear; body: BodyP; layer: 0 | 1 }
+export interface GarmentProps { w: Wear; body: BodyP; layer: 0 | 1; /** cut of the top worn underneath (jackets only) */ under?: string }
+
+const BOXY = new Set(['Boxy tee', 'Sweatshirt', 'Hoodie']);
 
 /** Body of a top/outer garment (sleeves are rendered on the arms). */
-export function TorsoGarment({ w, body, layer }: GarmentProps) {
+export function TorsoGarment({ w, body, layer, under }: GarmentProps) {
   const cut = w.cut;
   const pad = layer ? (cut === 'Puffer' || cut === 'Shaggy coat' ? 0.03 : 0.022) : 0.006;
   const geo = useMemo(() => {
@@ -51,7 +55,9 @@ export function TorsoGarment({ w, body, layer }: GarmentProps) {
       for (let y = hem; y < 0.82; y += 0.08) extra.push([r0 + (0.82 - y) * (cut === 'Trench' ? 0.16 : 0.1), y]);
       pts = [...extra, ...pts];
     }
-    if (cut === 'Boxy tee' || cut === 'Sweatshirt' || cut === 'Hoodie') pts = pts.map(([r, y]) => [y < 1.4 ? Math.max(r, 0.27 * body.shoulders) + 0.01 : r, y]);
+    if (BOXY.has(cut)) pts = pts.map(([r, y]) => [y < 1.4 ? Math.max(r, 0.27 * body.shoulders) + 0.01 : r, y]);
+    // A jacket over a roomy top must be roomier still, or the top pokes through it.
+    if (layer && under && BOXY.has(under)) pts = pts.map(([r, y]) => [y < 1.4 ? Math.max(r, 0.27 * body.shoulders + 0.016 + pad) : r, y]);
     const open = cut === 'Blazer' || cut === 'Denim jacket' || cut === 'Biker' || cut === 'Zip hoodie' || cut === 'Trench' || cut === 'Shaggy coat';
     const g = open ? lathe(pts, 64, 0.32, Math.PI * 2 - 0.64) : lathe(pts, 64);
     // soft drape folds on everyday fabrics (strongest toward the hem)
@@ -80,7 +86,7 @@ export function TorsoGarment({ w, body, layer }: GarmentProps) {
       g.computeVertexNormals();
     }
     return scaleUV(g, 3, 2.5);
-  }, [cut, body, pad]);
+  }, [cut, body, pad, layer, under]);
   const open = cut === 'Blazer' || cut === 'Denim jacket' || cut === 'Biker' || cut === 'Zip hoodie' || cut === 'Trench' || cut === 'Shaggy coat';
   const dark = mix(w.c1, '#000000', 0.18);
   return (
@@ -153,24 +159,25 @@ function Details({ w, body, dark }: { w: Wear; body: BodyP; dark: string }) {
       break;
     case 'V-neck':
       items.push(
-        <mesh key="v" position={[0, 1.57, 0.178 * bw]} rotation={[-0.15, 0, Math.PI]}>
-          <circleGeometry args={[0.06, 3]} />
-          <meshStandardMaterial color={dark} />
+        // a downward V opening with a contrast trim, so it reads at thumbnail size
+        <mesh key="v" position={[0, 1.585, 0.182 * bw]} rotation={[-0.15, 0, -Math.PI / 2]} scale={[1.25, 0.8, 1]}>
+          <circleGeometry args={[0.075, 3]} />
+          <meshStandardMaterial color={mix(w.c1, '#000000', 0.45)} />
         </mesh>,
       );
       break;
     case 'Polo':
-      items.push(...collar(mix(w.c1, '#ffffff', 0.08), 1.1), placket(1.48, 1.62, mix(w.c1, '#000000', 0.08), 2));
+      items.push(...collar(w.c2, 1.1), placket(1.48, 1.62, w.c2, 2)); // contrast-tipped collar
       break;
     case 'Shirt':
-      items.push(...collar(mix(w.c1, '#ffffff', 0.1)), placket(0.98, 1.6, mix(w.c1, '#000000', 0.05), 5));
+      items.push(...collar(mix(w.c1, '#ffffff', 0.35)), placket(0.98, 1.6, mix(w.c1, '#000000', 0.28), 6)); // crisp collar + button strip
       break;
     case 'Lounge shirt':
       items.push(...collar(w.c1), placket(0.98, 1.6, w.c1, 5));
       items.push(
         <mesh key="pocket" position={[-0.11 * bw, 1.42, 0.18 * bw]}>
-          <boxGeometry args={[0.08, 0.08, 0.006]} />
-          <Cloth w={w} />
+          <boxGeometry args={[0.09, 0.09, 0.008]} />
+          <Cloth color={w.c2} />
         </mesh>,
       );
       break;

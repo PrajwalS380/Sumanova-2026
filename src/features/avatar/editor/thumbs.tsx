@@ -10,7 +10,7 @@ import { DEFAULT_LOOK, type Look } from '../look/config';
  * a time on a warm clay mannequin, and results are cached as image URLs, so
  * scrolling a 100-item grid never creates 100 GL contexts.
  */
-export type ThumbFrame = 'head' | 'face' | 'upper' | 'lower' | 'feet' | 'full' | 'sticker' | 'seated';
+export type ThumbFrame = 'head' | 'face' | 'upper' | 'lower' | 'feet' | 'full' | 'sticker' | 'seated' | 'bag' | 'dress';
 
 const SIZE = 192;
 const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
@@ -18,7 +18,11 @@ const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number,
   face: { pos: [0, 1.98, 0.95], target: [0, 1.94, 0], fov: 30 },
   upper: { pos: [0, 1.6, 2.7], target: [0, 1.46, 0], fov: 30 },
   lower: { pos: [0, 0.66, 2.9], target: [0, 0.66, 0], fov: 30 },
-  feet: { pos: [0.6, 0.35, 1.4], target: [0, 0.18, 0], fov: 30 },
+  feet: { pos: [0.55, 0.3, 1.05], target: [0, 0.12, 0.05], fov: 30 },
+  /** Three-quarter view of the bag side (bags hang at the avatar's right hip; backpacks sit behind). */
+  bag: { pos: [-1.75, 1.15, 0.75], target: [-0.36, 1.0, -0.04], fov: 30 },
+  /** Shoulders to shins, so prints on dresses read clearly. */
+  dress: { pos: [0, 1.12, 3.5], target: [0, 1.06, 0], fov: 30 },
   full: { pos: [0, 1.26, 4.8], target: [0, 1.2, 0], fov: 30 },
   /** Knees up, with head-room for raised arms (chat stickers). */
   sticker: { pos: [0, 1.5, 3.9], target: [0, 1.45, 0], fov: 30 },
@@ -47,7 +51,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v7';
+const STORE = 'snv-thumbs-v8';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {
@@ -165,6 +169,14 @@ async function pump() {
   running = false;
 }
 void ready;
+
+/** Render one preview now (used by the duplicate checker in e2e/avatar-harness). */
+export function renderThumb(key: string, look: Look, frame: ThumbFrame, faceless = false, size = SIZE): Promise<string> {
+  return new Promise((resolve) => {
+    queue.push({ key, look, frame, faceless, size, resolve });
+    void pump();
+  });
+}
 
 /** Returns a preview image URL for a look, rendering it lazily (when `enabled`). */
 export function useThumb(key: string, make: () => Look, frame: ThumbFrame, enabled: boolean, faceless = false, size = SIZE) {

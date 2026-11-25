@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { AvatarStage, type Framing } from '@/features/avatar/AvatarStage';
 import { DEFAULT_LOOK, type Look, type Slot } from '@/features/avatar/look/config';
@@ -12,6 +13,9 @@ import { PRESETS } from '@/features/avatar/look/presets';
  *   ?frame=head|full|upper|feet
  */
 const q = new URLSearchParams(location.search);
+if (q.get('presetImages')) void import('./dupes').then((m) => m.presetImages());
+if (q.get('thumbs')) void import('./dupes').then((m) => m.showThumbs(q.get('thumbs') as Slot, (q.get('frame') ?? 'upper') as never, q.get('ids')!.split(',').map(Number), q.get('color') ? '#' + q.get('color') : null));
+if (q.get('dupes')) void import('./dupes').then((m) => m.runDupes(q.get('dupes') as Slot, (q.get('frame') ?? 'upper') as never, q.get('color') ? '#' + q.get('color') : null));
 const frame = (q.get('frame') ?? 'full') as Framing;
 const n = +(q.get('n') ?? 8);
 const looks: Look[] = [];
@@ -31,6 +35,11 @@ if (q.get('presets')) {
       l.pick.bottom = null;
     }
     if (q.get('tip')) l.color.hairTip = q.get('tip');
+    // e.g. &top=70 to test a jacket over a specific top
+    if (q.get('top')) l.pick.top = q.get('top') === 'none' ? null : +q.get('top')!;
+    if (q.get('outer')) l.pick.outer = +q.get('outer')!;
+    if (q.get('ctop')) l.color.top = '#' + q.get('ctop');
+    if (q.get('couter')) l.color.outer = '#' + q.get('couter');
     looks.push(l);
   }
 } else {
@@ -59,7 +68,22 @@ if (q.get('presets')) {
   }
 }
 const size = +(q.get('size') ?? 300);
+// ?switch=outer:0,13 → start on the first variant and swap to the second after 3s (live-edit check).
+const sw = q.get('switch')?.split(':');
 function App() {
+  const [, force] = (React as typeof import('react')).useState(0);
+  (React as typeof import('react')).useEffect(() => {
+    if (!sw) return;
+    const [slot, ids] = sw;
+    const [a, b] = ids.split(',').map(Number);
+    looks.forEach((l) => (l.pick[slot as Slot] = a));
+    force(1);
+    const t = setTimeout(() => {
+      looks.forEach((l, i) => (looks[i] = { ...l, pick: { ...l.pick, [slot]: b } }));
+      force(2);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, []);
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap' }}>
       {looks.map((l, i) => (
@@ -71,4 +95,4 @@ function App() {
     </div>
   );
 }
-createRoot(document.getElementById('root')!).render(<App />);
+if (!q.get('dupes') && !q.get('thumbs') && !q.get('presetImages')) createRoot(document.getElementById('root')!).render(<App />);

@@ -80,6 +80,13 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   12 original starter characters in `look/presets.ts` (Looks tab → "Start from a character"); random = wearable outfits.
   Visual check: `npx vite --config vite.avatar-test.config.ts` (`?presets=1&n=8`) (port 5199, `?slot=hair&ids=1,2&frame=head`, `?random=8`).
   Keep ≤8 canvases per harness page (swiftshader). Python/sed multi-file edits get blocked by the sandbox classifier — use Edit.
+  Wardrobe uniqueness (owner, 2026-11-25: "no duplicates"): in `look/fashion.ts` every cut's 10 items have different, bold
+  patterns and rotating trim colours (the colour rail only replaces c1, so plain-colour-only variants collapse into copies).
+  Duplicate checker: harness `?dupes=<slot>&frame=<thumb frame>&color=6f7680` renders every item like the studio grid and
+  greedily lists look-alikes at full thumbnail resolution; results go into `look/hidden.ts` (hidden from grids/random, ids
+  stay valid for saved avatars). `?thumbs=<slot>&frame=..&ids=1,2` shows real thumbnails. Re-run after renderer changes and
+  bump `snv-thumbs-vN`. Materials whose `map` can toggle must be keyed (`Cloth`), or three.js drops the pattern (plain white).
+  Restart the harness vite server if a change doesn't show (its watcher sometimes serves a stale module).
 - **Nova emoji** (owner: "don't just use prebuilt emojis"): our own SVG emoji set in `components/emoji/novaEmoji.ts`
   (squircle faces, bold #111 outline; `NovaEmoji` component, `novaEmojiImage` for canvas). Used for badges (`badgeArt`),
   streak flame/hourglass, lens tray icons, chat + editor stickers (stored as `nova:<id>`). Face lenses in

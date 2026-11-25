@@ -206,7 +206,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
         </mesh>
         {dress && <DressGarment w={dress} body={body} />}
         {top && <TorsoGarment w={top} body={body} layer={0} />}
-        {outer && <TorsoGarment w={outer} body={body} layer={1} />}
+        {outer && <TorsoGarment w={outer} body={body} layer={1} under={top?.cut} />}
         {bag && <Bag w={bag} width={b} />}
 
         {/* Arms */}
