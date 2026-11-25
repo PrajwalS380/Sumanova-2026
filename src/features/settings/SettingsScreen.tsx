@@ -137,6 +137,7 @@ export default function SettingsScreen() {
             <Toggle label="Let people find me by phone number" description="Only people who already have your number" checked={privacy.find_by_phone ?? true} onChange={(v) => updatePrivacy({ find_by_phone: v })} />
             {session && <ContactSyncToggle uid={session.user.id} />}
             <Toggle label="Show my birthday to friends" description="Day and month only — never the year" checked={privacy.show_birthday ?? true} onChange={(v) => updatePrivacy({ show_birthday: v })} />
+            <Toggle label="Show my battery on the map" description="Friends see it while you share your location" checked={privacy.share_battery ?? true} onChange={(v) => updatePrivacy({ share_battery: v })} />
             <Toggle label="Ghost mode" description="Hide your location on the map (on by default)" checked={privacy.ghost_mode} onChange={(v) => updatePrivacy({ ghost_mode: v })} />
           </Section>
         )}

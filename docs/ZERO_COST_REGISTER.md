@@ -23,3 +23,7 @@ Budget: **₹0**. Every service below is used on its free tier with **no credit 
 | Supabase Vault | Stores the VAPID private key | Included | — | No | — | — |
 | Google Firebase Cloud Messaging (optional) | Android push when the APK is fully closed | Free, needs a Firebase project | Yes | No | — | Keep using in-app/background notifications |
 | Web Push (VAPID) | Notifications for web/PWA (incl. iPhone home-screen app, iOS 16.4+) | Free browser push services (Google/Mozilla/Apple) | No | No | — | — |
+| MediaPipe Image Segmenter models (selfie + hair) | Background blur/replace and hair-colour lenses (on-device) | Apache-2.0, bundled in public/mediapipe — no network at use | No | No | — | — |
+| OpenStreetMap Overpass API (overpass-api.de) | "Places" layer on the map (cafés, parks, sights) | Free public instance, fair use, no key | No | No | Places layer shows "busy" and can be retried | Another public Overpass instance or self-host |
+| Web Audio API (built into the phone) | Original music for snaps, voice changer, video speed/reverse | Free — tracks are composed in code and synthesised on the phone (no audio files, no licences) | No | No | — | — |
+| Web Crypto API (built into the phone) | "My Eyes Only" passcode encryption (PBKDF2 + AES-GCM) | Free | No | No | — | — |

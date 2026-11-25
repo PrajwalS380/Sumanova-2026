@@ -7,11 +7,12 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { friendsApi } from '@/lib/chat/api';
 import { snapsApi } from '@/lib/snaps/api';
-import { CATEGORIES, memoriesApi, spotlightApi, storiesApi, type Audience, type Category } from '@/lib/social/api';
+import { CATEGORIES, memoriesApi, spotlightApi, storiesApi, type Category } from '@/lib/social/api';
 import type { Friend } from '@/lib/chat/types';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
-import { AudiencePicker } from '@/features/stories/AudiencePicker';
+import { DEFAULT_STORY, StoryOptions, type StoryChoice } from '@/features/stories/StoryOptions';
+import { getPosition } from '@/features/map/api';
 
 export interface Prepared {
   kind: 'image' | 'video';
@@ -55,7 +56,7 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [replay, setReplay] = useState(true);
   const [toStory, setToStory] = useState(false);
-  const [audience, setAudience] = useState<Audience>('friends');
+  const [story, setStory] = useState<StoryChoice>(DEFAULT_STORY);
   const [toMemories, setToMemories] = useState(false);
   const [toSpotlight, setToSpotlight] = useState(false);
   const [caption, setCaption] = useState('');
@@ -91,7 +92,14 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
         done.push(`${n} ${n === 1 ? 'friend' : 'friends'}`);
       }
       if (toStory) {
-        await storiesApi.post(me, { kind: prepared.kind, blob: prepared.blob, overlay: prepared.overlay, meta: prepared.meta, audience });
+        if (story.audience === 'custom' && !story.custom.length) throw new Error('Pick who can see your private story');
+        if (story.audience === 'group' && !story.group) throw new Error('Pick a group for your story');
+        let map: { lat: number; lng: number } | undefined;
+        if (story.audience === 'everyone' && story.onMap) {
+          const p = await getPosition().catch(() => null);
+          if (p) map = { lat: p.coords.latitude, lng: p.coords.longitude };
+        }
+        await storiesApi.post(me, { kind: prepared.kind, blob: prepared.blob, overlay: prepared.overlay, meta: { ...prepared.meta, mentions: story.mentions, ...(map ? { map } : {}) }, audience: story.audience, custom: story.custom, group: story.group });
         done.push('your story');
       }
       if (toMemories) {
@@ -134,7 +142,7 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
 
         <h2 className={H2}>Stories</h2>
         <Row on={toStory} onClick={() => setToStory((v) => !v)} icon={<Sparkles className="h-[22px] w-[22px]" />} tint="bg-ember-flame/[0.12] text-ember-flame" title="My story" sub="Visible for 24 hours" />
-        {toStory && <div className="px-4 pb-2"><AudiencePicker value={audience} onChange={setAudience} /></div>}
+        {toStory && <div className="px-4 pb-2"><StoryOptions value={story} onChange={setStory} friends={friends ?? []} /></div>}
         <Row on={toMemories} onClick={() => setToMemories((v) => !v)} icon={<BookImage className="h-[22px] w-[22px]" />} tint="bg-[#d8f5ea] text-ember-jade" title="Memories" sub="Only you can see these" />
         {prepared.kind === 'video' && <Row on={toSpotlight} onClick={() => setToSpotlight((v) => !v)} icon={<Clapperboard className="h-[22px] w-[22px]" />} tint="bg-[#fff1e6] text-[#C2410C]" title="Spotlight" sub="Public to everyone on SUMANOVA" />}
         {toSpotlight && prepared.kind === 'video' && (

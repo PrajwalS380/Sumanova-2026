@@ -42,6 +42,7 @@ export interface PrivacySettings {
   /** friends may see day + month of my birthday (never the year) */
   show_birthday?: boolean;
   find_by_phone?: boolean;
+  share_battery?: boolean;
 }
 
 export const AURA: Record<AuraColor, { from: string; to: string; label: string }> = {

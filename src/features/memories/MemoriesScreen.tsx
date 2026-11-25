@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Archive, ArchiveRestore, CalendarSearch, Check, ChevronDown, ChevronLeft, Download, FolderPlus, Heart, Loader2, Play, Sparkles, Trash2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, CalendarSearch, Check, ChevronDown, ChevronLeft, Download, FolderPlus, Heart, Loader2, Lock, Play, Search, Sparkles, Trash2, X } from 'lucide-react';
+import { PrivateGrid, VaultGate } from './PrivateVault';
 import { useNavigate } from 'react-router-dom';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
@@ -14,8 +15,8 @@ import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
 import { useLongPress } from '@/features/chat/useLongPress';
 
-type Tab = 'all' | 'favourites' | 'albums' | 'archived';
-const TAB_LABEL: Record<Tab, string> = { all: 'Snaps', favourites: 'Favourites', albums: 'Albums', archived: 'Archived' };
+type Tab = 'all' | 'favourites' | 'albums' | 'archived' | 'private';
+const TAB_LABEL: Record<Tab, string> = { all: 'Snaps', favourites: 'Favourites', albums: 'Albums', archived: 'Archived', private: 'My Eyes Only' };
 const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-ink active:scale-90';
 
 export default function MemoriesScreen() {
@@ -34,6 +35,13 @@ export default function MemoriesScreen() {
   const [albumPicker, setAlbumPicker] = useState(false);
   const [usage, setUsage] = useState<{ items: number; bytes: number; max_items: number; max_bytes: number } | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState<string | null>(null);
+  const [vaultKey, setVaultKey] = useState<CryptoKey | null>(null);
+  const [lockAsk, setLockAsk] = useState(false);
+  // Lock the vault again when leaving the tab or the screen.
+  useEffect(() => {
+    if (tab !== 'private') setVaultKey(null);
+  }, [tab]);
 
   const query = useCallback(
     (offset: number) => {
@@ -46,6 +54,17 @@ export default function MemoriesScreen() {
   const reload = useCallback(async () => {
     setItems(null);
     setSelected(new Set());
+    if (tab === 'private') return setItems([]);
+    if (search && search.trim().length >= 2) {
+      try {
+        setItems(await memoriesApi.search(search.trim()));
+        setMore(false);
+      } catch (e) {
+        toast((e as Error).message, 'error');
+        setItems([]);
+      }
+      return;
+    }
     if (tab === 'albums' && !album) {
       setItems([]);
       return;
@@ -59,7 +78,7 @@ export default function MemoriesScreen() {
       setItems([]);
     }
     void memoriesApi.usage().then(setUsage).catch(() => undefined);
-  }, [query, tab, album, toast]);
+  }, [query, tab, album, toast, search]);
 
   useEffect(() => {
     void reload();
@@ -135,19 +154,39 @@ export default function MemoriesScreen() {
     }
   }
 
+  async function lockChosen(key: CryptoKey) {
+    setLockAsk(false);
+    const list = chosen;
+    try {
+      for (const m of list) await memoriesApi.lock(me, m, key, async () => (await fetch(await privateUrl('memories', m.media_path))).blob());
+      haptic(10);
+      toast(`${list.length} moved to My Eyes Only`, 'success');
+      await reload();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
+
   return (
     <div className="min-h-full bg-noir pb-36">
       <header className="flex items-center gap-2 px-3.5 pb-3 pt-safe">
         <button onClick={() => (album ? setAlbum(null) : navigate(-1))} aria-label={album ? 'Back to albums' : 'Back to camera'} className={CIRCLE}>{album ? <ChevronLeft className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}</button>
         <h1 className="min-w-0 flex-1 truncate text-center text-lg font-extrabold">{album ? album.title : 'Memories'}</h1>
+        <button onClick={() => setSearch((v) => (v === null ? '' : null))} aria-label="Search memories" className={CIRCLE}><Search className="h-5 w-5" /></button>
         <label className={cn(CIRCLE, 'relative cursor-pointer')} aria-label="Jump to month">
           <CalendarSearch className="h-5 w-5" />
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="absolute inset-0 opacity-0" />
         </label>
       </header>
       <div className="mx-auto max-w-lg px-4">
+        {search !== null && (
+          <label className="mb-3 flex h-11 items-center gap-2 rounded-2xl bg-white px-3.5">
+            <Search className="h-4 w-4 text-ink-mute" />
+            <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Try “sunset”, “night”, “March 2026”, “videos”…" aria-label="Search memories" className="flex-1 bg-transparent text-[15px] font-semibold outline-none" />
+          </label>
+        )}
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-3">
-          {(['all', 'favourites', 'albums', 'archived'] as Tab[]).map((t) => (
+          {(['all', 'favourites', 'albums', 'archived', 'private'] as Tab[]).map((t) => (
             <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-xl px-3.5 py-2 text-[13px] font-extrabold', tab === t ? 'bg-ink text-white' : 'bg-white text-ink')}>{TAB_LABEL[t]}</button>
           ))}
           {month && (
@@ -174,7 +213,9 @@ export default function MemoriesScreen() {
           </div>
         )}
 
-        {tab === 'albums' && !album ? (
+        {tab === 'private' ? (
+          vaultKey ? <PrivateGrid vaultKey={vaultKey} onLock={() => setVaultKey(null)} /> : <VaultGate onKey={setVaultKey} />
+        ) : tab === 'albums' && !album ? (
           <div className="grid grid-cols-2 gap-3">
             <button onClick={async () => { const t = window.prompt('Album name')?.trim(); if (t) { await memoriesApi.createAlbum(me, t.slice(0, 40)).catch((e) => toast((e as Error).message, 'error')); setAlbums(await memoriesApi.albums()); } }} className="grid aspect-square place-items-center rounded-3xl border border-dashed border-ink/20 text-sm text-ink-mute">
               <span className="flex flex-col items-center gap-2"><FolderPlus className="h-6 w-6" /> New album</span>
@@ -233,11 +274,16 @@ export default function MemoriesScreen() {
               <IconBtn label="Favourite" onClick={() => void act(() => memoriesApi.update([...selected], { favourite: true }), 'Added to favourites')}><Heart className="h-5 w-5" /></IconBtn>
               <IconBtn label="Add to album" onClick={() => setAlbumPicker(true)}><FolderPlus className="h-5 w-5" /></IconBtn>
               <IconBtn label={tab === 'archived' ? 'Unarchive' : 'Archive'} onClick={() => void act(() => memoriesApi.update([...selected], { archived: tab !== 'archived' }), tab === 'archived' ? 'Restored' : 'Archived')}>{tab === 'archived' ? <ArchiveRestore className="h-5 w-5" /> : <Archive className="h-5 w-5" />}</IconBtn>
+              <IconBtn label="Move to My Eyes Only" onClick={() => (vaultKey ? void lockChosen(vaultKey) : setLockAsk(true))}><Lock className="h-5 w-5" /></IconBtn>
               <IconBtn label="Delete" danger onClick={() => window.confirm(`Delete ${selected.size} memories permanently?`) && void act(() => memoriesApi.remove(chosen), 'Deleted')}><Trash2 className="h-5 w-5" /></IconBtn>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Sheet open={lockAsk} onClose={() => setLockAsk(false)} title="Move to My Eyes Only">
+        <div className="px-4 pb-6"><VaultGate onKey={(k) => { setVaultKey(k); void lockChosen(k); }} /></div>
+      </Sheet>
 
       <Sheet open={albumPicker} onClose={() => setAlbumPicker(false)} title="Add to album">
         <div className="pb-4">

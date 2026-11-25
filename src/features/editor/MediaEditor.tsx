@@ -35,7 +35,7 @@ function MeFace({ size }: { size: number }) {
   return <Avatar name={profile?.display_name ?? 'Me'} url={profile?.avatar_url} aura={profile?.aura_color} size={size} />;
 }
 
-export default function MediaEditor({ captured, onClose }: { captured: Captured; onClose: () => void }) {
+export default function MediaEditor({ captured, onClose, extraMeta }: { captured: Captured; onClose: () => void; extraMeta?: Record<string, unknown> }) {
   const toast = useToast();
   const isVideo = captured.kind === 'video';
   const [src, setSrc] = useState(() => URL.createObjectURL(captured.blob));
@@ -56,7 +56,16 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
   const [busy, setBusy] = useState(false);
   const [overTrash, setOverTrash] = useState(false);
   const [template, setTemplate] = useState<string | null>(null);
-  const [music, setMusic] = useState<string | null>(null);
+  // "Use this sound" from Spotlight preselects a track once.
+  const [music, setMusic] = useState<string | null>(() => {
+    try {
+      const id = sessionStorage.getItem('snv-use-sound');
+      sessionStorage.removeItem('snv-use-sound');
+      return id;
+    } catch {
+      return null;
+    }
+  });
   const [speed, setSpeed] = useState(1);
   const [reverse, setReverse] = useState(false);
   const [voice, setVoice] = useState<Voice>('none');
@@ -235,6 +244,8 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
   async function prepare(): Promise<Prepared> {
     if (!natural) throw new Error('Still loading');
     const tpl = templateById(template);
+    // Words typed on the snap help Memories search find it later.
+    const text = items.filter((i) => i.type === 'text').map((i) => i.content).join(' ').slice(0, 300);
     if (isVideo) {
       const fx = { speed, reverse, voice, music };
       let blob = captured.blob;
@@ -248,10 +259,10 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
       }
       const overlay = await exportOverlay(strokes, items, natural.w, natural.h, tpl);
       const dur = captured.duration ? captured.duration / speed : undefined;
-      return { kind: 'video', blob, overlay, meta: { filter: filterId, width: natural.w, height: natural.h, duration: dur, ...(music ? { music_baked: music } : {}) }, duration: null };
+      return { kind: 'video', blob, overlay, meta: { filter: filterId, width: natural.w, height: natural.h, duration: dur, ...(music ? { music_baked: music } : {}), ...(text ? { text } : {}), ...extraMeta }, duration: null };
     }
     const blob = await exportImage(src, filterId, strokes, items, 2048, tpl);
-    return { kind: 'image', blob, overlay: null, meta: { width: natural.w, height: natural.h, ...(music ? { music } : {}) }, duration: duration || null };
+    return { kind: 'image', blob, overlay: null, meta: { width: natural.w, height: natural.h, ...(music ? { music } : {}), ...(text ? { text } : {}), ...extraMeta }, duration: duration || null };
   }
 
   async function save() {

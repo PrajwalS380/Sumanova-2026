@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -37,6 +38,17 @@ export default function StoriesScreen() {
     const ch = supabase.channel('stories-feed').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stories' }, () => void load()).subscribe();
     return () => void supabase.removeChannel(ch);
   }, [load]);
+
+  // Deep link from a mention notification: /stories?u=<user id> opens their story.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const u = params.get('u');
+    if (!u || !rings) return;
+    const i = rings.findIndex((r) => r.user_id === u);
+    if (i >= 0) setOpen({ list: rings, index: i });
+    params.delete('u');
+    setParams(params, { replace: true });
+  }, [params, rings, setParams]);
 
   const mine = rings?.find((r) => r.is_me);
   const friends = (rings ?? []).filter((r) => !r.is_me && r.is_friend);

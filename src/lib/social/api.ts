@@ -23,6 +23,9 @@ export interface Story {
   created_at: string;
   expires_at: string;
   deleted_at: string | null;
+  mentions?: string[];
+  map_lat?: number | null;
+  map_lng?: number | null;
 }
 export interface StoryRing {
   user_id: string;
@@ -99,17 +102,18 @@ export interface Memory {
   id: string;
   kind: 'image' | 'video';
   media_path: string;
-  media_meta: { width?: number; height?: number; duration?: number; filter?: string };
+  media_meta: { width?: number; height?: number; duration?: number; filter?: string; tags?: string; text?: string; orig_type?: string };
   size_bytes: number;
   taken_at: string;
   favourite: boolean;
   archived: boolean;
   album_id: string | null;
+  private?: boolean;
 }
 export interface Album { id: string; title: string; created_at: string }
 export const memoriesApi = {
   list: async (opts: { archived?: boolean; favourite?: boolean; album?: string | null; from?: string; to?: string; offset?: number }) => {
-    let q = supabase.from('memories').select('*').eq('archived', !!opts.archived).order('taken_at', { ascending: false }).range(opts.offset ?? 0, (opts.offset ?? 0) + 59);
+    let q = supabase.from('memories').select('*').eq('archived', !!opts.archived).eq('private', false).order('taken_at', { ascending: false }).range(opts.offset ?? 0, (opts.offset ?? 0) + 59);
     if (opts.favourite) q = q.eq('favourite', true);
     if (opts.album) q = q.eq('album_id', opts.album);
     if (opts.from) q = q.gte('taken_at', opts.from);
@@ -119,8 +123,34 @@ export const memoriesApi = {
   async add(me: string, blob: Blob, kind: 'image' | 'video', meta: object = {}) {
     const id = crypto.randomUUID();
     const path = await uploadTo('memories', `${me}/${id}.${extFor(blob.type)}`, blob);
-    must(await supabase.rpc('add_memory', { p_id: id, p_kind: kind, p_media_path: path, p_meta: meta, p_size: blob.size, p_taken_at: null }));
+    const tags = (meta as { tags?: string }).tags ?? (await autoTags(blob, kind).catch(() => ''));
+    must(await supabase.rpc('add_memory', { p_id: id, p_kind: kind, p_media_path: path, p_meta: { ...meta, tags }, p_size: blob.size, p_taken_at: null }));
     return id;
+  },
+  /** Search by what's in them (auto tags, text on the snap), month/year, weekday or "videos"/"photos". */
+  search: async (q: string) => must(await supabase.rpc('search_memories', { p_query: q, p_limit: 120 })) as Memory[],
+  listPrivate: async () => must(await supabase.from('memories').select('*').eq('private', true).order('taken_at', { ascending: false }).limit(300)) as Memory[],
+  /** Move into My Eyes Only: encrypt on the phone, replace the file, forget the original. */
+  async lock(me: string, m: Memory, key: CryptoKey, fetchOriginal: () => Promise<Blob>) {
+    const { encryptBlob } = await import('@/lib/vault');
+    const original = await fetchOriginal();
+    const path = await uploadTo('memories', `${me}/${crypto.randomUUID()}.bin`, await encryptBlob(key, original));
+    must(await supabase.from('memories').update({ private: true, media_path: path, media_meta: { ...m.media_meta, orig_type: original.type || (m.kind === 'image' ? 'image/webp' : 'video/mp4'), tags: undefined, text: undefined } }).eq('id', m.id));
+    await supabase.storage.from('memories').remove([m.media_path]);
+  },
+  /** Move back out of My Eyes Only. */
+  async unlock(me: string, m: Memory, key: CryptoKey) {
+    const { decryptBlob } = await import('@/lib/vault');
+    const plain = await decryptBlob(key, await (await supabase.storage.from('memories').download(m.media_path)).data!, m.media_meta.orig_type ?? 'image/webp');
+    const path = await uploadTo('memories', `${me}/${crypto.randomUUID()}.${extFor(plain.type)}`, plain);
+    must(await supabase.from('memories').update({ private: false, media_path: path }).eq('id', m.id));
+    await supabase.storage.from('memories').remove([m.media_path]);
+  },
+  async openPrivate(m: Memory, key: CryptoKey): Promise<Blob> {
+    const { decryptBlob } = await import('@/lib/vault');
+    const { data, error } = await supabase.storage.from('memories').download(m.media_path);
+    if (error || !data) throw new Error('Couldn’t load this memory');
+    return decryptBlob(key, data, m.media_meta.orig_type ?? 'image/webp');
   },
   update: async (ids: string[], patch: Partial<Pick<Memory, 'favourite' | 'archived' | 'album_id'>> & { deleted_at?: string }) => must(await supabase.from('memories').update(patch).in('id', ids)),
   async remove(items: Memory[]) {
@@ -147,7 +177,7 @@ export interface SpotlightVideo {
   poster_path: string | null;
   caption: string | null;
   category: Category;
-  media_meta: { width?: number; height?: number; duration?: number; filter?: string };
+  media_meta: { width?: number; height?: number; duration?: number; filter?: string; music_baked?: string; remix_of?: string };
   like_count: number;
   comment_count: number;
   view_count: number;
@@ -162,7 +192,11 @@ export interface Creator {
   id: string; username: string; display_name: string; bio: string | null; avatar_url: string | null; aura_color: AuraColor;
   followers: number; following: number; videos: number; likes: number; is_following: boolean; is_friend: boolean; is_me: boolean;
 }
+export interface CreatorStats { videos: number; views: number; likes: number; comments: number; saves: number; followers: number; views_7d: number }
 export const spotlightApi = {
+  trendingTags: async () => must(await supabase.rpc('trending_hashtags', { p_limit: 12 })) as { tag: string; videos: number }[],
+  trendingSounds: async () => must(await supabase.rpc('trending_sounds', { p_limit: 8 })) as { track: string; videos: number }[],
+  creatorStats: async () => (must(await supabase.rpc('creator_stats')) as CreatorStats[])[0] ?? null,
   feed: async (opts: { category?: Category | null; offset?: number; query?: string | null }) =>
     must(await supabase.rpc('spotlight_feed', { p_category: opts.category ?? null, p_offset: opts.offset ?? 0, p_limit: 8, p_query: opts.query || null })) as SpotlightVideo[],
   async publish(me: string, blob: Blob, poster: Blob | null, caption: string, category: Category, meta: object) {
@@ -195,3 +229,38 @@ export const spotlightApi = {
   saved: async () => must(await supabase.from('video_saves').select('video_id').order('created_at', { ascending: false }).limit(60)) as { video_id: string }[],
   setInterests: async (me: string, interests: string[]) => must(await supabase.from('user_settings').update({ interests }).eq('user_id', me)),
 };
+
+/**
+ * Tags a photo from what it looks like, on the phone (no cloud AI): brightness and colour
+ * mood (night, bright, sunset, nature, sky…). Used by memory search.
+ */
+export async function autoTags(blob: Blob, kind: 'image' | 'video'): Promise<string> {
+  const tags = new Set<string>([kind === 'image' ? 'photo' : 'video']);
+  if (kind !== 'image' || typeof createImageBitmap === 'undefined') return [...tags].join(' ');
+  const bmp = await createImageBitmap(blob);
+  const c = document.createElement('canvas');
+  c.width = 48; c.height = 48;
+  const g = c.getContext('2d', { willReadFrequently: true })!;
+  g.drawImage(bmp, 0, 0, 48, 48);
+  bmp.close();
+  const d = g.getImageData(0, 0, 48, 48).data;
+  let lum = 0, warm = 0, green = 0, blueTop = 0, sat = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], gg = d[i + 1], b = d[i + 2];
+    const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+    lum += 0.299 * r + 0.587 * gg + 0.114 * b;
+    sat += mx ? (mx - mn) / mx : 0;
+    if (r > 170 && r > b + 40 && gg < r - 20) warm++;
+    if (gg > r + 15 && gg > b + 10) green++;
+    if (i < d.length / 3 && b > r + 20 && b > gg) blueTop++;
+  }
+  const n = d.length / 4;
+  lum /= n; sat /= n;
+  if (lum < 60) tags.add('night dark');
+  else if (lum > 190) tags.add('bright');
+  if (warm / n > 0.25) tags.add('sunset warm');
+  if (green / n > 0.25) tags.add('nature green outdoors');
+  if (blueTop / (n / 3) > 0.4) tags.add('sky outdoors');
+  if (sat < 0.12) tags.add('black and white');
+  return [...tags].join(' ');
+}

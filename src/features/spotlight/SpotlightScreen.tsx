@@ -2,7 +2,14 @@ import { MeButton } from '@/components/MeButton';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bookmark, Flag, Heart, Loader2, MessageCircle, MoreHorizontal, Music2, Plus, Search, Send, Share2, SlidersHorizontal, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { BarChart3, Bookmark, Columns2, Flag, Hash, Heart, Loader2, MessageCircle, MoreHorizontal, Music2, Plus, Search, Send, Share2, SlidersHorizontal, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RemixRecorder } from './RemixRecorder';
+import { trackById } from '@/lib/music/tracks';
+import type { CreatorStats } from '@/lib/social/api';
+import type { Captured } from '@/features/camera/CameraScreen';
+const MediaEditor = lazy(() => import('@/features/editor/MediaEditor'));
 import { Avatar } from '@/components/Avatar';
 import { Ghost } from '@/components/ui/Ghost';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
@@ -41,6 +48,27 @@ export default function SpotlightScreen() {
   const [more2, setMore2] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const loadingMore = useRef(false);
+  const navigate = useNavigate();
+  const [trending, setTrending] = useState<{ tags: { tag: string; videos: number }[]; sounds: { track: string; videos: number }[] } | null>(null);
+  const [stats, setStats] = useState<CreatorStats | null | undefined>(undefined);
+  const [remix, setRemix] = useState<SpotlightVideo | null>(null);
+  const [remixed, setRemixed] = useState<{ captured: Captured; of: string } | null>(null);
+  useEffect(() => {
+    if (searching && !trending) void Promise.all([spotlightApi.trendingTags(), spotlightApi.trendingSounds()]).then(([tags, sounds]) => setTrending({ tags, sounds })).catch(() => setTrending({ tags: [], sounds: [] }));
+  }, [searching, trending]);
+  const openTag = (tag: string) => {
+    setSearching(true);
+    setQuery(`#${tag}`);
+  };
+  const useSound = (id: string) => {
+    try {
+      sessionStorage.setItem('snv-use-sound', id);
+    } catch {
+      /* storage blocked */
+    }
+    toast(`“${trackById(id)?.name ?? 'Sound'}” is ready — take a snap`, 'success');
+    navigate('/');
+  };
 
   const load = useCallback(async () => {
     setVideos(null);
@@ -141,7 +169,7 @@ export default function SpotlightScreen() {
           </div>
         ) : (
           (feed === 'following' ? videos.filter((x) => x.following) : videos).map((v, i) => (
-            <Card key={v.id} v={v} me={me} active={playing !== null && i === active} near={Math.abs(i - active) <= 1} muted={muted} onMute={() => setMuted((m) => !m)} onLike={(f) => void toggleLike(v, f)} onSave={() => void toggleSave(v)} onFollow={() => void toggleFollow(v)} onComments={() => setComments(v)} onShare={() => void share(v)} onMenu={() => setMenu(v)} />
+            <Card key={v.id} v={v} me={me} active={playing !== null && i === active && !remix} near={Math.abs(i - active) <= 1} muted={muted} onMute={() => setMuted((m) => !m)} onLike={(f) => void toggleLike(v, f)} onSave={() => void toggleSave(v)} onFollow={() => void toggleFollow(v)} onComments={() => setComments(v)} onShare={() => void share(v)} onMenu={() => setMenu(v)} onTag={openTag} onSound={useSound} onRemix={() => setRemix(v)} />
           ))
         )}
       </div>
@@ -170,6 +198,22 @@ export default function SpotlightScreen() {
           )}
         </div>
       </div>
+      {searching && !query.trim() && trending && (trending.tags.length > 0 || trending.sounds.length > 0) && (
+        <div className="absolute inset-x-3.5 top-[calc(var(--safe-top)+4.25rem)] z-10 rounded-tile bg-[rgba(17,17,17,0.8)] p-3 text-white">
+          {trending.tags.length > 0 && <p className="px-1 pb-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/60">Trending</p>}
+          <div className="flex flex-wrap gap-1.5">
+            {trending.tags.map((t) => (
+              <button key={t.tag} onClick={() => openTag(t.tag)} className="flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-xs font-extrabold"><Hash className="h-3 w-3" />{t.tag} <span className="text-white/50">{t.videos}</span></button>
+            ))}
+          </div>
+          {trending.sounds.length > 0 && <p className="px-1 pb-1.5 pt-3 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white/60">Trending sounds</p>}
+          <div className="flex flex-wrap gap-1.5">
+            {trending.sounds.filter((s) => trackById(s.track)).map((s) => (
+              <button key={s.track} onClick={() => useSound(s.track)} className="flex items-center gap-1.5 rounded-full bg-ember-rose px-3 py-1.5 text-xs font-extrabold"><Music2 className="h-3.5 w-3.5" />{trackById(s.track)!.name} <span className="text-white/70">{s.videos}</span></button>
+            ))}
+          </div>
+        </div>
+      )}
       {feed === 'following' && videos && videos.length > 0 && !videos.some((x) => x.following) && (
         <div className="absolute inset-0 grid place-items-center px-10 text-center text-white">
           <p className="text-sm text-white/80">Follow creators from For you and their videos will show up here.</p>
@@ -179,6 +223,7 @@ export default function SpotlightScreen() {
         <div className="pb-3">
           <SheetItem icon={<Plus className="h-4 w-4" />} label="Post a video" onClick={() => { setMore2(false); setUpload(true); }} />
           <SheetItem icon={<SlidersHorizontal className="h-4 w-4" />} label="Your interests" onClick={() => { setMore2(false); setInterests(true); }} />
+          <SheetItem icon={<BarChart3 className="h-4 w-4" />} label="Your creator stats" onClick={() => { setMore2(false); setStats(null); void spotlightApi.creatorStats().then((x) => setStats(x ?? { videos: 0, views: 0, likes: 0, comments: 0, saves: 0, followers: 0, views_7d: 0 })).catch((e) => { setStats(undefined); toast((e as Error).message, 'error'); }); }} />
         </div>
       </Sheet>
 
@@ -211,6 +256,28 @@ export default function SpotlightScreen() {
           <p className="mt-2 w-full text-xs text-ink-mute">“For you” ranks videos by likes, comments, saves and views, how recent they are, creators you follow and these interests. It’s a simple, transparent formula — not an AI model.</p>
         </div>
       </Sheet>
+      <Sheet open={stats !== undefined} onClose={() => setStats(undefined)} title="Your creator stats">
+        {stats === null ? (
+          <div className="grid h-32 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-ink-mute" /></div>
+        ) : stats ? (
+          <div className="grid grid-cols-3 gap-2 px-4 pb-6">
+            {([['Videos', stats.videos], ['Views', stats.views], ['Views · 7 days', stats.views_7d], ['Likes', stats.likes], ['Comments', stats.comments], ['Followers', stats.followers]] as const).map(([l, n]) => (
+              <div key={l} className="rounded-2xl bg-[#F1F1F4] p-3">
+                <p className="text-xl font-black">{fmt(Number(n))}</p>
+                <p className="text-[11px] font-bold text-ink-mute">{l}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </Sheet>
+      {remix && !remixed && <RemixRecorder video={remix} onClose={() => setRemix(null)} onDone={(blob, duration) => setRemixed({ captured: { blob, kind: 'video', filter: 'none', duration }, of: remix.id })} />}
+      <AnimatePresence>
+        {remixed && (
+          <Suspense fallback={<div className="fixed inset-0 z-[90] bg-black" />}>
+            <MediaEditor captured={remixed.captured} extraMeta={{ remix_of: remixed.of }} onClose={() => { setRemixed(null); setRemix(null); }} />
+          </Suspense>
+        )}
+      </AnimatePresence>
       <AnimatePresence>{upload && <UploadSheet onClose={() => setUpload(false)} onPosted={() => { setUpload(false); void load(); }} />}</AnimatePresence>
     </div>
   );
@@ -220,8 +287,9 @@ function TopBtn({ children, label, onClick }: { children: React.ReactNode; label
   return <button onClick={onClick} aria-label={label} className="grid h-11 w-11 place-items-center rounded-2xl bg-[rgba(17,17,17,0.55)] text-white active:scale-90">{children}</button>;
 }
 
-const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, onSave, onFollow, onComments, onShare, onMenu }: {
+const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, onSave, onFollow, onComments, onShare, onMenu, onTag, onSound, onRemix }: {
   v: SpotlightVideo; me: string; active: boolean; near: boolean; muted: boolean; onMute: () => void; onLike: (force?: boolean) => void; onSave: () => void; onFollow: () => void; onComments: () => void; onShare: () => void; onMenu: () => void;
+  onTag: (tag: string) => void; onSound: (id: string) => void; onRemix: () => void;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
@@ -288,6 +356,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
         <Rail label={fmt(v.comment_count)} onClick={onComments}><MessageCircle className="h-7 w-7" /></Rail>
         <Rail label={fmt(v.save_count)} active={v.saved} onClick={onSave}><Bookmark className={cn('h-7 w-7', v.saved && 'fill-white text-white')} /></Rail>
         <Rail label="Share" onClick={onShare}><Share2 className="h-7 w-7" /></Rail>
+        <Rail label="Remix" onClick={onRemix}><Columns2 className="h-7 w-7" /></Rail>
         <Rail label="" onClick={onMenu}><MoreHorizontal className="h-7 w-7" /></Rail>
         <button onClick={onMute} aria-label={muted ? 'Unmute' : 'Mute'} className="grid h-11 w-11 place-items-center rounded-2xl bg-[rgba(17,17,17,0.5)]">{muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
       </div>
@@ -308,7 +377,14 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
             <button onClick={onFollow} className={cn('ml-auto rounded-xl px-3.5 py-[7px] text-[13px] font-extrabold', v.following ? 'bg-white/20' : 'bg-white text-ink')}>{v.following ? 'Following' : 'Follow'}</button>
           )}
         </div>
-        {v.caption && <p className="mt-2 line-clamp-3 text-sm font-semibold">{v.caption}</p>}
+        {v.caption && (
+          <p className="mt-2 line-clamp-3 text-sm font-semibold">
+            {v.caption.split(/(#[A-Za-z0-9_]{2,30})/g).map((part, k) => (part.startsWith('#') ? <button key={k} onClick={() => onTag(part.slice(1).toLowerCase())} className="font-extrabold text-ember-gold">{part}</button> : part))}
+          </p>
+        )}
+        {v.media_meta?.music_baked && trackById(v.media_meta.music_baked) && (
+          <button onClick={() => onSound(v.media_meta.music_baked!)} className="mt-2 flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-bold"><Music2 className="h-3.5 w-3.5" /> {trackById(v.media_meta.music_baked)!.name} · Use this sound</button>
+        )}
         <span className="mt-2 inline-block rounded-lg bg-white/15 px-2.5 py-0.5 text-[11px] font-bold capitalize">{v.category}</span>
         </div>
       </div>

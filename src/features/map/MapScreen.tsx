@@ -3,7 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Check, Ghost, Loader2, LocateFixed, Navigation, Search, ShieldCheck, Sun, Users } from 'lucide-react';
+import { BatteryLow, Check, Ghost, Layers, Loader2, LocateFixed, Navigation, Search, ShieldCheck, Sun, Users } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { StoryViewer } from '@/features/stories/StoryViewer';
+import { chatApi } from '@/lib/chat/api';
+import type { StoryRing } from '@/lib/social/api';
 import { Sheet } from '@/components/ui/Sheet';
 import { Toggle } from '@/components/ui/Toggle';
 import { Avatar } from '@/components/Avatar';
@@ -15,7 +19,7 @@ import { AURA } from '@/lib/types';
 import { lastSeenLabel } from '@/lib/chat/time';
 import { cn } from '@/lib/cn';
 import { Ghost as GhostLayer } from '@/components/ui/Ghost';
-import { distanceM, getPosition, mapApi, type FriendLocation, type MyShare } from './api';
+import { distanceM, getPosition, mapApi, MOTION_LABEL, placesIn, type Bounds, type FriendLocation, type MyShare, type Place } from './api';
 
 const DURATIONS = [{ m: 15, l: '15 min' }, { m: 60, l: '1 hour' }, { m: 480, l: '8 hours' }, { m: 1440, l: '24 hours' }];
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -44,7 +48,8 @@ const ROUND = 'grid h-12 w-12 place-items-center rounded-2xl bg-[#F1F1F4] text-i
 function tagFor(f: FriendLocation, live: boolean) {
   const mins = Math.max(0, Math.round((Date.now() - new Date(f.updated_at).getTime()) / 60000));
   const when = live && mins < 1 ? 'now' : mins < 60 ? `${mins}m` : `${Math.round(mins / 60)}h`;
-  return `${f.display_name.split(' ')[0]} · ${when}`;
+  const extra = f.motion && MOTION_LABEL[f.motion] ? ` · ${MOTION_LABEL[f.motion]}` : f.battery != null && f.battery <= 15 ? ` · ${f.battery}%` : '';
+  return `${f.display_name.split(' ')[0]} · ${when}${extra}`;
 }
 
 export default function MapScreen() {
@@ -67,6 +72,14 @@ export default function MapScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [busy, setBusy] = useState(false);
   const sharing = !!mine && new Date(mine.expires_at) > new Date();
+  // Extra layers: public story heat, places (OpenStreetMap) and the areas I've explored.
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [layers, setLayers] = useState({ heat: true, places: false, explored: false });
+  const [viewRev, setViewRev] = useState(0);
+  const [place, setPlace] = useState<Place | null>(null);
+  const [exploredCount, setExploredCount] = useState<number | null>(null);
+  const [storyRings, setStoryRings] = useState<StoryRing[] | null>(null);
+  const layerGroups = useRef<{ heat: L.LayerGroup; places: L.LayerGroup; explored: L.LayerGroup } | null>(null);
 
   // Init map once.
   useEffect(() => {
@@ -79,6 +92,8 @@ export default function MapScreen() {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(m);
     map.current = m;
+    layerGroups.current = { heat: L.layerGroup().addTo(m), places: L.layerGroup().addTo(m), explored: L.layerGroup().addTo(m) };
+    m.on('moveend', () => setViewRev((n) => n + 1));
     return () => {
       m.remove();
       map.current = null;
@@ -165,6 +180,103 @@ export default function MapScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharing, mine?.expires_at]);
 
+  const bounds = (): Bounds | null => {
+    const b = map.current?.getBounds();
+    return b ? { south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() } : null;
+  };
+
+  // Public story heat: circles sized by how many stories; tap to watch them.
+  useEffect(() => {
+    const g = layerGroups.current?.heat;
+    const b = bounds();
+    if (!g || !b) return;
+    g.clearLayers();
+    if (!layers.heat) return;
+    let alive = true;
+    void mapApi.heat(b).then((cells) => {
+      if (!alive) return;
+      const cellDeg = Math.max((b.north - b.south) / 24, 0.01);
+      for (const c of cells) {
+        const r = Math.min(46, 14 + Math.sqrt(c.stories) * 8);
+        L.circleMarker([c.lat, c.lng], { radius: r, stroke: false, fillColor: '#FF4F9A', fillOpacity: Math.min(0.7, 0.25 + c.stories * 0.05) })
+          .bindTooltip(`${c.stories} public ${c.stories === 1 ? 'story' : 'stories'}`)
+          .on('click', () => void openStoriesNear(c.lat, c.lng, cellDeg))
+          .addTo(g);
+      }
+    }).catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers.heat, viewRev]);
+
+  async function openStoriesNear(lat: number, lng: number, radius: number) {
+    try {
+      const near = await mapApi.near(lat, lng, radius);
+      const ids = [...new Set(near.map((n) => n.user_id))];
+      if (!ids.length) return toast('Those stories have just expired', 'info');
+      const people = await chatApi.profiles(ids);
+      setStoryRings(ids.map((id) => {
+        const p = people.find((x) => x.id === id)!;
+        return { user_id: id, username: p?.username ?? '', display_name: p?.display_name ?? 'Someone', avatar_url: p?.avatar_url ?? null, aura_color: p?.aura_color ?? 'violet', story_count: 1, unseen: true, latest_at: new Date().toISOString(), is_me: id === profile?.id, is_friend: false };
+      }));
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
+
+  // Places from OpenStreetMap when zoomed in enough.
+  useEffect(() => {
+    const g = layerGroups.current?.places;
+    const m = map.current;
+    const b = bounds();
+    if (!g || !m || !b) return;
+    if (!layers.places) return void g.clearLayers();
+    if (m.getZoom() < 14) {
+      g.clearLayers();
+      return;
+    }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      void placesIn(b, ctrl.signal).then((list) => {
+        g.clearLayers();
+        for (const p of list) {
+          L.marker([p.lat, p.lng], {
+            icon: L.divIcon({ className: '', iconSize: [140, 30], iconAnchor: [10, 15], html: `<div class="snv-place"><span class="dot"></span><span class="nm">${escape(p.name)}</span></div>` }),
+          }).on('click', () => setPlace(p)).addTo(g);
+        }
+      }).catch((e) => (e as Error).name !== 'AbortError' && toast((e as Error).message, 'error'));
+    }, 600);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers.places, viewRev]);
+
+  // Explored: ~1 km squares I've shared my location from.
+  useEffect(() => {
+    const g = layerGroups.current?.explored;
+    const b = bounds();
+    if (!g || !b) return;
+    g.clearLayers();
+    if (!layers.explored) return;
+    let alive = true;
+    void mapApi.explored(b).then((cells) => {
+      if (!alive) return;
+      for (const c of cells) {
+        L.rectangle([[c.lat_i / 100, c.lng_i / 100], [(c.lat_i + 1) / 100, (c.lng_i + 1) / 100]], { stroke: false, fillColor: '#18C48C', fillOpacity: 0.38 }).addTo(g);
+      }
+    }).catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layers.explored, viewRev]);
+  useEffect(() => {
+    if (layersOpen) void mapApi.exploredCount().then(setExploredCount).catch(() => undefined);
+  }, [layersOpen]);
+
   async function locate() {
     try {
       const p = await getPosition();
@@ -219,6 +331,7 @@ export default function MapScreen() {
             {sharing ? `Sharing · ${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'Ghost mode'}
           </span>
         </div>
+        <button onClick={() => setLayersOpen(true)} aria-label="Map layers" className={cn(WHITE, 'pointer-events-auto')}><Layers className="h-5 w-5" /></button>
         <button onClick={() => setSheet(true)} aria-label="Location settings" className={cn(WHITE, 'pointer-events-auto')}><Sun className="h-5 w-5" /></button>
       </header>
       <button onClick={() => void locate()} aria-label="Centre on me" className={cn(WHITE, 'absolute right-3.5 z-[500] bottom-[calc(84px+var(--safe-bottom)+8.25rem)]')}><Navigation className="h-5 w-5" /></button>
@@ -304,13 +417,37 @@ export default function MapScreen() {
         </div>
       </Sheet>
 
+      <Sheet open={layersOpen} onClose={() => setLayersOpen(false)} title="Map layers">
+        <div className="mx-4 mb-6 overflow-hidden rounded-2xl bg-[#F1F1F4]">
+          <Toggle label="Public stories" description="Heat of public stories posted around here today — tap a spot to watch" checked={layers.heat} onChange={(v) => setLayers((l) => ({ ...l, heat: v }))} />
+          <Toggle label="Places" description="Cafés, parks and sights from OpenStreetMap (zoom in)" checked={layers.places} onChange={(v) => setLayers((l) => ({ ...l, places: v }))} />
+          <Toggle label="Explored" description={exploredCount === null ? 'Areas you’ve shared your location from' : `You’ve explored ${exploredCount} area${exploredCount === 1 ? '' : 's'} (about ${exploredCount} km²)`} checked={layers.explored} onChange={(v) => setLayers((l) => ({ ...l, explored: v }))} />
+        </div>
+      </Sheet>
+
+      <Sheet open={!!place} onClose={() => setPlace(null)}>
+        {place && (
+          <div className="flex items-center gap-3 px-5 pb-6">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ember-sage text-white"><Navigation className="h-5 w-5" /></span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-extrabold">{place.name}</p>
+              <p className="text-xs capitalize text-ink-mute">{place.kind} · OpenStreetMap</p>
+            </div>
+            <a href={`https://www.openstreetmap.org/directions?to=${place.lat},${place.lng}`} target="_blank" rel="noreferrer" className="rounded-2xl bg-[#111111] px-4 py-2 text-sm font-extrabold text-white">Directions</a>
+          </div>
+        )}
+      </Sheet>
+
+      <AnimatePresence>{storyRings && <StoryViewer rings={storyRings} startIndex={0} onClose={() => setStoryRings(null)} />}</AnimatePresence>
+
       <Sheet open={!!selected} onClose={() => setSelected(null)}>
         {selected && (
           <div className="flex items-center gap-3 px-5 pb-6">
             <Avatar name={selected.display_name} url={selected.avatar_url} aura={selected.aura_color} size={52} />
             <div className="flex-1">
               <p className="font-semibold">{selected.display_name}</p>
-              <p className="text-xs text-ink-mute">{lastSeenLabel(selected.updated_at).replace('Active', 'Updated')} · {selected.precise ? 'precise' : 'approximate'}</p>
+              <p className="text-xs text-ink-mute">{lastSeenLabel(selected.updated_at).replace('Active', 'Updated')} · {selected.precise ? 'precise' : 'approximate'}{selected.motion && MOTION_LABEL[selected.motion] ? ` · ${MOTION_LABEL[selected.motion]}` : ''}</p>
+              {selected.battery != null && <p className={cn('mt-0.5 flex items-center gap-1 text-xs font-bold', selected.battery <= 15 ? 'text-ember-rose' : 'text-ink-mute')}><BatteryLow className="h-3.5 w-3.5" /> {selected.battery}% battery</p>}
             </div>
             <button onClick={() => navigate(`/u/${selected.username}`)} className="rounded-2xl bg-[#111111] px-4 py-2 text-sm font-extrabold text-white">Profile</button>
           </div>

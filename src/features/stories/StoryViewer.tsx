@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playTrack } from '@/lib/music/tracks';
+import { chatApi } from '@/lib/chat/api';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -71,6 +72,14 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
       stop?.();
     };
   }, [ready, paused, music, story?.kind, story?.id]);
+
+  // People mentioned in the current story (tap to open their profile).
+  const [mentionPeople, setMentionPeople] = useState<{ id: string; username: string }[]>([]);
+  useEffect(() => {
+    const ids = story?.mentions ?? [];
+    if (!ids.length) return setMentionPeople([]);
+    void chatApi.profiles(ids).then((ps) => setMentionPeople(ps.map((p) => ({ id: p.id, username: p.username })))).catch(() => setMentionPeople([]));
+  }, [story?.id, story?.mentions]);
 
   // Reset per story + mark viewed.
   useEffect(() => {
@@ -215,7 +224,7 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
             <Avatar name={ring.display_name} url={ring.avatar_url} aura={ring.aura_color} size={36} ring={false} />
             <span className="text-left">
               <span className="block text-sm font-semibold text-white">{ring.is_me ? 'My story' : ring.display_name}</span>
-              <span className="block text-[11px] text-white/70">{story ? shortTime(story.created_at) : ''}{story?.audience === 'everyone' ? ' · Public' : ''}</span>
+              <span className="block text-[11px] text-white/70">{story ? shortTime(story.created_at) : ''}{story?.audience === 'everyone' ? ' · Public' : story?.audience === 'custom' ? ' · Private' : story?.audience === 'group' ? ' · Group' : ''}</span>
             </span>
           </button>
           <span className="flex-1" />
@@ -223,6 +232,15 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
           <button onClick={onClose} aria-label="Close" className="grid h-[42px] w-[42px] place-items-center rounded-2xl bg-[rgba(10,12,24,0.38)] text-white"><X className="h-[22px] w-[22px]" strokeWidth={2.4} /></button>
         </div>
       </div>
+
+      {/* @mentions on this story */}
+      {mentionPeople.length > 0 && (
+        <div className="absolute inset-x-0 top-[calc(var(--safe-top)+5.5rem)] z-10 flex flex-wrap justify-center gap-1.5 px-6">
+          {mentionPeople.map((p) => (
+            <button key={p.id} onClick={() => { onClose(); navigate(`/u/${p.username}`); }} className="rounded-full bg-white/90 px-3 py-1 text-xs font-extrabold text-ink">@{p.username}</button>
+          ))}
+        </div>
+      )}
 
       {/* Reaction burst */}
       <AnimatePresence>
