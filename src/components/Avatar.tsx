@@ -16,7 +16,7 @@ interface AvatarProps {
 
 /** Round avatar face on a soft tint; optional accent ring; initials when there's no picture yet. */
 export const Avatar = memo(function Avatar({ name, url, aura = 'gold', size = 44, ring = false, className }: AvatarProps) {
-  const a = AURA[aura];
+  const a = AURA[aura] ?? AURA.gold;
   const initials = name
     .split(/\s+/)
     .map((p) => p[0])

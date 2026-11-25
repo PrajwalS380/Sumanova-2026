@@ -196,8 +196,10 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
     return <div className="glass-strong mx-3 mb-3 rounded-3xl px-4 py-3 text-center text-sm text-ink-mute pb-safe">{disabled}</div>;
   }
 
+  // While typing, the small tools fold away so the text box keeps its room on narrow phones.
+  const typing = text.trim().length > 0;
   return (
-    <div className="relative z-20 bg-noir px-3 pb-safe pt-2">
+    <div className="relative z-20 bg-noir px-safe-3 pb-safe pt-2">
       <AnimatePresence>
         {(replyTo || editing) && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="glass-strong mb-2 flex items-center gap-2 rounded-2xl px-3 py-2">
@@ -231,12 +233,12 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
           </button>
         </div>
       ) : (
-        <div className="flex items-end gap-2">
+        <div className="flex min-w-0 items-end gap-1.5 min-[380px]:gap-2">
           <button onClick={() => file.current?.click()} aria-label="Send a photo or video" className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-2xl bg-ember-flame text-white active:scale-90">
             <Camera className="h-5 w-5" />
           </button>
           <input ref={file} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => { void pickFiles(e.target.files); e.target.value = ''; }} />
-          <div className="flex min-h-[42px] flex-1 items-center rounded-2xl bg-white px-3.5">
+          <div className="flex min-h-[42px] min-w-0 flex-1 items-center rounded-2xl bg-white pl-3 pr-2 min-[380px]:pl-3.5">
           <textarea
             ref={ta}
             rows={1}
@@ -254,20 +256,20 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
             placeholder={editing ? 'Edit message' : secret ? 'Secret chat (encrypted)' : 'Send a chat'}
             maxLength={4000}
             aria-label="Message"
-            className="max-h-[132px] min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] font-semibold leading-snug outline-none placeholder:text-ink-mute"
+            className="max-h-[132px] min-h-[24px] w-0 min-w-0 flex-1 resize-none bg-transparent py-2 text-[15px] font-semibold leading-snug outline-none placeholder:text-ink-mute"
           />
-          {dictationSupported && !editing && (
+          {dictationSupported && !editing && (!typing || listening) && (
             <button onClick={() => void toggleDictation()} aria-label={listening ? 'Stop speaking to type' : 'Speak to type'} aria-pressed={listening} className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-xl active:scale-90', listening ? 'animate-pulse text-ember-rose' : 'text-ink-faint')}>
               <AudioLines className="h-4 w-4" />
             </button>
           )}
-          {peerId && !editing && (
+          {peerId && !editing && !typing && (
             <button onClick={() => void toggleSecret()} aria-label={secret ? 'Secret chat on — tap to turn off' : 'Turn on secret (end-to-end encrypted) chat'} aria-pressed={secret} className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-xl active:scale-90', secret ? 'text-ember-sage' : 'text-ink-faint')}>
               <Lock className="h-4 w-4" />
             </button>
           )}
-          {!editing && (
-            <button onClick={() => setExtras(true)} aria-label="Poll, location or schedule" className="-mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-ink-mute active:scale-90">
+          {!editing && !typing && (
+            <button onClick={() => setExtras(true)} aria-label="Poll, location or schedule" className="-mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-ink-mute active:scale-90">
               <Plus className="h-5 w-5" strokeWidth={2.4} />
             </button>
           )}

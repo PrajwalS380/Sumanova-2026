@@ -17,7 +17,7 @@ export function E2EText({ body, mine }: { body: string; mine: boolean; senderId:
     };
   }, [body, mine, session]);
   return (
-    <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">
+    <p className="whitespace-pre-wrap text-[15px] leading-snug [overflow-wrap:anywhere]">
       <Lock className="mr-1 inline h-3 w-3 -translate-y-px opacity-70" aria-label="End-to-end encrypted" />
       {failed ? <span className="italic opacity-70">Encrypted on another device</span> : text ?? <span className="opacity-60">Decrypting…</span>}
     </p>

@@ -39,7 +39,7 @@ export default function ChatThreadScreen() {
   const conv = useConversation(id, me);
   const calls = useCalls();
   const summary = inbox.conversations.find((c) => c.id === id);
-  const theme = CHAT_THEMES[summary?.theme ?? 'aurora'];
+  const theme = CHAT_THEMES[summary?.theme ?? 'aurora'] ?? CHAT_THEMES.aurora;
   const [menu, setMenu] = useState<LocalMessage | null>(null);
   const [replyTo, setReplyTo] = useState<LocalMessage | null>(null);
   const [editing, setEditing] = useState<LocalMessage | null>(null);

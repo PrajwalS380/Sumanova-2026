@@ -18,7 +18,7 @@ export default function WelcomePage() {
       <LogoMark size={96} className="mt-[64px]" />
       <h1 className="mt-4"><Wordmark className="text-[40px]" /></h1>
 
-      <div className="mt-[48px] flex items-end">
+      <div className="mt-[min(48px,6vh)] flex max-w-full items-end justify-center px-2">
         {figs.map((f, i) => (
           <motion.img
             key={f.src}
@@ -28,7 +28,7 @@ export default function WelcomePage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 * i, type: 'spring', stiffness: 220, damping: 22 }}
-            style={{ height: f.h, width: 'auto' }}
+            style={{ height: `min(${f.h}px, ${(f.h / 420) * 100}vw)`, width: 'auto' }}
             className={i === 1 ? 'relative z-10 -mx-2' : ''}
           />
         ))}

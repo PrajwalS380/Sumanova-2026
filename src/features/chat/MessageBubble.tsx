@@ -53,7 +53,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
   if (m.kind === 'system') {
     return (
       <div className="my-3 flex justify-center px-6">
-        <span className="rounded-xl bg-white px-3 py-1 text-center text-xs font-semibold text-ink-mute">{m.body}</span>
+        <span className="max-w-[90%] rounded-xl bg-white px-3 py-1 text-center text-xs font-semibold text-ink-mute [overflow-wrap:anywhere]">{m.body}</span>
       </div>
     );
   }
@@ -77,7 +77,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
       id={`msg-${m.id}`}
     >
       {!mine && p.showSender && <span className="w-7 shrink-0">{!p.groupedWithNext && p.sender && <Avatar name={p.sender.display_name} url={p.sender.avatar_url} aura={p.sender.aura_color} size={28} ring={false} />}</span>}
-      <div className={cn('flex max-w-[78%] flex-col', mine ? 'items-end' : 'items-start')}>
+      <div className={cn('flex min-w-0 max-w-[78%] flex-col', mine ? 'items-end' : 'items-start')}>
         {p.showSender && !mine && !p.groupedWithPrev && p.sender && <span className="mb-1 ml-3 text-[11px] font-semibold text-ink-mute">{p.sender.display_name}</span>}
         <div
           {...press}
@@ -105,14 +105,16 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           {deleted ? (
             <span className="text-sm">Message deleted</span>
           ) : m.kind === 'text' ? (
-            m.body?.startsWith('e2e:') ? <E2EText body={m.body} mine={mine} senderId={m.sender_id} conversationId={m.conversation_id} /> : <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">{m.body}</p>
+            m.body?.startsWith('e2e:') ? <E2EText body={m.body} mine={mine} senderId={m.sender_id} conversationId={m.conversation_id} /> : <p className="whitespace-pre-wrap text-[15px] leading-snug [overflow-wrap:anywhere]">{m.body}</p>
           ) : m.kind === 'snap' ? (
             p.snap ? <SnapTile kind={m.body ?? 'image'} state={p.snap.state} screenshot={p.snap.screenshot} mine={mine} onOpen={p.snap.onOpen} /> : null
           ) : m.kind === 'sticker' ? (
             parseNovaSticker(m.body) ? (
               <NovaSticker s={parseNovaSticker(m.body)!} size={104} className="pb-1" />
+            ) : m.body?.startsWith('nova:') ? (
+              <span className="text-sm text-ink-mute">Sticker</span>
             ) : (
-              <span className="block pb-1 text-[64px] leading-none drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker">{m.body}</span>
+              <span className="block max-w-full pb-1 text-[64px] leading-none [overflow-wrap:anywhere] drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker">{m.body}</span>
             )
           ) : m.kind === 'hangout' && m.media_meta?.hangout_id ? (
             <HangoutCard hangoutId={m.media_meta.hangout_id} />
@@ -131,7 +133,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           ) : m.kind === 'voice' ? (
             <VoiceView path={m.media_path} localUrl={m.localUrl} meta={m.media_meta} mine={mine} />
           ) : null}
-          {isMedia && m.body && <p className="px-2 pb-1 pt-1.5 text-[14px]">{m.body}</p>}
+          {isMedia && m.body && <p className="px-2 pb-1 pt-1.5 text-[14px] [overflow-wrap:anywhere]">{m.body}</p>}
         </div>
 
         {p.reactions.length > 0 && (
