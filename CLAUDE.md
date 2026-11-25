@@ -97,6 +97,18 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
 - Tests: Vitest + Testing Library (`npm test`), `npm run typecheck`, `npm run build`. CI must stay green.
 - Commit as `PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com>`; no model names in commits.
 
+## Feature checklist build (owner said "approve all", 2026-11-25; then "finish all batches end to end without asking")
+Done: batch 1 (contacts/phone/PYMK/badges), Nova emoji + lenses, batch 2 (polls, live location, scheduled msgs,
+moving + avatar stickers, chat screenshot alerts), batch 3 (group calls, mesh ≤6).
+Remaining, in order: batch 4 camera (lens browser, background blur/replace + hair colour via bundled MediaPipe
+segmenters in public/mediapipe, makeup, distortions, night mode, front flash, video speed/reverse/multi-clip/voice
+changer, original synthesized music on snaps, snap templates) → batch 5 (group/private stories, @mentions, Places (OSM),
+heat map, explored areas/travel/battery, passcode private memories, memory search, hashtags/trending sounds/creator
+stats, remix) → batch 6 (snap score, trophies, TOTP 2FA, login alerts + devices, data download, birthday
+notifications, closed-app Android push needs owner Firebase) → batch 7 (B1–B13). After each batch: migration +
+rolled-back test, typecheck/test/build, commit, push, Vercel deploy, APK link. If an approval is blocked, record it in
+`docs/PENDING_OWNER_ACTIONS.md` and keep going.
+
 ## Sandbox limits (this cloud environment)
 Outbound network to supabase.co / vercel.app is blocked from the shell; use Supabase MCP (`execute_sql`) and Vercel
 MCP (`web_fetch_vercel_url`) to verify. No Android SDK locally — Android builds run on GitHub Actions.

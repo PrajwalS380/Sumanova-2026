@@ -13,7 +13,11 @@ export function useRecorder(getStream: () => MediaStream | null) {
   const chunks = useRef<Blob[]>([]);
   const mic = useRef<MediaStream | null>(null);
   const started = useRef(0);
+  const pausedAt = useRef(0);
+  const pausedTotal = useRef(0);
   const [recording, setRecording] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [clips, setClips] = useState(0);
 
   const start = useCallback(async () => {
     const cam = getStream();
@@ -31,6 +35,9 @@ export function useRecorder(getStream: () => MediaStream | null) {
     r.start(250);
     rec.current = r;
     started.current = performance.now();
+    pausedTotal.current = 0;
+    setClips(1);
+    setPaused(false);
     setRecording(true);
     return true;
   }, [getStream]);
@@ -40,12 +47,15 @@ export function useRecorder(getStream: () => MediaStream | null) {
       new Promise<{ blob: Blob; duration: number } | null>((resolve) => {
         const r = rec.current;
         if (!r) return resolve(null);
-        const duration = (performance.now() - started.current) / 1000;
+        if (r.state === 'paused') pausedTotal.current += performance.now() - pausedAt.current;
+        const duration = (performance.now() - started.current - pausedTotal.current) / 1000;
         r.onstop = () => {
           mic.current?.getTracks().forEach((t) => t.stop());
           mic.current = null;
           rec.current = null;
           setRecording(false);
+          setPaused(false);
+          setClips(0);
           if (duration < 0.5) return resolve(null);
           resolve({ blob: new Blob(chunks.current, { type: (r.mimeType || 'video/webm').split(';')[0] }), duration });
         };
@@ -54,5 +64,33 @@ export function useRecorder(getStream: () => MediaStream | null) {
     [],
   );
 
-  return { recording, start, stop, elapsed: () => (rec.current ? (performance.now() - started.current) / 1000 : 0) };
+  /** Multi-clip: pause between holds, resume on the next hold (one video, several clips). */
+  const pause = useCallback(() => {
+    const r = rec.current;
+    if (!r || r.state !== 'recording' || typeof r.pause !== 'function') return false;
+    r.pause();
+    pausedAt.current = performance.now();
+    setPaused(true);
+    return true;
+  }, []);
+  const resume = useCallback(() => {
+    const r = rec.current;
+    if (!r || r.state !== 'paused') return false;
+    pausedTotal.current += performance.now() - pausedAt.current;
+    r.resume();
+    setPaused(false);
+    setClips((n) => n + 1);
+    return true;
+  }, []);
+
+  return {
+    recording,
+    paused,
+    clips,
+    start,
+    stop,
+    pause,
+    resume,
+    elapsed: () => (rec.current ? (((rec.current.state === 'paused' ? pausedAt.current : performance.now()) - started.current - pausedTotal.current) / 1000) : 0),
+  };
 }

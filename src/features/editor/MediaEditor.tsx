@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Check, Crop, Download, Infinity as InfinityIcon, Paintbrush, RotateCw, Smile, Timer, Trash2, Type, Undo2, X } from 'lucide-react';
+import { ArrowRight, Check, Crop, Download, Gauge, Infinity as InfinityIcon, LayoutTemplate, Loader2, Mic2, Music, Paintbrush, Rewind, RotateCw, Smile, Timer, Trash2, Type, Undo2, X } from 'lucide-react';
+import { TEMPLATES, templateById } from '@/lib/snaps/templates';
+import { TRACKS, playTrack, trackById } from '@/lib/music/tracks';
+import { hasFx, processVideo, VOICES, type Voice } from '@/lib/media/videoFx';
 import { Sheet } from '@/components/ui/Sheet';
 import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/providers/AuthProvider';
@@ -52,12 +55,47 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [busy, setBusy] = useState(false);
   const [overTrash, setOverTrash] = useState(false);
+  const [template, setTemplate] = useState<string | null>(null);
+  const [music, setMusic] = useState<string | null>(null);
+  const [speed, setSpeed] = useState(1);
+  const [reverse, setReverse] = useState(false);
+  const [voice, setVoice] = useState<Voice>('none');
+  const [panel, setPanel] = useState<'templates' | 'music' | 'voice' | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const stageVideo = useRef<HTMLVideoElement>(null);
+  const tplCanvas = useRef<HTMLCanvasElement>(null);
+
   const stage = useRef<HTMLDivElement>(null);
   const drawCanvas = useRef<HTMLCanvasElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
   const drag = useRef<{ id: string; dx: number; dy: number } | null>(null);
   const drawing = useRef<Stroke | null>(null);
   const filterSwipe = useRef<number | null>(null);
+
+  // Preview: template frame, playback speed and the chosen song.
+  useEffect(() => {
+    const c = tplCanvas.current;
+    if (!c || !box.w) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    c.width = box.w * dpr;
+    c.height = box.h * dpr;
+    const ctx = c.getContext('2d')!;
+    ctx.clearRect(0, 0, c.width, c.height);
+    templateById(template)?.draw(ctx, c.width, c.height, new Date());
+  }, [template, box]);
+  useEffect(() => {
+    if (stageVideo.current) stageVideo.current.playbackRate = speed;
+  }, [speed, natural]);
+  useEffect(() => {
+    if (!music) return;
+    let stop: (() => void) | null = null;
+    let alive = true;
+    void playTrack(music, 0.6).then((s) => (alive ? (stop = s) : s())).catch(() => undefined);
+    return () => {
+      alive = false;
+      stop?.();
+    };
+  }, [music]);
 
   useEffect(() => () => URL.revokeObjectURL(src), [src]);
 
@@ -196,12 +234,24 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
 
   async function prepare(): Promise<Prepared> {
     if (!natural) throw new Error('Still loading');
+    const tpl = templateById(template);
     if (isVideo) {
-      const overlay = await exportOverlay(strokes, items, natural.w, natural.h);
-      return { kind: 'video', blob: captured.blob, overlay, meta: { filter: filterId, width: natural.w, height: natural.h, duration: captured.duration }, duration: null };
+      const fx = { speed, reverse, voice, music };
+      let blob = captured.blob;
+      if (hasFx(fx)) {
+        setProgress(0);
+        try {
+          blob = await processVideo(captured.blob, fx, (p) => setProgress(p));
+        } finally {
+          setProgress(null);
+        }
+      }
+      const overlay = await exportOverlay(strokes, items, natural.w, natural.h, tpl);
+      const dur = captured.duration ? captured.duration / speed : undefined;
+      return { kind: 'video', blob, overlay, meta: { filter: filterId, width: natural.w, height: natural.h, duration: dur, ...(music ? { music_baked: music } : {}) }, duration: null };
     }
-    const blob = await exportImage(src, filterId, strokes, items);
-    return { kind: 'image', blob, overlay: null, meta: { width: natural.w, height: natural.h }, duration: duration || null };
+    const blob = await exportImage(src, filterId, strokes, items, 2048, tpl);
+    return { kind: 'image', blob, overlay: null, meta: { width: natural.w, height: natural.h, ...(music ? { music } : {}) }, duration: duration || null };
   }
 
   async function save() {
@@ -244,11 +294,12 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
         onPointerCancel={onStageUp}
       >
         {isVideo ? (
-          <video src={src} autoPlay loop playsInline muted={false} onLoadedMetadata={(e) => setNatural({ w: e.currentTarget.videoWidth || 720, h: e.currentTarget.videoHeight || 1280 })} className="h-full w-full object-contain" style={{ filter: f.css }} />
+          <video ref={stageVideo} src={src} autoPlay loop playsInline muted={false} onLoadedMetadata={(e) => setNatural({ w: e.currentTarget.videoWidth || 720, h: e.currentTarget.videoHeight || 1280 })} className="h-full w-full object-contain" style={{ filter: f.css }} />
         ) : (
           <img src={src} alt="" onLoad={(e) => setNatural({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })} className="h-full w-full object-contain" style={{ filter: f.css }} draggable={false} />
         )}
         {f.tint && <div className="pointer-events-none absolute inset-0" style={{ background: f.tint }} />}
+        <canvas ref={tplCanvas} className="pointer-events-none absolute inset-0 h-full w-full" />
         <canvas ref={drawCanvas} className="pointer-events-none absolute inset-0 h-full w-full" />
         {tool === 'crop' && aspect && <CropGuide aspect={aspect} box={box} />}
         {items.map((it) => (
@@ -280,6 +331,15 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
               </span>
             </EdBtn>
           )}
+          <EdBtn label="Templates" active={!!template} onClick={() => setPanel('templates')}><LayoutTemplate className="h-5 w-5" /></EdBtn>
+          <EdBtn label="Music" active={!!music} onClick={() => setPanel('music')}><Music className="h-5 w-5" /></EdBtn>
+          {isVideo && (
+            <EdBtn label={`Speed ${speed}x`} active={speed !== 1} onClick={() => setSpeed((v) => (v === 1 ? 2 : v === 2 ? 0.5 : 1))}>
+              <span className="relative"><Gauge className="h-5 w-5" />{speed !== 1 && <span className="absolute -bottom-2 -right-3 rounded-full bg-ember-flame px-1 text-[9px] font-bold text-white">{speed}x</span>}</span>
+            </EdBtn>
+          )}
+          {isVideo && <EdBtn label={reverse ? 'Reverse on' : 'Reverse'} active={reverse} onClick={() => setReverse((v) => !v)}><Rewind className="h-5 w-5" /></EdBtn>}
+          {isVideo && <EdBtn label="Voice changer" active={voice !== 'none'} onClick={() => setPanel('voice')}><Mic2 className="h-5 w-5" /></EdBtn>}
           {tool === 'draw' && strokes.length > 0 && <EdBtn label="Undo" onClick={() => setStrokes((s) => s.slice(0, -1))}><Undo2 className="h-5 w-5" /></EdBtn>}
         </div>
       </div>
@@ -356,6 +416,45 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
           ))}
         </div>
       </Sheet>
+
+      <Sheet open={panel === 'templates'} onClose={() => setPanel(null)} title="Templates">
+        <div className="grid grid-cols-2 gap-2 px-4 pb-6">
+          <button onClick={() => { setTemplate(null); setPanel(null); }} className={cn('rounded-2xl px-3 py-3 text-left text-sm font-extrabold', !template ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>No template</button>
+          {TEMPLATES.map((t) => (
+            <button key={t.id} onClick={() => { setTemplate(t.id); setPanel(null); haptic(6); }} className={cn('rounded-2xl px-3 py-3 text-left text-sm font-extrabold', template === t.id ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>{t.name}</button>
+          ))}
+        </div>
+      </Sheet>
+      <Sheet open={panel === 'music'} onClose={() => setPanel(null)} title="Add music">
+        <p className="px-5 pb-2 text-xs text-ink-mute">Original SUMANOVA tracks, made on your phone — free to use anywhere.</p>
+        <div className="space-y-1.5 px-4 pb-6">
+          <button onClick={() => setMusic(null)} className={cn('flex w-full items-center rounded-2xl px-3.5 py-3 text-left text-sm font-extrabold', !music ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>No music</button>
+          {TRACKS.map((t) => (
+            <button key={t.id} onClick={() => { setMusic(t.id); haptic(6); }} className={cn('flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left', music === t.id ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>
+              <Music className="h-5 w-5 shrink-0" />
+              <span className="flex-1"><span className="block text-sm font-extrabold">{t.name}</span><span className="block text-xs opacity-70">{t.mood} · {t.bpm} bpm</span></span>
+              {music === t.id && <span className="text-xs font-bold">Playing</span>}
+            </button>
+          ))}
+        </div>
+      </Sheet>
+      <Sheet open={panel === 'voice'} onClose={() => setPanel(null)} title="Voice changer">
+        <div className="grid grid-cols-3 gap-2 px-4 pb-6">
+          {VOICES.map((v) => (
+            <button key={v.id} onClick={() => { setVoice(v.id); setPanel(null); haptic(6); }} className={cn('rounded-2xl px-3 py-3.5 text-sm font-extrabold', voice === v.id ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>{v.label}</button>
+          ))}
+        </div>
+        <p className="px-5 pb-6 text-xs text-ink-mute">The voice, speed and reverse are applied when you send or save.</p>
+      </Sheet>
+      {progress !== null && (
+        <div className="absolute inset-0 z-50 grid place-items-center bg-black/60">
+          <div className="flex flex-col items-center gap-3 rounded-tile bg-white px-6 py-5 text-ink">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <p className="text-sm font-extrabold">Adding effects… {Math.round(progress * 100)}%</p>
+          </div>
+        </div>
+      )}
+      {music && trackById(music) && <div className="pointer-events-none absolute left-1/2 top-[calc(var(--safe-top)+1rem)] -translate-x-1/2 rounded-full bg-black/50 px-3 py-1.5 text-xs font-extrabold text-white">♪ {trackById(music)!.name}</div>}
 
       <SendSheet prepared={prepared} onClose={() => setPrepared(null)} onSent={onClose} />
     </motion.div>,

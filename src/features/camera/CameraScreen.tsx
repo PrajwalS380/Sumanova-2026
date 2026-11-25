@@ -2,8 +2,9 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { MeButton } from '@/components/MeButton';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, UserPlus, CameraOff, Images, ImagePlus, Loader2, RefreshCw, ScanFace, Search, Settings2, Smile, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
-import { LENSES } from './lenses';
+import { Bell, Check, UserPlus, CameraOff, Images, ImagePlus, Layers, LayoutGrid, Loader2, Moon, RefreshCw, ScanFace, Search, Settings2, Smile, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
+import { ALL_LENSES } from './allLenses';
+import { LensBrowser } from './LensBrowser';
 import { NovaEmoji } from '@/components/emoji/NovaEmoji';
 import { useLens } from './useLens';
 import { useNotificationsOptional } from '@/providers/NotificationsProvider';
@@ -32,6 +33,11 @@ export default function CameraScreen() {
   const cam = useCamera(videoRef);
   const [lensId, setLensId] = useState<string | null>(null);
   const [lensTray, setLensTray] = useState(false);
+  const [browser, setBrowser] = useState(false);
+  const [night, setNight] = useState(false);
+  const [screenFlash, setScreenFlash] = useState(false);
+  const [flashing, setFlashing] = useState(false);
+  const [multi, setMulti] = useState(false);
   const lens = useLens(videoRef, overlayRef, lensId, cam.facing === 'user');
   const recorder = useRecorder(() => {
     const raw = cam.stream();
@@ -53,6 +59,9 @@ export default function CameraScreen() {
   const gallery = useRef<HTMLInputElement>(null);
   const mirror = cam.facing === 'user';
   const filter = FILTERS[filterIdx];
+  // Night mode brightens the preview and the captured photo (on top of the chosen filter).
+  const NIGHT = 'brightness(1.55) contrast(1.08) saturate(1.12)';
+  const previewCss = night ? `${filter.css === 'none' ? '' : filter.css} ${NIGHT}`.trim() : filter.css;
 
   useEffect(() => {
     if (!showFilterName) return;
@@ -90,9 +99,15 @@ export default function CameraScreen() {
       setCountdown(0);
     }
     haptic([12, 30, 8]);
+    // Front "flash": the screen lights the face for a moment while the photo is taken.
+    if (screenFlash && mirror) {
+      setFlashing(true);
+      await new Promise((r) => setTimeout(r, 380));
+    }
+    const blob = await captureFrame(video, mirror, previewCss, (ctx, w, h) => paintTint(ctx, filter, w, h), lensId ? overlayRef.current : null, lens.fullFrame);
+    setFlashing(false);
     setFlashFx(true);
     setTimeout(() => setFlashFx(false), 180);
-    const blob = await captureFrame(video, mirror, filter.css, (ctx, w, h) => paintTint(ctx, filter, w, h), lensId ? overlayRef.current : null);
     if (!blob) return toast('Couldn’t capture — try again', 'error');
     setCaptured({ blob, kind: 'image', filter: 'none' });
   }
@@ -108,14 +123,18 @@ export default function CameraScreen() {
     if (cam.status !== 'live' || countdown) return;
     holdTimer.current = setTimeout(async () => {
       haptic(14);
+      if (recorder.paused) return void recorder.resume();
       const ok = await recorder.start();
       if (!ok) toast('Recording isn’t supported here', 'error');
     }, HOLD_MS);
   }
   function onShutterUp() {
     clearTimeout(holdTimer.current);
-    if (recorder.recording) void finishRecording();
-    else void takePhoto();
+    if (recorder.recording && !recorder.paused) {
+      // Multi-clip: releasing pauses; tap ✓ to finish. Falls back to a single clip if pausing isn't supported.
+      if (multi && recorder.pause()) return;
+      void finishRecording();
+    } else if (!recorder.recording) void takePhoto();
   }
 
   function onPick(file: File | undefined) {
@@ -146,16 +165,17 @@ export default function CameraScreen() {
         muted
         autoPlay
         className={cn('absolute inset-0 h-full w-full object-cover transition-opacity duration-500', cam.status === 'live' ? 'opacity-100' : 'opacity-0', mirror && '-scale-x-100')}
-        style={{ filter: filter.css }}
+        style={{ filter: previewCss }}
       />
-      <canvas ref={overlayRef} className={cn('pointer-events-none absolute inset-0 h-full w-full object-cover', mirror && '-scale-x-100', !lensId && 'hidden')} />
+      <canvas ref={overlayRef} className={cn('pointer-events-none absolute inset-0 h-full w-full object-cover', mirror && '-scale-x-100', !lensId && 'hidden')} style={lens.fullFrame ? { filter: previewCss } : undefined} />
       {filter.tint && <div className="pointer-events-none absolute inset-0" style={{ background: filter.tint }} />}
       {lensId && lens.state === 'loading' && <div className="absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="flex items-center gap-2 rounded-xl bg-black/50 px-4 py-2 text-sm text-white backdrop-blur-md"><Loader2 className="h-4 w-4 animate-spin" /> Loading face tracking…</span></div>}
       {lensId && lens.state === 'error' && <div className="absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-xl bg-black/60 px-4 py-2 text-sm text-white">Lenses need an internet connection the first time</span></div>}
-      {lensId && lens.state === 'ready' && lens.faces === 0 && <div className="pointer-events-none absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-xl bg-black/40 px-4 py-2 text-sm text-white/90 backdrop-blur-md">Point the camera at a face</span></div>}
+      {lensId && lens.state === 'ready' && lens.needsFace && lens.faces === 0 && <div className="pointer-events-none absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-xl bg-black/40 px-4 py-2 text-sm text-white/90 backdrop-blur-md">Point the camera at a face</span></div>}
 
       {cam.status !== 'live' && <CameraState status={cam.status} onRetry={cam.retry} />}
 
+      {flashing && <div className="absolute inset-0 z-40 bg-[#FFF6E8]" aria-hidden />}
       <AnimatePresence>{flashFx && <motion.div initial={{ opacity: 0.9 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }} className="absolute inset-0 z-30 bg-white" />}</AnimatePresence>
 
       <AnimatePresence>
@@ -197,11 +217,21 @@ export default function CameraScreen() {
 
       {/* Right tool rail */}
       <div className="absolute right-3.5 top-[calc(var(--safe-top)+62px)] z-10 flex flex-col rounded-[18px] bg-[rgba(17,17,17,0.55)] py-1">
-        {cam.caps.torch && (
+        {mirror ? (
+          <button onClick={() => { haptic(6); setScreenFlash((v) => !v); }} aria-label={screenFlash ? 'Front flash off' : 'Front flash on'} aria-pressed={screenFlash} className={cn(RAIL, screenFlash && 'text-ember-gold')}>
+            {screenFlash ? <Zap className="h-[22px] w-[22px]" /> : <ZapOff className="h-[22px] w-[22px]" />}
+          </button>
+        ) : cam.caps.torch ? (
           <button onClick={() => { haptic(6); cam.setTorch(!cam.torch); }} aria-label={cam.torch ? 'Flash off' : 'Flash on'} aria-pressed={cam.torch} className={cn(RAIL, cam.torch && 'text-ember-gold')}>
             {cam.torch ? <Zap className="h-[22px] w-[22px]" /> : <ZapOff className="h-[22px] w-[22px]" />}
           </button>
-        )}
+        ) : null}
+        <button onClick={() => { haptic(6); setNight((v) => !v); }} aria-label={night ? 'Night mode off' : 'Night mode on'} aria-pressed={night} className={cn(RAIL, night && 'text-ember-gold')}>
+          <Moon className={cn('h-[22px] w-[22px]', night && 'fill-current')} />
+        </button>
+        <button onClick={() => { haptic(6); setMulti((v) => !v); }} disabled={recorder.recording} aria-label={multi ? 'Multi-clip off' : 'Multi-clip on: hold, let go, hold again'} aria-pressed={multi} className={cn(RAIL, multi && 'text-ember-gold')}>
+          <Layers className="h-[22px] w-[22px]" />
+        </button>
         <button onClick={() => { haptic(6); setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length]); }} aria-label={`Timer ${timer ? `${timer}s` : 'off'}`} aria-pressed={timer > 0} className={cn(RAIL, 'relative', timer > 0 && 'bg-white/30')}>
           <Timer className="h-[22px] w-[22px]" />
           {timer > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-ember-rose px-1 text-[9px] font-bold">{timer}</span>}
@@ -223,7 +253,8 @@ export default function CameraScreen() {
         {lensTray && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="no-scrollbar absolute inset-x-0 bottom-[15.5rem] z-10 flex gap-2 overflow-x-auto px-4" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
             <button onClick={() => setLensId(null)} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-xs font-bold text-white ring-2', !lensId ? 'bg-white/30 ring-white' : 'bg-black/45 ring-transparent')}>Off</button>
-            {LENSES.map((l) => (
+            <button onClick={() => setBrowser(true)} aria-label="Browse all lenses" className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-ink"><LayoutGrid className="h-6 w-6" /></button>
+            {ALL_LENSES.map((l) => (
               <button key={l.id} onClick={() => { haptic(6); setLensId(l.id); }} aria-label={l.name} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl ring-2 transition-transform', lensId === l.id ? 'scale-110 bg-white/30 ring-white' : 'bg-black/45 ring-transparent')}><NovaEmoji id={l.icon} size={38} /></button>
             ))}
           </motion.div>
@@ -274,6 +305,13 @@ export default function CameraScreen() {
       </div>
       <p className="pointer-events-none absolute inset-x-0 bottom-[calc(84px+var(--safe-bottom)+0.25rem)] z-10 text-center text-xs font-bold text-white/80">Tap for photo · hold for video</p>
 
+      {recorder.paused && (
+        <div className="absolute inset-x-0 bottom-[calc(84px+var(--safe-bottom)+7.5rem)] z-20 flex justify-center gap-2" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+          <span className="rounded-full bg-black/55 px-3 py-2 text-xs font-extrabold text-white">{recorder.clips} clip{recorder.clips === 1 ? '' : 's'} · hold to add more</span>
+          <button onClick={() => void finishRecording()} className="flex items-center gap-1 rounded-full bg-white px-3.5 py-2 text-xs font-extrabold text-ink"><Check className="h-4 w-4" /> Done</button>
+        </div>
+      )}
+      <AnimatePresence>{browser && <LensBrowser current={lensId} onPick={(id) => { haptic(6); setLensId(id); setBrowser(false); setLensTray(true); }} onClose={() => setBrowser(false)} />}</AnimatePresence>
       <AnimatePresence>
         {captured && (
           <Suspense fallback={<div className="absolute inset-0 z-50 bg-black" />}>

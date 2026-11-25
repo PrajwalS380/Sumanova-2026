@@ -41,6 +41,26 @@ async function main() {
     ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.fillText(lens.name + (f === open ? ' (mouth open)' : ''), 8, H - 8);
     document.body.appendChild(c);
   }
+  // Full-frame lenses (background, hair, makeup, warps) with real masks from the segmenters.
+  if (bg && new URLSearchParams(location.search).has('frame')) {
+    const { FRAME_LENSES } = await import('@/features/camera/frameLenses');
+    const { loadSegmenter, MaskTracker } = await import('@/features/camera/segment');
+    const src = document.createElement('canvas');
+    src.width = W; src.height = H;
+    src.getContext('2d')!.drawImage(bg, 0, 0, W, H);
+    const [ps, hs] = await Promise.all([loadSegmenter('selfie'), loadSegmenter('hair')]);
+    const person = new MaskTracker(ps, 'selfie').update(src, 1);
+    const hair = new MaskTracker(hs, 'hair').update(src, 1);
+    document.body.innerHTML = '';
+    for (const l of FRAME_LENSES) {
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const ctx = c.getContext('2d')!;
+      l.frame({ ctx, video: src, w: W, h: H, t: 1.2, faces: [face], person, hair });
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.fillText(l.name, 8, H - 8);
+      document.body.appendChild(c);
+    }
+  }
   // Canvas must stay exportable (snaps are saved with toBlob).
   (window as unknown as { exportable: boolean }).exportable = !!document.querySelector('canvas')!.toDataURL().length;
   (window as unknown as { done: boolean }).done = true;

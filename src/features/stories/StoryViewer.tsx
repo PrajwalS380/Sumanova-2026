@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { playTrack } from '@/lib/music/tracks';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -57,6 +58,19 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
     }).catch(() => next());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userIdx]);
+
+  // Music added to a photo story plays while it's on screen (paused with the story).
+  const music = (story?.media_meta as { music?: string } | undefined)?.music;
+  useEffect(() => {
+    if (!ready || paused || !music || story?.kind !== 'image') return;
+    let stop: (() => void) | null = null;
+    let alive = true;
+    void playTrack(music).then((s) => (alive ? (stop = s) : s())).catch(() => undefined);
+    return () => {
+      alive = false;
+      stop?.();
+    };
+  }, [ready, paused, music, story?.kind, story?.id]);
 
   // Reset per story + mark viewed.
   useEffect(() => {

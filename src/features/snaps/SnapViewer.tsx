@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Loader2, X } from 'lucide-react';
 import { snapsApi, type SnapRow } from '@/lib/snaps/api';
 import { filterById } from '@/lib/snaps/filters';
+import { playTrack } from '@/lib/music/tracks';
 import { screenProtection } from '@/lib/privacy';
 import { useToast } from '@/providers/ToastProvider';
 
@@ -67,6 +68,18 @@ export function SnapViewer({ snapId, mode, onClose }: { snapId: string; mode: 'o
   }, [ready, snap, mode]);
 
   const f = filterById(snap?.media_meta?.filter);
+  // Music added to a photo snap plays while it's open.
+  const music = (snap?.media_meta as { music?: string } | undefined)?.music;
+  useEffect(() => {
+    if (!ready || !music || snap?.kind !== 'image') return;
+    let stop: (() => void) | null = null;
+    let alive = true;
+    void playTrack(music).then((s) => (alive ? (stop = s) : s())).catch(() => undefined);
+    return () => {
+      alive = false;
+      stop?.();
+    };
+  }, [ready, music, snap?.kind]);
 
   return createPortal(
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[110] select-none bg-black" onClick={() => snap?.kind === 'image' && close()} onContextMenu={(e) => e.preventDefault()}>

@@ -1,3 +1,4 @@
+import type { Template } from '@/lib/snaps/templates';
 import { loadNovaEmoji, novaEmojiImage, novaStickerId } from '@/components/emoji/novaEmoji';
 
 const loadStickers = (items: OverlayItem[]) => Promise.all(items.map((it) => novaStickerId(it.content)).filter((x) => x !== null).map((id) => loadNovaEmoji(id!)));
@@ -91,7 +92,7 @@ function drawItems(ctx: CanvasRenderingContext2D, items: OverlayItem[], w: numbe
 }
 
 /** Bake filter + tint + drawing + text/stickers into a final photo. */
-export async function exportImage(src: string, filterId: string, strokes: Stroke[], items: OverlayItem[], maxSide = 2048): Promise<Blob> {
+export async function exportImage(src: string, filterId: string, strokes: Stroke[], items: OverlayItem[], maxSide = 2048, template: Template | null = null): Promise<Blob> {
   const [img] = await Promise.all([loadImage(src), loadStickers(items)]);
   const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
   const w = Math.round(img.naturalWidth * scale);
@@ -105,14 +106,15 @@ export async function exportImage(src: string, filterId: string, strokes: Stroke
   ctx.drawImage(img, 0, 0, w, h);
   ctx.filter = 'none';
   paintTint(ctx, f, w, h);
+  template?.draw(ctx, w, h, new Date());
   drawStrokes(ctx, strokes, w, h);
   drawItems(ctx, items, w, h);
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Export failed'))), 'image/webp', 0.9));
 }
 
 /** Transparent PNG with drawing + text/stickers, laid over a video at playback. */
-export async function exportOverlay(strokes: Stroke[], items: OverlayItem[], w: number, h: number): Promise<Blob | null> {
-  if (!strokes.length && !items.length) return null;
+export async function exportOverlay(strokes: Stroke[], items: OverlayItem[], w: number, h: number, template: Template | null = null): Promise<Blob | null> {
+  if (!strokes.length && !items.length && !template) return null;
   await loadStickers(items);
   const scale = Math.min(1, 1280 / Math.max(w, h));
   const cw = Math.round(w * scale);
@@ -121,6 +123,7 @@ export async function exportOverlay(strokes: Stroke[], items: OverlayItem[], w: 
   canvas.width = cw;
   canvas.height = ch;
   const ctx = canvas.getContext('2d')!;
+  template?.draw(ctx, cw, ch, new Date());
   drawStrokes(ctx, strokes, cw, ch);
   drawItems(ctx, items, cw, ch);
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
