@@ -12,6 +12,11 @@ export interface MeshOptions {
   skin?: number;
   /** per-vertex UV (x, y, z, tag, normal) — for fabric patterns */
   uv?: (x: number, y: number, z: number, tag: number, n: V3) => [number, number];
+  /**
+   * How much faster than 1 unit/unit the field may change (lofts + displacement exceed 1).
+   * Raises the culling margin so no block that holds surface is skipped (which leaves holes).
+   */
+  lipschitz?: number;
   /** per-vertex colour (x, y, z, tag, normal) — e.g. hair root→tip */
   color?: (x: number, y: number, z: number, tag: number, n: V3) => [number, number, number];
 }
@@ -37,7 +42,7 @@ export function meshField(f: Field, o: MeshOptions): THREE.BufferGeometry {
   //      centres (the field is ~1-Lipschitz; smooth blends add a little slack). Only nodes of
   //      sub-blocks that can hold surface are evaluated; the rest inherit the block's sign.
   const S = 8, s2 = 2;
-  const margin = 1.35;
+  const margin = 1.35 * (o.lipschitz ?? 1);
   const bx = (nx - 1) / S, by = (ny - 1) / S, bz = (nz - 1) / S;
   for (let k = 0; k < bz; k++) for (let j = 0; j < by; j++) for (let i = 0; i < bx; i++) {
     const dc = f.eval(ox + (i + 0.5) * S * h, oy + (j + 0.5) * S * h, oz + (k + 0.5) * S * h);

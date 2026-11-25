@@ -23,12 +23,18 @@ export function outfit(look: Look) {
   return { dress, outer, top, bottom, shoes: wear(look, 'shoes'), socks: wear(look, 'socks'), bag: wear(look, 'bag'), hat: wear(look, 'hat'), glasses: wear(look, 'glasses') };
 }
 
+/** The sculpted head (skull + nose + ears) for a look. `faceless` = preview mannequin (no nose). */
+export function headJob(look: Look, h: ReturnType<typeof headFromParams>, faceless: boolean): Job {
+  return { k: 'head', h, nose: faceless ? null : variant(look, 'nose')!.p, ears: variant(look, 'ears')!.p };
+}
+
 /** Every sculpted piece a look needs (body, hands, garments, hair). */
-export function lookJobs(look: Look, only?: 'head'): Job[] {
+export function lookJobs(look: Look, only?: 'head', faceless = false): Job[] {
   const o = outfit(look);
   const jobs: Job[] = [];
+  const h = headFromParams(variant(look, 'head')!.p, look.tune.face);
+  jobs.push(headJob(look, h, faceless));
   if (look.pick.hair != null) {
-    const h = headFromParams(variant(look, 'head')!.p, look.tune.face);
     jobs.push({ k: 'hair', h, p: variant(look, 'hair')!.p, seed: look.pick.hair, hatOn: !!o.hat });
   }
   if (only === 'head') return jobs;
@@ -44,6 +50,6 @@ export function lookJobs(look: Look, only?: 'head'): Job[] {
 }
 
 /** Resolve once every piece of a look is sculpted (before thumbnails / captures). */
-export function prepareLook(look: Look, only?: 'head'): Promise<void> {
-  return Promise.all(lookJobs(look, only).map((j) => sculpt(j).catch(() => undefined))).then(() => undefined);
+export function prepareLook(look: Look, only?: 'head', faceless = false): Promise<void> {
+  return Promise.all(lookJobs(look, only, faceless).map((j) => sculpt(j).catch(() => undefined))).then(() => undefined);
 }

@@ -289,6 +289,7 @@ function build(h: HeadShape, p: HairP, seed: number, hatOn: boolean): Out {
   const f = new Field(parts, 0.02 * R, 0.08 * R);
   const geo = meshField(f, {
     cell: (long ? 0.0105 : 0.009) * (R / 0.35),
+    lipschitz: 1.6,
     color: (x, y, z, tag) => {
       // shade: deeper toward the scalp (fake occlusion between locks); t: root → tip
       const dh = hd(x, y, z);

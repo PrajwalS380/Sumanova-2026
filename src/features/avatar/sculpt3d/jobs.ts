@@ -5,6 +5,8 @@ import type { HeadShape } from '../sculpt';
 import { bodyGeometry, handsGeometry } from './rig';
 import { bottomGeometry, dressGeometry, shoeGeometry, sockGeometry, topGeometry, type GarmentGeo, type Tone } from './garments';
 import { hairGeometry } from './hair';
+import { headGeometry } from './head';
+import type { EarP, NoseP } from '../look/face';
 
 /** Every sculpted piece is described by a small, serialisable job (so it can run in a worker). */
 export type Job =
@@ -15,10 +17,11 @@ export type Job =
   | { k: 'dress'; bp: BodyP; cut: string }
   | { k: 'socks'; bp: BodyP; cut: string }
   | { k: 'shoes'; bp: BodyP; cut: string }
-  | { k: 'hair'; h: HeadShape; p: HairP; seed: number; hatOn: boolean };
+  | { k: 'hair'; h: HeadShape; p: HairP; seed: number; hatOn: boolean }
+  | { k: 'head'; h: HeadShape; nose: NoseP | null; ears: EarP };
 
 /** Bump when any sculpt builder changes its output (invalidates the on-device cache). */
-export const SCULPT_VERSION = 2;
+export const SCULPT_VERSION = 5;
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 export function jobKey(j: Job): string {
@@ -29,6 +32,8 @@ export function jobKey(j: Job): string {
       return `${j.k}|${bp}`;
     case 'top':
       return `top|${bp}|${j.cut}|${j.layer}|${j.under ?? ''}`;
+    case 'head':
+      return `head|${JSON.stringify(j.h)}|${JSON.stringify(j.nose)}|${JSON.stringify(j.ears)}`;
     case 'hair':
       return `hair|${JSON.stringify(j.h)}|${JSON.stringify(j.p)}|${j.seed}|${j.hatOn ? 1 : 0}`;
     default:
@@ -45,6 +50,7 @@ const fromGarment = (g: GarmentGeo): Result => [...(g.main ? [{ geo: g.main, rol
 export function runJob(j: Job): Result {
   switch (j.k) {
     case 'body': return [{ geo: bodyGeometry(j.bp), role: 'main' }];
+    case 'head': return [{ geo: headGeometry(j.h, j.nose, j.ears), role: 'main' }];
     case 'hands': return [{ geo: handsGeometry(j.bp), role: 'main' }];
     case 'top': return fromGarment(topGeometry(j.bp, j.cut, j.layer, j.under));
     case 'bottom': return fromGarment(bottomGeometry(j.bp, j.cut));

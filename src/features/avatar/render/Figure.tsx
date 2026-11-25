@@ -10,6 +10,7 @@ import { SculptBody } from './SculptBody';
 import { SculptClothes } from './SculptClothes';
 import { SculptHair } from './SculptHair';
 import { outfit } from './lookParts';
+import { skirtClearance } from '../sculpt3d/garments';
 
 /** Head centre when only the head is drawn (head thumbnails, Avatar Cam). */
 const HEAD_ONLY_Y = 1.98;
@@ -77,6 +78,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
         pose={pose}
         animate={animate}
         head={headInner}
+        skirt={skirtClearance(o.dress?.cut ?? null, o.outer?.cut ?? null)}
         clothes={(sk, bones) => (
           <>
             <SculptClothes body={body} top={o.top} outer={o.outer} bottom={o.bottom} dress={o.dress} socks={o.socks} shoes={o.shoes} skeleton={sk} />

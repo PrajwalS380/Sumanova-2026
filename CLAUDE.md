@@ -92,8 +92,9 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   `jobs.ts` when any builder output changes). `render/Figure.tsx` = SculptBody (skinned body+hands, head via portal on
   the head bone) + SculptClothes + SculptHair; `render/lookParts.ts` `prepareLook()` must be awaited before stills
   (thumbnails, captures). Poses incl. pointing/peace/crossed/pockets. Starter pictures: `e2e/preset-images.e2e.cjs`.
-  Harness views: `&turns=0,1.57`, `&cam=x,y,z,tx,ty,tz`, `&poses=a,b`. The face (`render/Face.tsx`) is still the earlier
-  sculpted-sphere face rig. Old primitive `Hair.tsx` / garment parts of `Clothes.tsx` are no longer used by Figure.
+  Harness views: `&turns=0,1.57`, `&cam=x,y,z,tx,ty,tz`, `&poses=a,b`. Head: `sculpt3d/head.ts` sculpts skull + nose (bridge,
+  tip, alae, carved nostrils) + ears (shell, rim, bowl, lobe) as one mesh (job `head`); eyes/brows/mouth/expressions are still
+  the `render/Face.tsx` rig. `sculpt3d/watertight.test.ts` guards against see-through holes (mesher `lipschitz` margin). Old primitive `Hair.tsx` / garment parts of `Clothes.tsx` are no longer used by Figure.
   Wardrobe uniqueness (owner, 2026-11-25: "no duplicates"): in `look/fashion.ts` every cut's 10 items have different, bold
   patterns and rotating trim colours (the colour rail only replaces c1, so plain-colour-only variants collapse into copies).
   Duplicate checker: harness `?dupes=<slot>&frame=<thumb frame>&color=6f7680` renders every item like the studio grid and

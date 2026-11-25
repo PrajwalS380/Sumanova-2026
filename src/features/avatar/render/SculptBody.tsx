@@ -65,12 +65,18 @@ function poseSpec(pose: Pose): PoseSpec {
  * The sculpted body: one continuous skin mesh + finely sculpted hands, posed by a skeleton.
  * `head` hangs off the head bone; `children` (clothes) receive the skeleton.
  */
-export function SculptBody({ look, body, pose, animate, head, clothes }: { look: Look; body: BodyP; pose: Pose; animate: boolean; head: ReactNode; clothes?: (skeleton: THREE.Skeleton, bones: THREE.Bone[]) => ReactNode }) {
+export function SculptBody({ look, body, pose, animate, head, clothes, skirt = 0 }: { look: Look; body: BodyP; pose: Pose; animate: boolean; head: ReactNode; clothes?: (skeleton: THREE.Skeleton, bones: THREE.Bone[]) => ReactNode; /** extra arm spread so hands clear a wide skirt (radians) */ skirt?: number }) {
   const J = jointsFor(body);
   const rig = useMemo(() => createRig(J), [J]);
   const skinGeo = useSculpt({ k: 'body', bp: body })?.[0]?.geo ?? null;
   const handGeo = useSculpt({ k: 'hands', bp: body })?.[0]?.geo ?? null;
-  const spec = useMemo(() => poseSpec(pose), [pose]);
+  const spec = useMemo(() => {
+    const sp = poseSpec(pose);
+    // arms that hang by the sides open out just enough to clear a skirt / long coat
+    if (skirt > 0 && Math.abs(sp.armL[0]) < 0.4) sp.armL = [sp.armL[0] + skirt, sp.armL[1]];
+    if (skirt > 0 && Math.abs(sp.armR[0]) < 0.4) sp.armR = [sp.armR[0] - skirt, sp.armR[1]];
+    return sp;
+  }, [pose, skirt]);
   const { bones } = rig;
 
   function apply(t: number) {

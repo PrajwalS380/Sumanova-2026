@@ -1,3 +1,4 @@
+import { useSculpt } from '../sculpt3d/async';
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -39,7 +40,8 @@ export interface FaceProps {
 
 export function Face(f: FaceProps) {
   const { h, skin } = f;
-  const headGeo = useMemo(() => shellGeometry(f.h, () => 1), [f.h]);
+  const sculpted = useSculpt({ k: 'head', h: f.h, nose: f.faceless ? null : f.nose, ears: f.ears })?.[0]?.geo ?? null;
+  const headGeo = useMemo(() => (sculpted ? null : shellGeometry(f.h, () => 1)), [f.h, sculpted]);
   const ex = 0.127 * (h.rx / 0.35) * (1 + f.tune.eyeGap * 0.14);
   const ey = -0.025;
   const er = 0.071 * f.eyes.size * (1 + f.tune.eyeSize * 0.16);
@@ -48,25 +50,26 @@ export function Face(f: FaceProps) {
   const lipColor = f.colors.lips ?? mix(skin, '#b0525a', 0.45);
   return (
     <group>
-      <mesh geometry={headGeo} castShadow receiveShadow>
+      {/* sculpted skull + nose + ears in one surface (the separate pieces are only a fallback while it's built) */}
+      <mesh geometry={sculpted ?? headGeo!} castShadow receiveShadow>
         <SkinMat color={skin} />
       </mesh>
-      <Ears h={h} p={f.ears} skin={skin} left={f.piercings.earL} right={f.piercings.earR} hearing={f.hearing} />
-      {!f.faceless && <Features f={f} ex={ex} ey={ey} er={er} noseY={noseY} mouthY={mouthY} lipColor={lipColor} />}
+      <Ears h={h} p={f.ears} skin={skin} left={f.piercings.earL} right={f.piercings.earR} hearing={f.hearing} sculpted={!!sculpted} />
+      {!f.faceless && <Features f={f} ex={ex} ey={ey} er={er} noseY={noseY} mouthY={mouthY} lipColor={lipColor} sculpted={!!sculpted} />}
       {f.faceless && f.beard && <Beard h={h} p={f.beard} color={f.colors.beard} mouthY={mouthY} />}
     </group>
   );
 }
 
 /** Eyes, brows, nose, cheeks, mouth (skipped on the featureless preview mannequin). */
-function Features({ f, ex, ey, er, noseY, mouthY, lipColor }: { f: FaceProps; ex: number; ey: number; er: number; noseY: number; mouthY: number; lipColor: string }) {
+function Features({ f, ex, ey, er, noseY, mouthY, lipColor, sculpted }: { f: FaceProps; ex: number; ey: number; er: number; noseY: number; mouthY: number; lipColor: string; sculpted: boolean }) {
   const { h, skin } = f;
   const e = f.expression;
   return (
     <group>
       <Eyes f={f} ex={ex} ey={ey} er={er} />
       <Brows h={h} p={f.brows} color={f.colors.brows} ex={ex} ey={ey} er={er} e={e} pierce={f.piercings.brow} />
-      <Nose h={h} p={f.nose} skin={skin} y={noseY} pierce={f.piercings.nose} />
+      <Nose h={h} p={f.nose} skin={skin} y={noseY} pierce={f.piercings.nose} sculpted={sculpted} />
       <Blush h={h} ex={ex} ey={ey} color={f.colors.blush ?? '#ff7d7d'} strength={f.colors.blush ? 0.55 : e === 'blushing' ? 0.6 : e === 'laughing' || e === 'happy' ? 0.28 : 0.18} />
       <Mouth h={h} p={f.mouth} y={mouthY} lip={lipColor} skin={skin} e={e} lipPierce={f.piercings.lip} tonguePierce={f.piercings.tongue} />
       {e === 'crying' && <Tears h={h} ex={ex} ey={ey} er={er} />}
@@ -77,7 +80,7 @@ function Features({ f, ex, ey, er, noseY, mouthY, lipColor }: { f: FaceProps; ex
 
 /* ---------------------------------------------------------------- Ears */
 
-function Ears({ h, p, skin, left, right, hearing }: { h: HeadShape; p: EarP; skin: string; left: PiercingP | null; right: PiercingP | null; hearing: FaceProps['hearing'] }) {
+function Ears({ h, p, skin, left, right, hearing, sculpted }: { h: HeadShape; p: EarP; skin: string; left: PiercingP | null; right: PiercingP | null; hearing: FaceProps['hearing']; sculpted: boolean }) {
   const x = h.rx * 0.97;
   return (
     <>
@@ -88,21 +91,25 @@ function Ears({ h, p, skin, left, right, hearing }: { h: HeadShape; p: EarP; ski
         return (
           <group key={s} position={[s * x, -0.035, -0.02]} rotation={[0, s * (0.2 + p.out * 0.5), s * -0.08]}>
             <group scale={[sz * p.width, sz, sz]}>
-              <mesh scale={[0.034, 0.072, 0.052]} castShadow>
-                <sphereGeometry args={[1, 22, 18]} />
-                <SkinMat color={skin} />
-              </mesh>
-              <mesh position={[s * 0.012, 0.002, 0.012]} scale={[0.016, 0.05, 0.031]}>
-                <sphereGeometry args={[1, 14, 10]} />
-                <Flat color={mix(skin, '#7a3a2a', 0.18)} />
-              </mesh>
-              {p.lobe > 0.4 && (
+              {!sculpted && (
+                <>
+                  <mesh scale={[0.034, 0.072, 0.052]} castShadow>
+                    <sphereGeometry args={[1, 22, 18]} />
+                    <SkinMat color={skin} />
+                  </mesh>
+                  <mesh position={[s * 0.012, 0.002, 0.012]} scale={[0.016, 0.05, 0.031]}>
+                    <sphereGeometry args={[1, 14, 10]} />
+                    <Flat color={mix(skin, '#7a3a2a', 0.18)} />
+                  </mesh>
+                </>
+              )}
+              {!sculpted && p.lobe > 0.4 && (
                 <mesh position={[0, -0.068, 0.004]} scale={[0.024, 0.024 * p.lobe, 0.02]}>
                   <sphereGeometry args={[1, 14, 10]} />
                   <SkinMat color={skin} />
                 </mesh>
               )}
-              {p.point > 0 && (
+              {!sculpted && p.point > 0 && (
                 <mesh position={[0, 0.07, -0.01]} rotation={[-0.4, 0, 0]} scale={[0.6, 1, 0.9]}>
                   <coneGeometry args={[0.03, 0.06 * p.point, 12]} />
                   <SkinMat color={skin} />
@@ -370,12 +377,13 @@ function Brows({ h, p, color, ex, ey, er, e, pierce }: { h: HeadShape; p: BrowP;
 
 /* ---------------------------------------------------------------- Nose */
 
-function Nose({ h, p, skin, y, pierce }: { h: HeadShape; p: NoseP; skin: string; y: number; pierce: PiercingP | null }) {
+function Nose({ h, p, skin, y, pierce, sculpted }: { h: HeadShape; p: NoseP; skin: string; y: number; pierce: PiercingP | null; sculpted: boolean }) {
   const z = surfaceZ(h, 0, y);
   const col = mix(skin, '#c06050', 0.04);
   const tipY = y + p.up * 0.008;
   return (
     <group scale={1.18} position={[0, -y * 0.18, -z * 0.18]}>
+      {!sculpted && (<>
       <mesh position={[0, tipY, z + 0.004]} rotation={[-p.up * 0.3, 0, 0]} scale={[0.034 * p.tipW, 0.032 * p.tipS, 0.042 * p.tipS]} castShadow>
         <sphereGeometry args={[1, 24, 18]} />
         <SkinMat color={col} />
@@ -392,6 +400,7 @@ function Nose({ h, p, skin, y, pierce }: { h: HeadShape; p: NoseP; skin: string;
           <SkinMat color={col} />
         </mesh>
       ))}
+      </>)}
       {pierce && <Jewelry zone="nose" p={pierce} nose={{ y, z, w: 0.026 * p.tipW * p.nostril }} />}
     </group>
   );

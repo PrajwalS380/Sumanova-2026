@@ -52,7 +52,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v9';
+const STORE = 'snv-thumbs-v10';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {
@@ -132,7 +132,7 @@ async function pump() {
         root!.configure({ size: { width: job.size, height: job.size, top: 0, left: 0 } });
       }
       // every sculpted piece must be ready before the single still frame is taken
-      await prepareLook(job.look, job.frame === 'head' || job.frame === 'face' ? 'head' : undefined);
+      await prepareLook(job.look, job.frame === 'head' || job.frame === 'face' ? 'head' : undefined, job.faceless);
       const url = await new Promise<string>((resolve) => {
         const onReady = (gl: THREE.WebGLRenderer, scene: THREE.Scene, cam: THREE.Camera) => {
           gl.setClearColor(0x000000, 0);

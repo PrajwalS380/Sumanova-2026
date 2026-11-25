@@ -61,7 +61,8 @@ function frontZ(J: Joints, y: number, off: number) {
 
 function meshMain(J: Joints, parts: Part[], skinTau = 0.025) {
   const f = new Field(parts, 0.03);
-  return meshField(f, { cell: CELL, skin: skinTau, uv: clothUV(J) });
+  // lofted skirts / coats and fold displacement change faster than a true distance: cull conservatively
+  return meshField(f, { cell: CELL, skin: skinTau, uv: clothUV(J), lipschitz: 1.8 });
 }
 function meshTrim(prims: Prim[], cell = TRIM_CELL, extra?: Partial<Part>) {
   const f = new Field([{ prims, ...extra }], 0.012, 0.05);
@@ -327,6 +328,19 @@ const DRESSES: Record<string, DressSpec> = {
   Tiered: { hem: 0.36, flare: 0.14, sleeve: 'short', neck: 'crew', tiers: 3 },
   Wrap: { hem: 0.52, flare: 0.07, sleeve: 'elbow', neck: 'v', belt: true },
 };
+/** How far the arms must open to clear a dress's skirt (radians, 0 = none). */
+export function skirtClearance(dressCut: string | null, outerCut: string | null): number {
+  let a = 0;
+  if (dressCut) {
+    const sp = DRESSES[dressCut] ?? DRESSES['A-line'];
+    a = sp.flare <= 0 ? 0.06 : 0.17 + sp.flare * 1.1;
+  }
+  if (outerCut) {
+    const t = topSpec(outerCut);
+    if (t.hem < 0.85) a = Math.max(a, 0.12);
+  }
+  return a;
+}
 const dressCache = new GeoCache<GarmentGeo>(20);
 export function dressGeometry(bp: BodyP, cut: string): GarmentGeo {
   return dressCache.get(`${bodyKey(bp)}|${cut}`, () => buildDress(jointsFor(bp), cut));
@@ -346,7 +360,9 @@ function buildDress(J: Joints, cut: string): GarmentGeo {
   // skirt: a lofted bell from the waist to the hem, clearing the legs
   const top = sp.blouse ? 1.14 : 1.1;
   const hemW = Math.max(0.215 * hp * W, 0.2 * hp * W + sp.flare + (0.6 - sp.hem) * 0.05);
-  const f = loft(sp.hem, top, [[sp.hem, hemW + 0.02], [Math.max(sp.hem + 0.02, 0.62), Math.max(0.21 * hp * W, hemW * 0.9)], [0.95, 0.19 * hp * W + 0.02], [top, 0.155 * W + 0.014]], [[sp.hem, 0.15 + sp.flare * 0.8], [0.95, 0.13 + ease], [top, 0.105 + ease + J.bp.belly * 0.05]], [[sp.hem, -0.005], [0.95, -0.012], [top, 0.0]]);
+  // the skirt clears the hips and thighs (widest at the seat), then falls to the hem
+  const seatW = (J.hx + J.r.thigh) * 1.0 + 0.03;
+  const f = loft(sp.hem, top, [[sp.hem, Math.max(hemW, seatW * 0.9) + 0.02], [Math.max(sp.hem + 0.02, 0.62), Math.max(seatW * 0.97, hemW * 0.9)], [0.93, seatW], [1.03, 0.172 * hp * W + 0.026], [top, 0.158 * W + 0.016 + J.bp.belly * 0.03]], [[sp.hem, 0.15 + sp.flare * 0.8], [0.93, 0.142 + ease], [top, 0.108 + ease + J.bp.belly * 0.05]], [[sp.hem, -0.005], [0.95, -0.014], [top, 0.0]]);
   const tiers = sp.tiers ?? 0;
   parts.push({
     prims: [{ t: 'fn', f, c: [0, (sp.hem + top) / 2, 0], ext: [hemW + 0.06, (top - sp.hem) / 2 + 0.01, 0.3], bone: B.pelvis, k: 0, tag: 1 }],
