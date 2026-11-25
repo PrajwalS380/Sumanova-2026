@@ -48,7 +48,12 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   (/profile/code, QR + BarcodeDetector scan), saved accounts (/accounts, `lib/savedAccounts.ts`, tokens only, never passwords),
   streak Restore pill in the chat list. Logo (owner asked for a Snapchat-level iconic mark, original): "Nova" — white four-point
   star mascot with bold black outline and a face, on a hot-pink #FF4F9A tile (`components/Logo.tsx`, `public/favicon.svg`,
-  `assets/*` → Android res via `npx @capacitor/assets generate --android`). Auth/welcome pages: logo + SUMANOVA wordmark, no slogans. Earlier design (superseded): Design system **"Pearl"** (owner-approved from 5 wireframe options; canvas
+  `assets/*` → Android res via `npx @capacitor/assets generate --android`). Auth/welcome pages: logo + SUMANOVA wordmark, no slogans.
+  Avatar onboarding (/onboarding/avatar after sign-up/log-in, Skip remembered per account): "Make it from a selfie" (/avatar/selfie)
+  or one of 11 pre-rendered starter characters (public/presets). Selfie → avatar runs fully on-device, ₹0: MediaPipe Face
+  Landmarker bundled in public/mediapipe (wasm + face_landmarker.task, CDN only as fallback) → `selfie/analyze.ts` (skin/hair/
+  eye/lip colour, hair length/volume, beard, face/eye/nose/mouth shape) → `selfie/generate.ts` (6 editable Looks) → studio
+  (?from=selfie via sessionStorage). Live framing guide + live trait chips; upload-a-photo and pick-a-character fallbacks. Earlier design (superseded): Design system **"Pearl"** (owner-approved from 5 wireframe options; canvas
   https://claude.ai/artifact/QeBwqyGdk5sy2xz7PHFneG). Light theme: milky glass over blue/pink/mint pearl sheen, navy
   ink, indigo accent, Instrument Serif display + Manrope. Token names are legacy: `noir.*` = light surfaces,
   `ink.*` = navy text, `ember.*` = accents (`ember-flame` indigo, `ember-cream` = navy active capsule with `text-noir`),

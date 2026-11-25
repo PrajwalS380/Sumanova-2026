@@ -39,6 +39,7 @@ const BirthdaysScreen = lazy(() => import('@/features/friends/BirthdaysScreen'))
 const ProfileCodeScreen = lazy(() => import('@/features/profile/ProfileCodeScreen'));
 const AccountsScreen = lazy(() => import('@/features/auth/AccountsScreen'));
 const AvatarOnboardingScreen = lazy(() => import('@/features/avatar/AvatarOnboardingScreen'));
+const SelfieAvatarScreen = lazy(() => import('@/features/avatar/selfie/SelfieAvatarScreen'));
 const AvatarHomeScreen = lazy(() => import('@/features/avatar/AvatarHomeScreen'));
 const ProfilePhotoScreen = lazy(() => import('@/features/profile/ProfilePhotoScreen'));
 
@@ -120,6 +121,7 @@ export default function App() {
             <Route path="avatar" element={<AvatarStudio />} />
             <Route path="avatar/duo" element={<DuoStudio />} />
             <Route path="avatar/home" element={<AvatarHomeScreen />} />
+            <Route path="avatar/selfie" element={<SelfieAvatarScreen />} />
             <Route path="stories" element={<StoriesScreen />} />
             <Route path="stories/archive" element={<StoryArchiveScreen />} />
             <Route path="u/:username" element={<PersonScreen />} />

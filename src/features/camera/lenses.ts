@@ -217,17 +217,32 @@ export function loadLandmarker(): Promise<FaceLandmarker> {
   if (!landmarker) {
     landmarker = (async () => {
       const { FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
-      const files = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-      const opts = (delegate: 'GPU' | 'CPU') => ({
-        baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', delegate },
-        runningMode: 'VIDEO' as const,
-        numFaces: 3,
-      });
-      try {
-        return await FaceLandmarker.createFromOptions(files, opts('GPU'));
-      } catch {
-        return await FaceLandmarker.createFromOptions(files, opts('CPU'));
+      // Bundled with the app (public/mediapipe — same 0.10.14 build), so face tracking works offline
+      // and never depends on a third-party CDN. The public CDNs are only a fallback.
+      const LOCAL = '/mediapipe';
+      const sources = [
+        { wasm: LOCAL, model: `${LOCAL}/face_landmarker.task` },
+        { wasm: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm', model: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task' },
+      ];
+      let lastError: unknown;
+      for (const src of sources) {
+        try {
+          const files = await FilesetResolver.forVisionTasks(src.wasm);
+          const opts = (delegate: 'GPU' | 'CPU') => ({
+            baseOptions: { modelAssetPath: src.model, delegate },
+            runningMode: 'VIDEO' as const,
+            numFaces: 3,
+          });
+          try {
+            return await FaceLandmarker.createFromOptions(files, opts('GPU'));
+          } catch {
+            return await FaceLandmarker.createFromOptions(files, opts('CPU'));
+          }
+        } catch (e) {
+          lastError = e;
+        }
       }
+      throw lastError ?? new Error('Face tracking unavailable');
     })().catch((e) => {
       landmarker = null;
       throw e;

@@ -13,7 +13,7 @@ import { avatarApi } from './api';
 
 const ACTIONS = [
   { to: '/avatar', label: 'Edit look', sub: 'Hair, face, outfit', icon: Paintbrush, bg: 'bg-[#111111] text-white' },
-  { to: '/avatar?mode=saved', label: 'Try a new look', sub: 'Characters & saved outfits', icon: Sparkles, bg: 'bg-ember-rose text-white' },
+  { to: '/avatar/selfie', label: 'From a selfie', sub: 'Rebuild it from your face', icon: Sparkles, bg: 'bg-ember-rose text-white' },
   { to: '/avatar/duo', label: 'Duo', sub: 'Pose with a friend', icon: Users, bg: 'bg-ember-sky text-white' },
   { to: '/profile/photo', label: 'Profile picture', sub: 'Avatar face or selfie', icon: ImageIcon, bg: 'bg-white text-ink' },
 ];
@@ -78,10 +78,10 @@ export default function AvatarHomeScreen() {
             </Link>
           ))}
         </div>
-        <Link to="/avatar" className={cn('mt-2 flex items-center gap-3 rounded-tile bg-white p-3.5', GHOST_HOST)}>
+        <Link to="/avatar?mode=saved" className={cn('mt-2 flex items-center gap-3 rounded-tile bg-white p-3.5', GHOST_HOST)}>
           <Ghost size={96} opacity={0.08} className="-right-4 -top-5"><Shirt className="h-full w-full" strokeWidth={1.4} /></Ghost>
           <Shirt className="h-6 w-6" />
-          <span className="flex-1"><span className="block font-extrabold">Wardrobe</span><span className="block text-xs text-ink-mute">Hundreds of original outfits — all free</span></span>
+          <span className="flex-1"><span className="block font-extrabold">Try a new look</span><span className="block text-xs text-ink-mute">Characters and saved outfits — all free</span></span>
         </Link>
       </div>
     </div>

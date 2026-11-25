@@ -12,7 +12,7 @@ import { AvatarStage, type AvatarStageHandle } from './AvatarStage';
 import { Avatar2D } from './Avatar2D';
 import { avatarApi, FASHION_SLOTS, type SavedOutfit } from './api';
 import { PRESETS } from './look/presets';
-import { DEFAULT_LOOK, OPTIONAL, SLOTS, randomLook, type ColorKey, type Look, type Slot } from './look/config';
+import { DEFAULT_LOOK, OPTIONAL, SLOTS, normalizeLook, randomLook, type ColorKey, type Look, type Slot } from './look/config';
 import { CATEGORIES, EXPRESSIONS, POSES, type Category, type Mode } from './editor/categories';
 import { mannequin, useThumb } from './editor/thumbs';
 
@@ -56,9 +56,18 @@ export default function AvatarStudio() {
         // Picked on the "Choose your avatar" step → start from that character and edit it.
         const picked = Number(new URLSearchParams(location.search).get('preset'));
         const preset = Number.isInteger(picked) && PRESETS[picked] ? PRESETS[picked] : null;
+        // Made from a selfie (selfie → avatar screen) → start from that look.
+        let fromSelfie: Look | null = null;
+        try {
+          const raw = new URLSearchParams(location.search).get('from') === 'selfie' ? sessionStorage.getItem('snv-selfie-look') : null;
+          if (raw) fromSelfie = normalizeLook(JSON.parse(raw));
+          sessionStorage.removeItem('snv-selfie-look');
+        } catch {
+          fromSelfie = null;
+        }
         // First visit without a pick: start from a ready-made character and show the character picker.
-        const l = preset ? structuredClone(preset.look) : a ?? structuredClone(PRESETS[Math.floor(Math.random() * PRESETS.length)].look);
-        if (!a && !preset) setMode('saved');
+        const l = fromSelfie ?? (preset ? structuredClone(preset.look) : a ?? structuredClone(PRESETS[Math.floor(Math.random() * PRESETS.length)].look));
+        if (!a && !preset && !fromSelfie) setMode('saved');
         setHist({ list: [l], i: 0 });
         setSaved(a);
         setLoading(false);

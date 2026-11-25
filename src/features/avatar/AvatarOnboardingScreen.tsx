@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Camera, Check } from 'lucide-react';
 import { LogoMark } from '@/components/Logo';
 import { ScreenLoader } from '@/components/ScreenLoader';
 import { useAuth } from '@/providers/AuthProvider';
@@ -65,10 +65,19 @@ export default function AvatarOnboardingScreen() {
       </header>
       <div className="px-5 pt-6">
         <h1 className="font-display text-[34px] leading-none">Choose your avatar</h1>
-        <p className="mt-2 text-sm font-semibold text-ink-mute">Pick a starting character — you’ll make it yours next. You can change everything later from your profile.</p>
+        <p className="mt-2 text-sm font-semibold text-ink-mute">Make one from a selfie, or start from a character. You can change everything later from your profile.</p>
+        <button onClick={() => navigate('/avatar/selfie')} className="relative isolate mt-4 flex w-full items-center gap-3 overflow-hidden rounded-tile bg-[#111111] p-4 text-left text-white active:scale-[0.98]">
+          <span aria-hidden className="pointer-events-none absolute -right-6 -top-8 -z-10 opacity-[0.12]"><Camera className="h-36 w-36" strokeWidth={1.2} /></span>
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-ember-rose"><Camera className="h-6 w-6" /></span>
+          <span className="flex-1">
+            <span className="block text-[17px] font-black">Make it from a selfie</span>
+            <span className="block text-xs font-semibold text-white/70">We read your skin, hair, eyes and face shape — right on your phone</span>
+          </span>
+        </button>
+        <h2 className="eyebrow mt-5">Or start from a character</h2>
       </div>
 
-      <div className="grid flex-1 grid-cols-3 content-start gap-2.5 px-5 pb-36 pt-5" role="radiogroup" aria-label="Starter characters">
+      <div className="grid flex-1 grid-cols-3 content-start gap-2.5 px-5 pb-36 pt-2.5" role="radiogroup" aria-label="Starter characters">
         {PICTURED.map((i) => ({ p: PRESETS[i], i })).filter((x) => x.p).map(({ p, i }) => (
           <motion.button
             key={p.name}
