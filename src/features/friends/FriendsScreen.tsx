@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Loader2, MessageCircle, Plus, Search, Share2, UserCheck, X } from 'lucide-react';
+import { BookUser, ChevronLeft, Loader2, MessageCircle, Plus, Search, Share2, UserCheck, X } from 'lucide-react';
+import { contactSyncOn, contactsSupported, peopleYouMayKnow, storedContactMatches, syncContacts, type ContactMatch, type PymkPerson } from '@/lib/contacts';
 import { Avatar } from '@/components/Avatar';
 import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
 import { useAuth } from '@/providers/AuthProvider';
@@ -25,6 +26,35 @@ export default function FriendsScreen() {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [people, setPeople] = useState<Record<string, PublicProfile>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [contacts, setContacts] = useState<ContactMatch[]>([]);
+  const [syncOn, setSyncOn] = useState(() => contactSyncOn(me));
+  const [syncing, setSyncing] = useState(false);
+  const [pymk, setPymk] = useState<PymkPerson[]>([]);
+
+  const loadSuggestions = useCallback(async () => {
+    const [c, p] = await Promise.all([
+      (contactSyncOn(me) && contactsSupported ? syncContacts(me) : storedContactMatches()).catch(() => [] as ContactMatch[]),
+      peopleYouMayKnow().catch(() => [] as PymkPerson[]),
+    ]);
+    setContacts(c === 'denied' ? [] : c);
+    setPymk(p);
+  }, [me]);
+
+  async function findContacts() {
+    setSyncing(true);
+    try {
+      const r = await syncContacts(me, { ask: true, force: true });
+      if (r === 'denied') return toast('Allow Contacts for SUMANOVA in your phone settings to find friends', 'error');
+      setSyncOn(true);
+      setContacts(r);
+      haptic(10);
+      toast(r.length ? `${r.length} of your contacts ${r.length === 1 ? 'is' : 'are'} here` : 'None of your contacts are here yet — we’ll tell you when they join', 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -43,6 +73,9 @@ export default function FriendsScreen() {
   useEffect(() => {
     void load();
   }, [load, pendingRequests]);
+  useEffect(() => {
+    void loadSuggestions();
+  }, [loadSuggestions, pendingRequests]);
 
   // Debounced search.
   useEffect(() => {
@@ -71,7 +104,7 @@ export default function FriendsScreen() {
       await fn();
       haptic(10);
       if (success) toast(success, 'success');
-      await load();
+      await Promise.all([load(), loadSuggestions()]);
       if (query.trim().length >= 2) setResults(await friendsApi.search(query.trim().replace(/^@/, '')));
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -119,6 +152,13 @@ export default function FriendsScreen() {
             <Share2 className="h-[22px] w-[22px] text-ember-flame" />
           </button>
         )}
+        {!query && contactsSupported && !syncOn && (
+          <button onClick={() => void findContacts()} disabled={syncing} className={cn('mt-2 flex w-full items-center gap-3 rounded-tile bg-[#111111] p-3.5 text-left text-white', GHOST_HOST)}>
+            <Ghost size={110} opacity={0.12} className="-right-4 -top-6"><BookUser className="h-full w-full" strokeWidth={1.4} /></Ghost>
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15">{syncing ? <Loader2 className="h-6 w-6 animate-spin" /> : <BookUser className="h-6 w-6" />}</span>
+            <span className="flex-1"><span className="block font-extrabold">Find friends in your contacts</span><span className="text-xs opacity-75">Numbers are scrambled on your phone before matching</span></span>
+          </button>
+        )}
 
         <AnimatePresence mode="wait">
           {query.trim().length >= 2 ? (
@@ -156,6 +196,30 @@ export default function FriendsScreen() {
                       </PersonRow>
                     );
                   })}
+                </Section>
+              )}
+
+              {contacts.length > 0 && (
+                <Section title={`In your contacts · ${contacts.length}`}>
+                  {contacts.map((p) => (
+                    <PersonRow key={p.id} person={p} onClick={() => navigate(`/u/${p.username}`)}>
+                      {p.relation === 'outgoing' ? (
+                        <span className="rounded-xl bg-ink/5 px-3 py-1.5 text-xs text-ink-mute">Requested</span>
+                      ) : (
+                        <RowButton primary={p.relation === 'incoming'} loading={busy === p.id} onClick={() => run(p.id, () => friendsApi.send(p.id), p.relation === 'incoming' ? 'You’re now friends!' : 'Request sent')} icon={p.relation === 'incoming' ? <UserCheck className="h-4 w-4" /> : <Plus className="h-[15px] w-[15px]" strokeWidth={2.6} />} label={p.relation === 'incoming' ? 'Accept' : 'Add'} />
+                      )}
+                    </PersonRow>
+                  ))}
+                </Section>
+              )}
+
+              {pymk.length > 0 && (
+                <Section title="People you may know">
+                  {pymk.map((p) => (
+                    <PersonRow key={p.id} person={p} sub={`${p.mutual} mutual friend${p.mutual === 1 ? '' : 's'}`} onClick={() => navigate(`/u/${p.username}`)}>
+                      <RowButton loading={busy === p.id} onClick={() => run(p.id, () => friendsApi.send(p.id), 'Request sent')} icon={<Plus className="h-[15px] w-[15px]" strokeWidth={2.6} />} label="Add" />
+                    </PersonRow>
+                  ))}
                 </Section>
               )}
 
@@ -206,7 +270,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function PersonRow({ person, children, onClick }: { person: PublicProfile; children: React.ReactNode; onClick?: () => void }) {
+function PersonRow({ person, children, onClick, sub }: { person: PublicProfile; children: React.ReactNode; onClick?: () => void; sub?: string }) {
   return (
     <li className={cn('flex items-center gap-3 py-[9px]', GHOST_HOST)}>
       <Ghost url={person.avatar_url} />
@@ -214,7 +278,7 @@ function PersonRow({ person, children, onClick }: { person: PublicProfile; child
         <Avatar name={person.display_name} url={person.avatar_url} aura={person.aura_color} size={50} />
         <span className="min-w-0">
           <span className="block truncate font-extrabold">{person.display_name}</span>
-          <span className="block truncate text-xs text-ink-mute">@{person.username}</span>
+          <span className="block truncate text-xs text-ink-mute">{sub ?? `@${person.username}`}</span>
         </span>
       </button>
       <span className="flex shrink-0 items-center gap-2">{children}</span>

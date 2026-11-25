@@ -16,6 +16,7 @@ import { brand } from '@/config/brand';
 import { ChevronLeft, Palette, UserRound } from 'lucide-react';
 import { Ghost } from '@/components/ui/Ghost';
 import { ACCENTS, getAccent, setAccent } from '@/lib/accent';
+import { ContactSyncToggle, PhoneRow } from './PhoneRows';
 
 function AccentPicker() {
   const [cur, setCur] = useState(() => getAccent().id);
@@ -115,6 +116,7 @@ export default function SettingsScreen() {
             <Link to="/profile/edit" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Name</span><span className="text-ink-mute">{profile.display_name}</span></Link>
             <Link to="/profile/edit" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Username</span><span className="text-ink-mute">@{profile.username}</span></Link>
             <div className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Email</span><span className="truncate text-ink-mute">{session?.user.email}</span></div>
+            {session && <PhoneRow uid={session.user.id} />}
             <Link to="/profile/photo" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Profile picture</span><span className="text-ink-mute">{profile.photo_mode ? 'Photo' : 'Avatar face'} ›</span></Link>
             {settings && (
               <label className="flex items-center gap-3 px-3.5 py-[11px] text-[15px] font-semibold">
@@ -132,6 +134,8 @@ export default function SettingsScreen() {
             <Segmented label="Who can view my story" value={privacy.who_can_view_story === 'custom' ? 'friends' : privacy.who_can_view_story} options={[{ value: 'friends', label: 'Friends' }, { value: 'everyone', label: 'Everyone' }]} onChange={(v) => updatePrivacy({ who_can_view_story: v })} />
             <Toggle label="Show when I was last active" checked={privacy.show_last_seen} onChange={(v) => updatePrivacy({ show_last_seen: v })} />
             <Toggle label="Appear in friend suggestions" description="Others can still add you by exact username" checked={privacy.show_in_discovery} onChange={(v) => updatePrivacy({ show_in_discovery: v })} />
+            <Toggle label="Let people find me by phone number" description="Only people who already have your number" checked={privacy.find_by_phone ?? true} onChange={(v) => updatePrivacy({ find_by_phone: v })} />
+            {session && <ContactSyncToggle uid={session.user.id} />}
             <Toggle label="Show my birthday to friends" description="Day and month only — never the year" checked={privacy.show_birthday ?? true} onChange={(v) => updatePrivacy({ show_birthday: v })} />
             <Toggle label="Ghost mode" description="Hide your location on the map (on by default)" checked={privacy.ghost_mode} onChange={(v) => updatePrivacy({ ghost_mode: v })} />
           </Section>

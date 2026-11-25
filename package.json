@@ -13,6 +13,7 @@
     "test:calls": "vite --config vite.call-test.config.ts & sleep 3 && node e2e/call.e2e.cjs; kill %1"
   },
   "dependencies": {
+    "@capacitor-community/contacts": "^8.0.0",
     "@capacitor/android": "^8.6.2",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.2",

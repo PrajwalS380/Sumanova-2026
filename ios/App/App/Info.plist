@@ -8,6 +8,8 @@
 	<string>SUMANOVA uses the microphone for videos, voice notes and calls.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>SUMANOVA saves your photos and videos to your library when you choose to.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>SUMANOVA checks which of your contacts are here so you can add them. Numbers are scrambled on your phone first.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>SUMANOVA lets you choose photos from your library to share.</string>
   <key>CAPACITOR_DEBUG</key>

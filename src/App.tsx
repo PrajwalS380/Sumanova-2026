@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { initNative } from '@/lib/nativeInit';
+import { startContactAutoSync } from '@/lib/contacts';
 import { InboxProvider } from '@/providers/InboxProvider';
 import { CallProvider } from '@/providers/CallProvider';
 import { NotificationsProvider } from '@/providers/NotificationsProvider';
@@ -59,6 +60,10 @@ function NativeBridge() {
       return true;
     });
   }, [navigate]);
+  // Contacts (when the person turned it on): re-match on start and every return to the app.
+  const { session } = useAuth();
+  const uid = session?.user.id;
+  useEffect(() => (uid ? startContactAutoSync(uid) : undefined), [uid]);
   return null;
 }
 

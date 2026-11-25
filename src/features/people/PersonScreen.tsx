@@ -168,6 +168,14 @@ export default function PersonScreen() {
             <div className="flex justify-between py-1.5 text-sm"><span className="text-ink-mute">Friends since</span><span className="font-extrabold">{new Date(fp.friends_since).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span></div>
             <div className="flex justify-between py-1.5 text-sm"><span className="text-ink-mute">Snaps shared</span><span className="font-extrabold">{fp.snaps_exchanged.toLocaleString()}</span></div>
             <div className="flex justify-between py-1.5 text-sm"><span className="text-ink-mute">Best streak</span><span className="font-extrabold">{fp.best_streak}</span></div>
+            {fp.badges.length > 0 && (
+              <div className="pt-2">
+                <span className="text-sm text-ink-mute">Badges</span>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {fp.badges.map((b) => <span key={b} className="rounded-full bg-[#F1F1F4] px-2.5 py-1 text-[12px] font-extrabold">{b}</span>)}
+                </div>
+              </div>
+            )}
             {fp.anniversary_today && <p className="pt-1 text-sm font-bold text-ember-rose">Happy friendiversary!</p>}
             <RestoreStreak friendId={c.id} onDone={load} />
           </div>

@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { streaksApi, type StreakInfo } from '@/lib/social/api';
+import { rowBadges, topFriendIds } from '@/lib/badges';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BellOff, Clock3, Eye, MessageSquarePlus, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info, X } from 'lucide-react';
@@ -57,6 +58,7 @@ export default function ChatListScreen() {
     return { rest: list };
   }, [conversations, query, chip, streaks]);
   const unreadCount = conversations.filter((c) => c.unread_count > 0).length;
+  const top = useMemo(() => topFriendIds(Object.values(streaks)), [streaks]);
 
   async function setPref(c: ConversationSummary, p: Partial<ConversationSummary>, msg: string) {
     patch(c.id, p);
@@ -109,7 +111,7 @@ export default function ChatListScreen() {
           {loading && conversations.length === 0
             ? [0, 1, 2, 3].map((i) => <li key={i} className="h-[72px] animate-pulse rounded-3xl bg-ink/[0.04]" />)
             : filtered.rest.map((c, i) => (
-                <ChatRow key={c.id} c={c} me={me} index={i} streak={c.other_user_id ? streaks[c.other_user_id] : undefined} online={c.other_user_id ? online.has(c.other_user_id) : false} onOpen={() => navigate(`/chat/${c.id}`)} onMenu={() => setMenu(c)} onRestore={c.other_user_id ? () => void restoreStreak(c.other_user_id!) : undefined} />
+                <ChatRow key={c.id} c={c} me={me} index={i} streak={c.other_user_id ? streaks[c.other_user_id] : undefined} top={!!c.other_user_id && top.has(c.other_user_id)} online={c.other_user_id ? online.has(c.other_user_id) : false} onOpen={() => navigate(`/chat/${c.id}`)} onMenu={() => setMenu(c)} onRestore={c.other_user_id ? () => void restoreStreak(c.other_user_id!) : undefined} />
               ))}
         </ul>
 
@@ -139,7 +141,7 @@ export default function ChatListScreen() {
   );
 }
 
-const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, onMenu, onRestore }: { c: ConversationSummary; me: string; index: number; online: boolean; streak?: StreakInfo; onOpen: () => void; onMenu: () => void; onRestore?: () => void }) {
+const ChatRow = memo(function ChatRow({ c, me, index, online, streak, top, onOpen, onMenu, onRestore }: { c: ConversationSummary; me: string; index: number; online: boolean; streak?: StreakInfo; top?: boolean; onOpen: () => void; onMenu: () => void; onRestore?: () => void }) {
   const press = useLongPress(() => {
     haptic(12);
     onMenu();
@@ -168,6 +170,7 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
             <span className={cn('truncate text-base', unread ? 'font-extrabold text-ink' : 'font-semibold')}>{name}</span>
+            {rowBadges(streak, !!top).map((b) => <span key={b.emoji} role="img" aria-label={b.label} title={b.label} className="shrink-0 text-[13px] leading-none">{b.emoji}</span>)}
             {c.pinned && <Pin className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.muted && <BellOff className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.disappear_mode !== 'never' && (c.disappear_mode === 'after_view' ? <Eye className="h-3 w-3 shrink-0 text-ink-faint" /> : <Clock3 className="h-3 w-3 shrink-0 text-ink-faint" />)}
