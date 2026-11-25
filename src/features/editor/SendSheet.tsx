@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookImage, Check, Clapperboard, Loader2, Repeat2, Send, Sparkles } from 'lucide-react';
-import { Sheet } from '@/components/ui/Sheet';
+import { BookImage, Check, ChevronLeft, Clapperboard, Loader2, Repeat2, Search, Send, Sparkles } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { Toggle } from '@/components/ui/Toggle';
 import { useAuth } from '@/providers/AuthProvider';
@@ -114,75 +113,91 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
 
   const list = (friends ?? []).filter((f) => !query || f.display_name.toLowerCase().includes(query.toLowerCase()) || f.username.includes(query.toLowerCase()));
 
+  const names = [toStory ? 'My story' : null, toMemories ? 'Memories' : null, toSpotlight ? 'Spotlight' : null, ...(friends ?? []).filter((f) => picked.has(f.id)).map((f) => f.display_name.split(' ')[0])].filter(Boolean);
+
+  if (!prepared) return null;
   return (
-    <Sheet open={!!prepared} onClose={onClose} title="Share to">
-      <div className="px-5 pb-5">
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          <Dest on={toStory} onClick={() => setToStory((v) => !v)} icon={<Sparkles className="h-5 w-5" />} label="My Story" />
-          <Dest on={toMemories} onClick={() => setToMemories((v) => !v)} icon={<BookImage className="h-5 w-5" />} label="Memories" />
-          <Dest on={toSpotlight} disabled={prepared?.kind !== 'video'} onClick={() => setToSpotlight((v) => !v)} icon={<Clapperboard className="h-5 w-5" />} label="Spotlight" />
+    <div className="fixed inset-0 z-[60] flex flex-col bg-white text-ink">
+      <header className="flex items-center gap-2 px-3.5 pb-3 pt-safe">
+        <button onClick={onClose} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-[#eef1fa] active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
+        <h1 className="flex-1 text-center text-lg font-extrabold">Send to</h1>
+        <span className="w-10" aria-hidden />
+      </header>
+      <div className="flex-1 overflow-y-auto pb-28">
+        <div className="px-4">
+          <label className="flex h-11 items-center gap-2.5 rounded-full bg-[#eef1fa] px-3.5">
+            <Search className="h-[18px] w-[18px] text-ink-mute" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search friends" aria-label="Search friends" className="flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:text-ink-mute" />
+          </label>
         </div>
-        {toStory && <div className="mb-4"><AudiencePicker value={audience} onChange={setAudience} /></div>}
-        {toSpotlight && prepared?.kind === 'video' && (
-          <div className="mb-4 space-y-2">
-            <input value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} placeholder="Add a caption for Spotlight" className="h-11 w-full rounded-2xl bg-ink/5 px-4 text-[15px] outline-none ring-1 ring-ink/10 focus:ring-ember-amber/60" />
+
+        <h2 className={H2}>Stories</h2>
+        <Row on={toStory} onClick={() => setToStory((v) => !v)} icon={<Sparkles className="h-[22px] w-[22px]" />} tint="bg-ember-flame/[0.12] text-ember-flame" title="My story" sub="Visible for 24 hours" />
+        {toStory && <div className="px-4 pb-2"><AudiencePicker value={audience} onChange={setAudience} /></div>}
+        <Row on={toMemories} onClick={() => setToMemories((v) => !v)} icon={<BookImage className="h-[22px] w-[22px]" />} tint="bg-[#d8f5ea] text-ember-jade" title="Memories" sub="Only you can see these" />
+        {prepared.kind === 'video' && <Row on={toSpotlight} onClick={() => setToSpotlight((v) => !v)} icon={<Clapperboard className="h-[22px] w-[22px]" />} tint="bg-[#fff1e6] text-[#c2410c]" title="Spotlight" sub="Public to everyone on SUMANOVA" />}
+        {toSpotlight && prepared.kind === 'video' && (
+          <div className="space-y-2 px-4 pb-2">
+            <input value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} placeholder="Add a caption for Spotlight" className="h-11 w-full rounded-full bg-[#eef1fa] px-4 text-[15px] outline-none" />
             <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
               {CATEGORIES.map((c) => (
-                <button key={c} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs capitalize', category === c ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 text-ink-soft ring-1 ring-ink/10')}>{c}</button>
+                <button key={c} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize', category === c ? 'bg-ink text-white' : 'bg-[#eef1fa]')}>{c}</button>
               ))}
             </div>
-            <p className="px-1 text-[11px] text-ink-faint">Spotlight videos are public to everyone on SUMANOVA.</p>
           </div>
         )}
 
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">Friends · snap</p>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search friends" className="mb-2 h-11 w-full rounded-2xl bg-ink/5 px-4 text-[15px] outline-none ring-1 ring-ink/10 focus:ring-ember-amber/60" aria-label="Search friends" />
+        <h2 className={H2}>Recents</h2>
         {friends === null ? (
           <div className="grid h-20 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-ink-mute" /></div>
         ) : friends.length === 0 ? (
-          <p className="py-5 text-center text-sm text-ink-mute">Add friends to send snaps.</p>
+          <p className="px-4 py-5 text-sm text-ink-mute">Add friends to send snaps.</p>
         ) : (
-          <ul className="max-h-[30vh] space-y-1 overflow-y-auto">
-            {list.map((f) => {
-              const on = picked.has(f.id);
-              return (
-                <li key={f.id}>
-                  <button onClick={() => toggle(f.id)} aria-pressed={on} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors', on ? 'bg-ink/10' : 'hover:bg-ink/5')}>
-                    <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={40} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">{f.display_name}</span>
-                      <span className="block truncate text-xs text-ink-mute">@{f.username}</span>
-                    </span>
-                    <span className={cn('grid h-6 w-6 place-items-center rounded-full ring-1', on ? 'bg-ember-gradient text-noir ring-transparent' : 'ring-ink/25')}>{on && <Check className="h-4 w-4" />}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          list.map((f) => (
+            <button key={f.id} onClick={() => toggle(f.id)} aria-pressed={picked.has(f.id)} className="flex w-full items-center gap-3 px-4 py-2 text-left active:bg-ink/[0.04]">
+              <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={48} />
+              <span className="min-w-0 flex-1"><span className="block truncate font-extrabold">{f.display_name}</span><span className="block truncate text-xs text-ink-mute">@{f.username}</span></span>
+              <Tick on={picked.has(f.id)} />
+            </button>
+          ))
         )}
         {picked.size > 0 && (
-          <>
-            <div className="glass mt-3 overflow-hidden rounded-2xl">
-              <Toggle label="Allow one replay" description="They can replay once within 5 minutes of opening" checked={replay} onChange={setReplay} />
-            </div>
-            <p className="mt-2 flex items-center gap-1.5 px-1 text-xs text-ink-mute">
-              <Repeat2 className="h-3.5 w-3.5" /> {prepared?.kind === 'image' ? (prepared.duration ? `Shows for ${prepared.duration}s` : 'No time limit') : 'Plays once through'} · opens once · expires after 30 days if unopened
+          <div className="mx-4 mt-3 overflow-hidden rounded-2xl bg-[#f4f6fd]">
+            <Toggle label="Allow one replay" description="They can replay once within 5 minutes of opening" checked={replay} onChange={setReplay} />
+            <p className="flex items-center gap-1.5 px-4 pb-3 text-xs text-ink-mute">
+              <Repeat2 className="h-3.5 w-3.5" /> {prepared.kind === 'image' ? (prepared.duration ? `Shows for ${prepared.duration}s` : 'No time limit') : 'Plays once through'} · opens once
             </p>
-          </>
+          </div>
         )}
-        <button onClick={() => void send()} disabled={!anything || sending} className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-ember-gradient text-noir font-semibold shadow-glow transition-transform active:scale-[0.98] disabled:opacity-50">
-          {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Share <Send className="h-4 w-4" /></>}
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-ember-flame px-4 pb-[max(1.75rem,var(--safe-bottom))] pt-3.5 text-white">
+        <span className="min-w-0 flex-1 truncate text-[15px] font-extrabold">{names.length ? names.join(', ') : 'Pick friends or your story'}</span>
+        <button onClick={() => void send()} disabled={!anything || sending} aria-label="Send" className="grid h-[52px] w-[52px] place-items-center rounded-full bg-white text-ember-flame disabled:opacity-60">
+          {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-[22px] w-[22px]" />}
         </button>
       </div>
-    </Sheet>
+    </div>
   );
 }
 
-function Dest({ on, onClick, icon, label, disabled }: { on: boolean; onClick: () => void; icon: React.ReactNode; label: string; disabled?: boolean }) {
+const H2 = 'px-4 pb-1 pt-3.5 text-[13px] font-extrabold uppercase tracking-[0.08em] text-ink-mute';
+
+function Tick({ on }: { on: boolean }) {
   return (
-    <button onClick={onClick} disabled={disabled} aria-pressed={on} className={cn('flex flex-col items-center gap-1.5 rounded-2xl py-3 text-xs font-semibold transition-all disabled:opacity-35', on ? 'bg-ember-gradient text-noir shadow-glow' : 'bg-ink/5 ring-1 ring-ink/10')}>
-      {icon}
-      {label}
+    <span className={cn('grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-2', on ? 'border-ember-flame bg-ember-flame text-white' : 'border-[#c3cbe0]')}>
+      {on && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+    </span>
+  );
+}
+
+function Row({ on, onClick, icon, tint, title, sub }: { on: boolean; onClick: () => void; icon: React.ReactNode; tint: string; title: string; sub: string }) {
+  return (
+    <button onClick={onClick} aria-pressed={on} className="flex w-full items-center gap-3 px-4 py-2 text-left active:bg-ink/[0.04]">
+      <span className={cn('grid h-12 w-12 place-items-center rounded-full', tint)}>{icon}</span>
+      <span className="min-w-0 flex-1"><span className="block font-extrabold">{title}</span><span className="block text-xs text-ink-mute">{sub}</span></span>
+      <Tick on={on} />
     </button>
   );
 }
+

@@ -42,8 +42,8 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [x] Friend profile: both full-body avatars side by side, streak pill, Chat / Snap / Call / Video, facts card, their story.
 - [x] Add friends ("Quick add" shown as "My friends": no suggestion engine; no scan-code button): search, Share my code card, Added me (Accept / ignore), Quick add.
 - [x] Notifications: Today / Earlier with face + coloured badge icon, unread dot.
-- [ ] Snap editor: right tool rail, caption bar, bottom = Save, "Story" (my face), "Send to →".
-- [ ] Send to: My story / Close friends / recents with tick circles; indigo bottom bar listing picks + send.
+- [x] Snap editor: right tool rail, caption bar, bottom = Save, "Story" (my face), "Send to →".
+- [x] Send to: My story / Close friends / recents with tick circles; indigo bottom bar listing picks + send.
 - [ ] Story viewer: segmented progress, header face + name + place, reply bar (camera, field, react).
 - [x] Memories (tabs are the real ones: Snaps / Favourites / Albums / Archived; flashback card appears when a memory matches today's date): tabs Snaps / Stories / Camera roll / Private, "1 year ago today" card, month grids.
 - [x] Welcome (/auth/welcome is the signed-out landing; figures are pre-rendered starter characters in public/welcome): wordmark, tagline, three full-body avatars, Create account / Log in.

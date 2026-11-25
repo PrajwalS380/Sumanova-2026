@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Crop, Download, Infinity as InfinityIcon, Paintbrush, RotateCw, Send, Smile, Timer, Trash2, Type, Undo2, X } from 'lucide-react';
+import { ArrowRight, Check, Crop, Download, Infinity as InfinityIcon, Paintbrush, RotateCw, Smile, Timer, Trash2, Type, Undo2, X } from 'lucide-react';
 import { Sheet } from '@/components/ui/Sheet';
+import { Avatar } from '@/components/Avatar';
+import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { FILTERS, filterById } from '@/lib/snaps/filters';
 import { saveMedia } from '@/lib/saveMedia';
@@ -22,6 +24,11 @@ const ASPECTS: { label: string; value: number | null }[] = [
   { label: '4:5', value: 4 / 5 },
   { label: '9:16', value: 9 / 16 },
 ];
+
+function MeFace({ size }: { size: number }) {
+  const { profile } = useAuth();
+  return <Avatar name={profile?.display_name ?? 'Me'} url={profile?.avatar_url} aura={profile?.aura_color} size={size} />;
+}
 
 export default function MediaEditor({ captured, onClose }: { captured: Captured; onClose: () => void }) {
   const toast = useToast();
@@ -314,13 +321,16 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
 
       {/* Bottom bar */}
       {tool === 'none' && !selected && (
-        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/60 to-transparent px-4 pb-safe pt-10">
-          <button onClick={() => void save()} disabled={busy} className="flex h-12 items-center gap-2 rounded-2xl bg-white/15 px-4 text-sm font-semibold text-white ring-1 ring-white/20 backdrop-blur-md disabled:opacity-50">
-            <Download className="h-5 w-5" /> Save
+        <div className="absolute inset-x-0 bottom-0 flex items-center gap-2.5 px-4 pb-[max(1.875rem,var(--safe-bottom))] pt-10">
+          <button onClick={() => void save()} disabled={busy} aria-label="Save to Memories" className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white disabled:opacity-50">
+            <Download className="h-[22px] w-[22px]" />
           </button>
-          <span className="rounded-full bg-black/40 px-3 py-1 text-xs text-white/85">{f.name} · swipe for filters</span>
-          <button onClick={() => void openSend()} disabled={busy} className="flex h-12 items-center gap-2 rounded-2xl bg-ember-gradient text-noir px-5 text-sm font-semibold shadow-glow disabled:opacity-60">
-            Send <Send className="h-4 w-4" />
+          <button onClick={() => void openSend()} disabled={busy} className="flex items-center gap-2 rounded-full bg-white/[0.92] py-1.5 pl-1.5 pr-3.5 text-sm font-extrabold text-ink disabled:opacity-60">
+            <MeFace size={36} /> Story
+          </button>
+          <span className="flex-1" />
+          <button onClick={() => void openSend()} disabled={busy} className="flex items-center gap-2 rounded-full bg-ember-flame px-5 py-3.5 text-base font-extrabold text-white disabled:opacity-60">
+            Send to <ArrowRight className="h-[18px] w-[18px]" strokeWidth={2.4} />
           </button>
         </div>
       )}
