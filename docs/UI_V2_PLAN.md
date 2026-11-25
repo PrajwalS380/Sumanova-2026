@@ -50,5 +50,5 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [x] Settings (privacy choices stay as segmented controls so they can be changed in place): grouped cards (Account, Privacy, Look & feel with theme colour dots, Support/Log out).
 
 ## Phase 4 — Finish
-- [ ] typecheck + vitest + build green; screenshots via scratch harness; commit; push (APK build); Vercel deploy.
-- [ ] Update CLAUDE.md (navigation + avatar-face decisions) and docs/OWNER_HANDBOOK.txt.
+- [x] typecheck + vitest + build green; screenshots via scratch harness; commit; push (APK build); Vercel deploy.
+- [x] Update CLAUDE.md (navigation + avatar-face decisions) and docs/OWNER_HANDBOOK.txt.

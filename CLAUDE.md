@@ -37,17 +37,20 @@ Android (APK) and iPhone.
 ## Stack & conventions
 React 18 + TS + Vite 5 + Tailwind 3 + Framer Motion + Lucide + Zod, Supabase JS v2, vite-plugin-pwa (web only),
 Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path alias `@/` → `src/`.
-- Design system **"Pearl"** + **"Widgets" structure** (owner-approved from 5 wireframe options; canvas
+- Design system **"Pearl"** (owner-approved from 5 wireframe options; canvas
   https://claude.ai/artifact/QeBwqyGdk5sy2xz7PHFneG). Light theme: milky glass over blue/pink/mint pearl sheen, navy
   ink, indigo accent, Instrument Serif display + Manrope. Token names are legacy: `noir.*` = light surfaces,
   `ink.*` = navy text, `ember.*` = accents (`ember-flame` indigo, `ember-cream` = navy active capsule with `text-noir`),
   `bg-ember-gradient` = indigo→violet (white text). Media screens (camera, editor, story/snap viewers, call, Spotlight
   player) keep white-on-dark overlays; everything else uses `ink/…` overlays, never `white/…`.
-  Navigation: NO tab bar. Home `/` = widget dashboard (`features/home/HomeScreen.tsx`, reorder/hide saved per device);
-  side drawer (`components/Drawer.tsx`, menu button in `ScreenHeader`/`MenuButton`, left-edge swipe); camera at `/camera`.
-  Spotlight lands on a ranked list, tap opens the full-screen player.
+  UI v2 (owner-approved 2026-11-25, wireframes https://claude.ai/artifact/YRvWos2boF7mhEDoAcfJqP, plan docs/UI_V2_PLAN.md;
+  owner wants screens to match the wireframes EXACTLY — colours, fields, layout): camera-first home `/`, five-tab
+  `BottomDock` (Map · Chat · Camera · Stories · Spotlight; dark on camera/Spotlight), `TopBar`/`MeButton` = my avatar FACE
+  top-left opens /profile. Everyone's picture is their rendered 3D avatar: studio save publishes face → `profiles.avatar_url`
+  and full body → `profiles.avatar_body_url`. Spotlight opens straight into the player (Following / For you).
+  Signed-out landing `/auth/welcome` (pre-rendered starter figures in public/welcome). No widget dashboard, no drawer.
   Accent colour is user-selectable (Settings → Theme colour, `lib/accent.ts`): `ember-flame`/`ember-amber`/`bg-ember-gradient`
-  read CSS vars `--accent`/`--accent-from`/`--accent-to` (RGB channels). Never hard-code #3D4FE0 in new UI. Must not copy Snapchat's layout/IA.
+  read CSS vars `--accent`/`--accent-from`/`--accent-to` (RGB channels). Never hard-code #3D4FE0 in new UI. Familiar camera-first alignment is owner-approved, but never copy Snapchat artwork, logos, names or yellow.
 - Avatar v2 (owner wants Snapchat-level depth, ~100 variants per category, all original & free, no brands):
   `features/avatar/look/` = data (`config.ts` Look v2 + v1 migration, `face.ts`/`hair.ts`/`fashion.ts`/`extras.ts`
   100-variant catalogues as families × params, `palettes.ts`, `tube.ts` tapered-strand builder);

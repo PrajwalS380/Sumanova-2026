@@ -135,14 +135,13 @@ export default function AvatarStudio() {
   const rail = cat.color ?? null;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-noir">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[60vh]" style={{ background: 'radial-gradient(60% 55% at 50% 32%, rgba(255,170,100,.2), transparent 70%), radial-gradient(45% 10% at 50% 92%, rgba(255,122,61,.3), transparent 70%)' }} />
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-gradient-to-b from-[#dfe6ff] to-[#f6efff]">
       <header className="relative z-10 flex items-center gap-2 px-3 pt-safe">
-        <button onClick={() => navigate(-1)} aria-label="Close" className="glass grid h-10 w-10 place-items-center rounded-full"><X className="h-5 w-5" /></button>
-        <h1 className="flex-1 font-display text-[22px] font-medium">Avatar <span className="italic text-ember">studio</span></h1>
-        <button onClick={() => commit((l) => ({ ...randomLook(), pose: l.pose }))} aria-label="Surprise me" className="glass grid h-10 w-10 place-items-center rounded-full"><Dices className="h-5 w-5" /></button>
-        <Link to="/avatar/duo" aria-label="Duo stickers" className="glass grid h-10 w-10 place-items-center rounded-full"><Users2 className="h-5 w-5" /></Link>
-        <button onClick={() => void save()} disabled={saving || (!dirty && !!saved)} className="flex h-10 items-center gap-1.5 rounded-full bg-ember-cream px-4 text-sm font-bold text-noir disabled:opacity-50">
+        <button onClick={() => navigate(-1)} aria-label="Close" className={STUDIO_BTN}><X className="h-5 w-5" /></button>
+        <h1 className="flex-1 text-center text-lg font-extrabold">My avatar</h1>
+        <button onClick={() => commit((l) => ({ ...randomLook(), pose: l.pose }))} aria-label="Random look" className={STUDIO_BTN}><Dices className="h-5 w-5" /></button>
+        <Link to="/avatar/duo" aria-label="Duo stickers" className={STUDIO_BTN}><Users2 className="h-5 w-5" /></Link>
+        <button onClick={() => void save()} disabled={saving || (!dirty && !!saved)} className="flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-extrabold text-white disabled:opacity-50">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {saved && !dirty ? 'Saved' : 'Save'}
         </button>
       </header>
@@ -209,6 +208,8 @@ export default function AvatarStudio() {
     </div>
   );
 }
+
+const STUDIO_BTN = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/85 text-ink active:scale-90';
 
 /* ------------------------------------------------------------------ panels */
 

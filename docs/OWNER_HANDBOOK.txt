@@ -15,6 +15,12 @@ Vercel project               : https://vercel.com  -> project "sumanova"
 Budget                       : Rs 0. Nothing here needs a credit card.
 
 
+NEW LOOK (UI v2, 2026-11-25)
+ The app now opens on the camera. Five tabs at the bottom: Map, Chat,
+ Camera, Stories, Spotlight. Tap your avatar's face (top-left) for your
+ profile. Save your avatar once in the studio — that 3D face becomes your
+ picture everywhere and your full body appears on the map and profiles.
+
 ====================================================================
 PART 1 — MUST-DO STEPS (do these in order, ~30 minutes total)
 ====================================================================
