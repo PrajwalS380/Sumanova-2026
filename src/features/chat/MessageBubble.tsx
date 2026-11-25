@@ -53,7 +53,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
   const isSticker = m.kind === 'sticker' || m.kind === 'snap';
   const deleted = !!m.deleted_at;
   const counts = p.reactions.reduce<Record<string, number>>((acc, r) => ((acc[r.emoji] = (acc[r.emoji] ?? 0) + 1), acc), {});
-  const r = 'rounded-[1.4rem]';
+  const r = 'rounded-[20px]';
   const corner = mine ? (p.groupedWithNext ? 'rounded-br-md' : 'rounded-br-[0.5rem]') : p.groupedWithNext ? 'rounded-bl-md' : 'rounded-bl-[0.5rem]';
   const topCorner = p.groupedWithPrev ? (mine ? 'rounded-tr-md' : 'rounded-tl-md') : '';
 
@@ -74,7 +74,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           onDoubleClick={() => !m.local && !deleted && p.onQuickReact(m)}
           className={cn(
             'relative select-none touch-manipulation',
-            !isSticker && !isMedia && cn(r, corner, topCorner, 'px-3.5 py-2', mine ? 'text-white' : 'bg-ink/[0.08] text-ink ring-1 ring-ink/[0.06]'),
+            !isSticker && !isMedia && cn(r, corner, topCorner, 'px-3.5 py-2', mine ? 'text-white' : 'bg-[#eef1fa] text-ink'),
             isMedia && cn('overflow-hidden p-1', r, corner, topCorner, mine ? '' : 'bg-ink/[0.06]'),
             deleted && 'bg-transparent italic text-ink-mute ring-1 ring-ink/10',
             m.local === 'failed' && 'opacity-70',

@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ImagePlus, Mic, PencilLine, Reply, SendHorizontal, Smile, Square, Trash2, X } from 'lucide-react';
+import { Camera, Mic, PencilLine, Reply, SendHorizontal, Smile, Square, Trash2, X } from 'lucide-react';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/providers/ToastProvider';
 import { MAX_VOICE_SECONDS, prepareMedia, startVoiceRecording, type VoiceRecording } from '@/lib/chat/media';
 import { formatDuration } from '@/lib/chat/time';
 import type { LocalMessage, MediaMeta, MessageKind } from '@/lib/chat/types';
 import { haptic } from '@/lib/haptics';
-import { cn } from '@/lib/cn';
 import { STICKERS } from './themes';
 
 export interface ComposerSend {
@@ -129,7 +128,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
   }
 
   return (
-    <div className="relative z-20 px-3 pb-safe pt-2">
+    <div className="relative z-20 border-t border-[#eef1fa] bg-white px-3 pb-safe pt-2.5">
       <AnimatePresence>
         {(replyTo || editing) && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="glass-strong mb-2 flex items-center gap-2 rounded-2xl px-3 py-2">
@@ -158,11 +157,12 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
           </button>
         </div>
       ) : (
-        <div className="glass-strong flex items-end gap-1 rounded-[1.75rem] p-1.5">
-          <button onClick={() => file.current?.click()} aria-label="Attach photo or video" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink-soft hover:text-white">
-            <ImagePlus className="h-5 w-5" />
+        <div className="flex items-end gap-2">
+          <button onClick={() => file.current?.click()} aria-label="Send a photo or video" className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full bg-ember-flame text-white active:scale-90">
+            <Camera className="h-5 w-5" />
           </button>
           <input ref={file} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => { void pickFiles(e.target.files); e.target.value = ''; }} />
+          <div className="flex min-h-[42px] flex-1 items-center rounded-[21px] bg-[#eef1fa] px-3.5">
           <textarea
             ref={ta}
             rows={1}
@@ -177,21 +177,22 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
                 void submit();
               }
             }}
-            placeholder={editing ? 'Edit message' : 'Message'}
+            placeholder={editing ? 'Edit message' : 'Send a chat'}
             maxLength={4000}
             aria-label="Message"
-            className="max-h-[132px] min-h-[40px] flex-1 resize-none bg-transparent px-1 py-2 text-[15px] leading-snug outline-none placeholder:text-ink-faint"
+            className="max-h-[132px] min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] font-semibold leading-snug outline-none placeholder:text-ink-mute"
           />
-          <button onClick={() => setStickers(true)} aria-label="Stickers" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink-soft hover:text-white">
+          </div>
+          <button onClick={() => setStickers(true)} aria-label="Stickers" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90">
             <Smile className="h-5 w-5" />
           </button>
           <AnimatePresence mode="wait" initial={false}>
             {text.trim() ? (
-              <motion.button key="send" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={() => void submit()} aria-label={editing ? 'Save edit' : 'Send'} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #8E5BEA)` }}>
+              <motion.button key="send" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={() => void submit()} aria-label={editing ? 'Save edit' : 'Send'} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ember-flame text-white active:scale-90">
                 <SendHorizontal className="h-5 w-5" />
               </motion.button>
             ) : (
-              <motion.button key="mic" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={startRecording} aria-label="Record voice note" className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink/10 text-white')}>
+              <motion.button key="mic" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={startRecording} aria-label="Record voice note" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90">
                 <Mic className="h-5 w-5" />
               </motion.button>
             )}

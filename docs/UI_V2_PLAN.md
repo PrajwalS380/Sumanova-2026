@@ -30,7 +30,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [x] Chat list (camera reply button skipped until the camera can send straight to a chat): filter chips (All / Unread / Groups / Streaks); rows = face 52, name, status line with small
       square (filled indigo = new snap, teal = new chat, outlined = sent/opened, grey = received) + time + streak
       with flame; camera button on the right (quick snap reply).
-- [ ] Chat thread: header face + name + streak line, voice & video buttons; bubbles (mine indigo right, theirs
+- [x] Chat thread: header face + name + streak line, voice & video buttons; bubbles (mine indigo right, theirs
       grey left with small face); snap card "New snap · tap to view"; composer = camera button, field, mic, stickers.
 - [x] Stories: "Friends" row of faces (indigo ring = unseen, "My story" with +), "For you" 2-column tall tiles.
 - [x] Spotlight (no sound line: videos have no sound metadata): full-screen player, top bar (face, search, Following / For you, more), right action rail,

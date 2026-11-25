@@ -22,7 +22,7 @@ import { useConversation } from './useConversation';
 import { useSnapStatuses } from '@/features/snaps/useSnapStatuses';
 import { snapTileState } from '@/features/snaps/SnapTile';
 import { SnapViewer } from '@/features/snaps/SnapViewer';
-import { streaksApi, type FriendshipProfile } from '@/lib/social/api';
+import { streaksApi } from '@/lib/social/api';
 
 export default function ChatThreadScreen() {
   const { id = '' } = useParams();
@@ -151,38 +151,48 @@ export default function ChatThreadScreen() {
     return out.reverse();
   }, [conv.messages]);
 
+  const [streak, setStreak] = useState(0);
+  useEffect(() => {
+    if (!summary?.other_user_id) return;
+    let alive = true;
+    void streaksApi.friendship(summary.other_user_id).then((p) => alive && setStreak(p?.streak ?? 0)).catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [summary?.other_user_id]);
+
   const close = (a: LocalMessage, b?: LocalMessage) => !!b && b.kind !== 'system' && a.kind !== 'system' && a.sender_id === b.sender_id && Math.abs(new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) < 3 * 60_000;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-noir" style={{ backgroundImage: theme.wallpaper }}>
+    <div className="fixed inset-0 flex flex-col bg-white" style={{ backgroundImage: theme.wallpaper }}>
       {/* Header */}
-      <header className="glass-strong z-30 flex items-center gap-2 rounded-b-[1.75rem] px-2 pb-2.5 pt-safe">
-        <button onClick={() => navigate('/chat')} className="grid h-10 w-10 place-items-center rounded-full" aria-label="Back to chats">
-          <ChevronLeft className="h-6 w-6" />
+      <header className="z-30 flex items-center gap-2.5 border-b border-[#eef1fa] bg-white px-3.5 pb-3 pt-safe">
+        <button onClick={() => navigate('/chat')} className={CIRCLE} aria-label="Back to chats">
+          <ChevronLeft className="h-5 w-5" />
         </button>
-        <Link to={`/chat/${id}/info`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 pr-2 active:bg-ink/5">
+        <Link to={isGroup ? `/chat/${id}/info` : otherProfile?.username ? `/u/${otherProfile.username}` : `/chat/${id}/info`} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl py-1 pr-2 active:bg-ink/5">
           {isGroup ? (
             info?.avatar_url ? <Avatar name={title} url={info.avatar_url} size={40} /> : (
               <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-ember-flame/50 to-ember-jade/50"><Users className="h-5 w-5" /></span>
             )
           ) : (
             <span className="relative">
-              <Avatar name={title || '?'} url={otherProfile?.avatar_url} aura={otherProfile?.aura_color} size={40} />
+              <Avatar name={title || '?'} url={otherProfile?.avatar_url} aura={otherProfile?.aura_color} size={42} />
               {online && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-ember-sage ring-2 ring-noir-800" />}
             </span>
           )}
           <span className="min-w-0">
-            <span className="block truncate text-[15px] font-semibold">{title}</span>
+            <span className="block truncate text-base font-extrabold">{title}</span>
             <AnimatePresence mode="wait" initial={false}>
               <motion.span key={typingNames.length ? 'typing' : 'status'} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="block truncate text-xs" style={{ color: typingNames.length ? theme.accent : undefined }}>
                 {typingNames.length ? (
                   <span className="flex items-center gap-1">{isGroup ? `${typingNames.join(', ')} typing` : 'typing'}<TypingDots /></span>
                 ) : isGroup ? (
                   <span className="text-ink-mute">{conv.members.length} members</span>
-                ) : online ? (
-                  <span className="text-ember-sage">Online</span>
                 ) : (
-                  <span className="text-ink-mute">{lastSeenLabel(lastSeen) || `@${otherProfile?.username ?? ''}`}</span>
+                  <span className={cn('font-extrabold', streak ? 'text-[#c2410c]' : online ? 'text-ember-jade' : 'text-ink-mute')}>
+                    {[streak ? `${streak}-day streak` : null, online ? 'online' : lastSeenLabel(lastSeen) || `@${otherProfile?.username ?? ''}`].filter(Boolean).join(' · ')}
+                  </span>
                 )}
               </motion.span>
             </AnimatePresence>
@@ -190,21 +200,20 @@ export default function ChatThreadScreen() {
         </Link>
         {!isGroup && info && (
           <>
-            <button onClick={() => void calls.startCall(id, 'voice')} className="grid h-10 w-10 place-items-center rounded-full text-ink-soft active:scale-90" aria-label="Voice call">
+            <button onClick={() => void calls.startCall(id, 'voice')} className={CIRCLE} aria-label="Voice call">
               <Phone className="h-5 w-5" />
             </button>
-            <button onClick={() => void calls.startCall(id, 'video')} className="grid h-10 w-10 place-items-center rounded-full text-ink-soft active:scale-90" aria-label="Video call">
+            <button onClick={() => void calls.startCall(id, 'video')} className={CIRCLE} aria-label="Video call">
               <Video className="h-5 w-5" />
             </button>
           </>
         )}
         {isGroup && (
-          <Link to={`/chat/${id}/info`} className="grid h-10 w-10 place-items-center rounded-full text-ink-soft" aria-label="Chat details">
+          <Link to={`/chat/${id}/info`} className={CIRCLE} aria-label="Chat details">
             <Info className="h-5 w-5" />
           </Link>
         )}
       </header>
-      {!isGroup && summary?.other_user_id && <InfoStrip friendId={summary.other_user_id} />}
 
       {/* Messages */}
       <div
@@ -361,23 +370,5 @@ function TypingDots() {
   );
 }
 
-/** Slim strip under the header: streak, snaps shared and how long you've been friends. */
-function InfoStrip({ friendId }: { friendId: string }) {
-  const [f, setF] = useState<FriendshipProfile | null>(null);
-  useEffect(() => {
-    let alive = true;
-    void streaksApi.friendship(friendId).then((p) => alive && setF(p)).catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, [friendId]);
-  if (!f) return null;
-  const since = new Date(f.friends_since).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
-  return (
-    <div className="mx-3 mt-2 flex items-center justify-around rounded-2xl bg-white/70 px-3 py-1.5 text-[11px] font-bold text-ink-soft ring-1 ring-ink/[0.06]">
-      <span className={cn(f.streak_expiring && 'text-ember-rose')}>🔥 {f.streak} streak{f.streak_expiring ? ' · ending' : ''}</span>
-      <span>{f.snaps_exchanged} snaps</span>
-      <span>Friends since {since}</span>
-    </div>
-  );
-}
+
+const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90';
