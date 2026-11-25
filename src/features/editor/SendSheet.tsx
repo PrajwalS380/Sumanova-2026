@@ -172,7 +172,7 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
           ))
         )}
         {picked.size > 0 && (
-          <div className="mx-4 mt-3 overflow-hidden rounded-2xl bg-[#ECECEF]">
+          <div className="mx-4 mt-3 overflow-hidden rounded-2xl bg-noir">
             <Toggle label="Allow one replay" description="They can replay once within 5 minutes of opening" checked={replay} onChange={setReplay} />
             <p className="flex items-center gap-1.5 px-4 pb-3 text-xs text-ink-mute">
               <Repeat2 className="h-3.5 w-3.5" /> {prepared.kind === 'image' ? (prepared.duration ? `Shows for ${prepared.duration}s` : 'No time limit') : 'Plays once through'} · opens once

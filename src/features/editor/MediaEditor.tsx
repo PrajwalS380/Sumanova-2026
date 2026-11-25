@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Check, Crop, Download, Gauge, Infinity as InfinityIcon, LayoutTemplate, Loader2, Mic2, Music, Paintbrush, Rewind, RotateCw, Smile, Timer, Trash2, Type, Undo2, X } from 'lucide-react';
 import { TEMPLATES, templateById } from '@/lib/snaps/templates';
+import { CUTOUT_PREFIX, cutoutLibrary, makeCutout } from '@/lib/cutout';
 import { TRACKS, playTrack, trackById } from '@/lib/music/tracks';
 import { hasFx, processVideo, VOICES, type Voice } from '@/lib/media/videoFx';
 import { Sheet } from '@/components/ui/Sheet';
@@ -71,6 +72,25 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
   const [voice, setVoice] = useState<Voice>('none');
   const [panel, setPanel] = useState<'templates' | 'music' | 'voice' | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [cutouts, setCutouts] = useState<string[]>(() => cutoutLibrary.list());
+  const [cutBusy, setCutBusy] = useState(false);
+  function addCutout(dataUrl: string) {
+    setItems((l) => [...l, { id: crypto.randomUUID(), type: 'sticker', content: CUTOUT_PREFIX + dataUrl, x: 0.5, y: 0.5, size: 0.16, color: '#fff', style: 'plain' }]);
+    setStickers(false);
+    haptic(8);
+  }
+  async function newCutout(f: File) {
+    setCutBusy(true);
+    try {
+      const d = await makeCutout(f);
+      setCutouts(cutoutLibrary.add(d));
+      addCutout(d);
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setCutBusy(false);
+    }
+  }
   const stageVideo = useRef<HTMLVideoElement>(null);
   const tplCanvas = useRef<HTMLCanvasElement>(null);
 
@@ -321,7 +341,7 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
             className={cn('absolute -translate-x-1/2 -translate-y-1/2 cursor-move whitespace-pre text-center', selected === it.id && 'outline-dashed outline-1 outline-white/60')}
             style={{ left: `${it.x * 100}%`, top: `${it.y * 100}%`, fontSize: it.size * box.w, lineHeight: 1.2, ...itemStyle(it) }}
           >
-            {novaStickerId(it.content) ? <NovaEmoji id={novaStickerId(it.content)!} size={it.size * box.w * 1.15} /> : it.content}
+            {it.content.startsWith('img:') ? <img src={it.content.slice(4)} alt="" draggable={false} style={{ width: it.size * box.w * 2.4 }} /> : novaStickerId(it.content) ? <NovaEmoji id={novaStickerId(it.content)!} size={it.size * box.w * 1.15} /> : it.content}
           </div>
         ))}
       </div>
@@ -412,6 +432,16 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
       <AnimatePresence>{editing && <TextEditor item={editing} onDone={commitText} />}</AnimatePresence>
 
       <Sheet open={stickers} onClose={() => setStickers(false)} title="Stickers">
+        <p className="px-5 pb-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-ink-mute">Cut-outs</p>
+        <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3">
+          <label className="grid h-16 w-16 shrink-0 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-ink/20 text-center text-[10px] font-extrabold leading-tight">
+            {cutBusy ? <Loader2 className="h-5 w-5 animate-spin" /> : <>+ New<br />cut-out</>}
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void newCutout(f); }} />
+          </label>
+          {cutouts.map((c) => (
+            <button key={c.slice(-40)} onClick={() => { addCutout(c); }} className="h-16 w-16 shrink-0 rounded-2xl bg-[#F1F1F4] p-1" aria-label="Add cut-out sticker"><img src={c} alt="" className="h-full w-full object-contain" /></button>
+          ))}
+        </div>
         <div className="grid grid-cols-5 gap-1 px-4 pb-3">
           {NOVA_EMOJI_IDS.map((id) => (
             <button key={id} onClick={() => { setItems((l) => [...l, { id: crypto.randomUUID(), type: 'sticker', content: NOVA_STICKER_PREFIX + id, x: 0.5, y: 0.5, size: 0.22, color: '#fff', style: 'plain' }]); setStickers(false); haptic(8); }} className="grid aspect-square place-items-center rounded-2xl hover:bg-white/5 active:scale-90" aria-label={`Add ${id}`}>

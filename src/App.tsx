@@ -45,6 +45,8 @@ const SelfieAvatarScreen = lazy(() => import('@/features/avatar/selfie/SelfieAva
 const AvatarHomeScreen = lazy(() => import('@/features/avatar/AvatarHomeScreen'));
 const TwoStepPage = lazy(() => import('@/features/auth/TwoStepPage'));
 const TrophiesScreen = lazy(() => import('@/features/profile/TrophiesScreen'));
+const SharedAlbumsScreen = lazy(() => import('@/features/reels/SharedAlbumsScreen'));
+const AvatarCamScreen = lazy(() => import('@/features/avatar/AvatarCamScreen'));
 const ProfilePhotoScreen = lazy(() => import('@/features/profile/ProfilePhotoScreen'));
 
 /** Hooks the native shell (status bar, splash, Android back button) into routing. */
@@ -70,6 +72,10 @@ function NativeBridge() {
   // Live locations shared in chats keep following me while the app is open.
   useEffect(() => {
     if (uid) liveShare.resume(uid);
+  }, [uid]);
+  // Publish this device's secret-chat key (end-to-end encryption) once.
+  useEffect(() => {
+    if (uid) void import('@/lib/e2e').then((m) => m.ensureMyKey(uid)).catch(() => undefined);
   }, [uid]);
   return null;
 }
@@ -132,6 +138,9 @@ export default function App() {
             <Route path="friends" element={<FriendsScreen />} />
             <Route path="birthdays" element={<BirthdaysScreen />} />
             <Route path="trophies" element={<TrophiesScreen />} />
+            <Route path="albums" element={<SharedAlbumsScreen />} />
+            <Route path="albums/:id" element={<SharedAlbumsScreen />} />
+            <Route path="avatar/cam" element={<AvatarCamScreen />} />
             <Route path="calls" element={<CallsScreen />} />
             <Route path="notifications" element={<NotificationsScreen />} />
             <Route path="avatar" element={<AvatarStudio />} />

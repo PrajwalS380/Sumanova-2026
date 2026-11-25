@@ -14,7 +14,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        noir: { DEFAULT: '#ECECEF', 950: '#FFFFFF', 900: '#ECECEF', 800: '#FFFFFF', 700: '#F1F1F4', 600: '#E6E6EB', 500: '#D6D6DC' },
+        noir: { DEFAULT: 'rgb(var(--canvas) / <alpha-value>)', 950: '#FFFFFF', 900: 'rgb(var(--canvas) / <alpha-value>)', 800: '#FFFFFF', 700: '#F1F1F4', 600: '#E6E6EB', 500: '#D6D6DC' },
         ember: {
           flame: 'rgb(var(--accent) / <alpha-value>)',
           amber: 'rgb(var(--accent) / <alpha-value>)',

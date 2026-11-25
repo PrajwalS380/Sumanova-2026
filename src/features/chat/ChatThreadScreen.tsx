@@ -18,6 +18,7 @@ import { cn } from '@/lib/cn';
 import { Composer } from './Composer';
 import { MessageBubble, type Receipt } from './MessageBubble';
 import { CHAT_THEMES, QUICK_REACTIONS } from './themes';
+import { AVATAR_REACTIONS, MyAvatarFace, NOVA_REACTIONS, ReactionGlyph } from './extras/AvatarReaction';
 import { useConversation } from './useConversation';
 import { useSnapStatuses } from '@/features/snaps/useSnapStatuses';
 import { snapTileState } from '@/features/snaps/SnapTile';
@@ -364,6 +365,17 @@ export default function ChatThreadScreen() {
                   </button>
                 );
               })}
+            </div>
+            <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pb-2">
+              {NOVA_REACTIONS.map((e) => (
+                <button key={e} onClick={() => { haptic(10); void safe(() => conv.react(menu.id, e)); setMenu(null); }} aria-label="React with a Nova emoji" className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#F1F1F4] active:scale-90"><ReactionGlyph value={e} userId={me} size={30} /></button>
+              ))}
+            </div>
+            <p className="px-5 pb-1 text-[11px] font-extrabold uppercase tracking-[0.12em] text-ink-mute">React as your avatar</p>
+            <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pb-3">
+              {AVATAR_REACTIONS.map((x) => (
+                <button key={x} onClick={() => { haptic(10); void safe(() => conv.react(menu.id, `av:${x}`)); setMenu(null); }} aria-label={`React as your avatar: ${x}`} className="shrink-0 rounded-2xl bg-[#F1F1F4] p-1 active:scale-90"><MyAvatarFace userId={me} expression={x} size={44} /></button>
+              ))}
             </div>
             <SheetItem icon={<Reply className="h-4 w-4" />} label="Reply" onClick={() => { setReplyTo(menu); setMenu(null); }} />
             {menu.body && menu.kind === 'text' && <SheetItem icon={<Copy className="h-4 w-4" />} label="Copy text" onClick={() => { void navigator.clipboard?.writeText(menu.body ?? ''); toast('Copied', 'success'); setMenu(null); }} />}

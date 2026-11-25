@@ -98,16 +98,15 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
 - Commit as `PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com>`; no model names in commits.
 
 ## Feature checklist build (owner said "approve all", 2026-11-25; then "finish all batches end to end without asking")
-Done: batch 1 (contacts/phone/PYMK/badges), Nova emoji + lenses, batch 2 (polls, live location, scheduled msgs,
-moving + avatar stickers, chat screenshot alerts), batch 3 (group calls, mesh ≤6).
-Remaining, in order: batch 4 camera (lens browser, background blur/replace + hair colour via bundled MediaPipe
-segmenters in public/mediapipe, makeup, distortions, night mode, front flash, video speed/reverse/multi-clip/voice
-changer, original synthesized music on snaps, snap templates) → batch 5 (group/private stories, @mentions, Places (OSM),
-heat map, explored areas/travel/battery, passcode private memories, memory search, hashtags/trending sounds/creator
-stats, remix) → batch 6 (snap score, trophies, TOTP 2FA, login alerts + devices, data download, birthday
-notifications, closed-app Android push needs owner Firebase) → batch 7 (B1–B13). After each batch: migration +
-rolled-back test, typecheck/test/build, commit, push, Vercel deploy, APK link. If an approval is blocked, record it in
-`docs/PENDING_OWNER_ACTIONS.md` and keep going.
+All 7 batches done (2026-11-25): batch 1 (contacts/phone/PYMK/badges), Nova emoji + lenses, batch 2 (polls, live
+location, scheduled msgs, avatar stickers, screenshot alerts), batch 3 (group calls, mesh ≤6), batch 4 camera (lens
+browser, MediaPipe segmenters, night/flash, video speed/reverse/voice FX, synthesized music, templates), batch 5 (group/
+private stories, @mentions, Places via Overpass, heat map, travel/battery, vault memories, search, hashtags, remix),
+batch 6 (score, trophies, TOTP 2FA + `mfa_ok()` RLS gate, login alerts, data download, birthdays), batch 7 B1–B13
+(hangouts, chat games, secret e2e chats `lib/e2e.ts`, avatar reactions, cutout stickers, offline chat cache, dictation,
+reels + shared albums, Avatar Cam, map mood + safety check-in, canvas themes `--canvas` + Android app icons via
+activity-aliases + `AppIconPlugin`). Only open item: closed-app Android push (owner Firebase) — see
+`docs/PENDING_OWNER_ACTIONS.md`.
 
 ## Sandbox limits (this cloud environment)
 Outbound network to supabase.co / vercel.app is blocked from the shell; use Supabase MCP (`execute_sql`) and Vercel

@@ -8,6 +8,7 @@
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     /* Accent (user-selectable in Settings, see lib/accent.ts) as RGB channels. */
+    --canvas: 236 236 239;
     --accent: 17 17 17;
     --accent-from: 17 17 17;
     --accent-to: 17 17 17;
@@ -101,3 +102,5 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .snv-place { display: flex; align-items: center; gap: 4px; }
 .snv-place .dot { width: 12px; height: 12px; border-radius: 999px; background: #18C48C; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(17,17,17,.3); flex: none; }
 .snv-place .nm { max-width: 118px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 7px; border-radius: 8px; background: rgba(255,255,255,.92); color: #111; font: 800 10.5px 'Inter Variable', system-ui, sans-serif; }
+.snv-fig { position: relative; }
+.snv-mood { position: absolute; top: -6px; right: 14px; width: 30px; height: 30px; filter: drop-shadow(0 2px 4px rgba(17,17,17,.3)); }

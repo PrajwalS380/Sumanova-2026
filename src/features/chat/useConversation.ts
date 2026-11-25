@@ -1,3 +1,4 @@
+import { offlineCache } from '@/lib/chat/offlineCache';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -64,8 +65,19 @@ export function useConversation(conversationId: string, me: string) {
       const pending = outbox.forConversation(conversationId).map((m) => ({ ...m, sender_id: me, disappear_mode: 'never', expires_at: null, edited_at: null, deleted_at: null, local: 'failed' }) as LocalMessage);
       setLocal(pending);
       setError(null);
+      offlineCache.saveChat(me, conversationId, { info: conv, members: mem, people: Object.fromEntries(profs.map((x) => [x.id, x])), messages: msgs });
     } catch (e) {
-      setError((e as Error).message);
+      // Offline: read the last messages kept on this phone (sending still queues in the outbox).
+      const snap = !navigator.onLine || /fetch|network/i.test((e as Error).message) ? offlineCache.loadChat<Message>(me, conversationId) : null;
+      if (snap) {
+        setInfo(snap.info as ConversationInfo);
+        setMembers(snap.members as Member[]);
+        setPeople(snap.people as Record<string, PublicProfile>);
+        setServer(snap.messages);
+        setHasMore(false);
+        setLocal(outbox.forConversation(conversationId).map((m) => ({ ...m, sender_id: me, disappear_mode: 'never', expires_at: null, edited_at: null, deleted_at: null, local: 'failed' }) as LocalMessage));
+        setError(null);
+      } else setError((e as Error).message);
     } finally {
       setLoading(false);
     }

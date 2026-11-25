@@ -16,6 +16,9 @@ export interface Profile {
   avatar_face_url?: string | null;
   /** true while avatar_url is a selfie / gallery photo */
   photo_mode?: boolean;
+  mood_emoji?: string | null;
+  mood_text?: string | null;
+  mood_until?: string | null;
   created_at: string;
   updated_at: string;
 }

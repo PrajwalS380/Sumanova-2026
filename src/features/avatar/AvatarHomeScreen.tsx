@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Image as ImageIcon, Paintbrush, Shirt, Sparkles, Users } from 'lucide-react';
+import { ChevronLeft, Image as ImageIcon, Images, Paintbrush, Shirt, Sparkles, Users, Video } from 'lucide-react';
 import { AvatarFigure } from '@/components/AvatarFigure';
 import { Scene, SCENES } from '@/components/Scene';
 import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
@@ -16,6 +16,8 @@ const ACTIONS = [
   { to: '/avatar/selfie', label: 'From a selfie', sub: 'Rebuild it from your face', icon: Sparkles, bg: 'bg-ember-rose text-white' },
   { to: '/avatar/duo', label: 'Duo', sub: 'Pose with a friend', icon: Users, bg: 'bg-ember-sky text-white' },
   { to: '/profile/photo', label: 'Profile picture', sub: 'Avatar face or selfie', icon: ImageIcon, bg: 'bg-white text-ink' },
+  { to: '/avatar/cam', label: 'Avatar Cam', sub: 'Your avatar copies your face', icon: Video, bg: 'bg-ember-sage text-white' },
+  { to: '/albums', label: 'Shared albums', sub: 'Photos with friends + recaps', icon: Images, bg: 'bg-ember-plum text-white' },
 ];
 
 /** My avatar (wireframe 8): my full-body avatar in my scene, scene picker, ways to restyle. */

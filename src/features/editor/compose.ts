@@ -1,7 +1,17 @@
 import type { Template } from '@/lib/snaps/templates';
 import { loadNovaEmoji, novaEmojiImage, novaStickerId } from '@/components/emoji/novaEmoji';
 
-const loadStickers = (items: OverlayItem[]) => Promise.all(items.map((it) => novaStickerId(it.content)).filter((x) => x !== null).map((id) => loadNovaEmoji(id!)));
+const cutouts = new Map<string, HTMLImageElement>();
+const loadStickers = (items: OverlayItem[]) =>
+  Promise.all([
+    ...items.map((it) => novaStickerId(it.content)).filter((x) => x !== null).map((id) => loadNovaEmoji(id!)),
+    ...items.filter((it) => it.content.startsWith('img:') && !cutouts.has(it.content)).map(async (it) => {
+      const img = new Image();
+      img.src = it.content.slice(4);
+      await img.decode().catch(() => undefined);
+      cutouts.set(it.content, img);
+    }),
+  ]);
 import { filterById, paintTint } from '@/lib/snaps/filters';
 
 export interface OverlayItem {
@@ -56,7 +66,12 @@ function drawItems(ctx: CanvasRenderingContext2D, items: OverlayItem[], w: numbe
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const nova = it.type === 'sticker' ? novaStickerId(it.content) : null;
-    if (nova) {
+    const cut = it.type === 'sticker' && it.content.startsWith('img:') ? cutouts.get(it.content) : null;
+    if (cut && cut.naturalWidth) {
+      // Cut-out sticker: size = its width as a fraction of the picture.
+      const sw = px * 2.4, sh = (sw * cut.naturalHeight) / cut.naturalWidth;
+      ctx.drawImage(cut, cx - sw / 2, cy - sh / 2, sw, sh);
+    } else if (nova) {
       const img = novaEmojiImage(nova);
       const s = px * 1.15;
       if (img) ctx.drawImage(img, cx - s / 2, cy - s / 2, s, s);

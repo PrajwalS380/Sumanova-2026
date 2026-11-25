@@ -227,7 +227,7 @@ export default function FriendsScreen() {
                 {friends === null ? (
                   <SkeletonRows />
                 ) : friends.length === 0 ? (
-                  <div className="mt-2 rounded-3xl bg-[#ECECEF] p-6 text-center">
+                  <div className="mt-2 rounded-3xl bg-noir p-6 text-center">
                     <p className="font-medium">No friends yet</p>
                     <p className="mt-1 text-sm text-ink-mute">Search for a username above to send your first request.</p>
                   </div>

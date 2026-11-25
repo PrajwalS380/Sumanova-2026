@@ -108,6 +108,9 @@ export default function ProfileScreen() {
           ) : (
             <Link to="/settings" className={cn(chip, 'bg-white text-ink')}><NovaEmoji id="cake" size={16} /> Add birthday</Link>
           )}
+          {profile?.mood_emoji && profile.mood_until && new Date(profile.mood_until).getTime() > Date.now() && (
+            <Link to="/map" className={cn(chip, 'bg-white text-ink')}><NovaEmoji id={profile.mood_emoji as never} size={16} /> {profile.mood_text ?? 'My mood'}</Link>
+          )}
           {score !== null && <Link to="/trophies" className={cn(chip, 'bg-[#111111] text-white')}><NovaEmoji id="nova" size={16} /> {score.toLocaleString()} · Trophies</Link>}
           {sign && <Link to="/birthdays?tab=zodiac" className={cn(chip, 'bg-[#111111] text-white')}>{sign.glyph} {sign.name}</Link>}
           {best > 0 && <span className={cn(chip, 'bg-ember-gold text-ink')}><NovaEmoji id="flame" size={16} /> {best} best</span>}

@@ -1,3 +1,7 @@
+import { AnimatePresence } from 'framer-motion';
+import { Clapperboard } from 'lucide-react';
+import { ReelBuilder } from '@/features/reels/ReelBuilder';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Camera, ChevronLeft, Loader2, MessageCircle, Settings } from 'lucide-react';
@@ -35,6 +39,7 @@ export default function BirthdaysScreen() {
   }, [toast]);
 
   const today = useMemo(() => (list ?? []).filter((b) => b.inDays === 0), [list]);
+  const [reelFor, setReelFor] = useState<string | null>(null);
   const upcoming = useMemo(() => (list ?? []).filter((b) => b.inDays > 0 && b.inDays <= 60), [list]);
   const recent = useMemo(() => (list ?? []).filter((b) => b.inDays >= 335).sort((a, b) => b.inDays - a.inDays), [list]);
   const later = useMemo(() => (list ?? []).filter((b) => b.inDays > 60 && b.inDays < 335), [list]);
@@ -83,7 +88,7 @@ export default function BirthdaysScreen() {
             {today.map((b) => (
               <div key={b.user_id} className={cn('mt-3 rounded-tile bg-ember-rose p-4 text-white', GHOST_HOST)}>
                 <Ghost url={b.avatar_url} size={180} opacity={0.3} className="-bottom-10 -right-8 top-auto" />
-                <span className="eyebrow text-white/85">Today 🎂</span>
+                <span className="eyebrow flex items-center gap-1 text-white/85">Today <NovaEmoji id="cake" size={16} /></span>
                 <div className="mt-1 flex items-center gap-3">
                   <Avatar name={b.display_name} url={b.avatar_url} aura={b.aura_color} size={58} />
                   <span className="font-display text-[26px] leading-none">{b.display_name}’s birthday</span>
@@ -94,6 +99,7 @@ export default function BirthdaysScreen() {
                     {opening === b.user_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}Wish in chat
                   </button>
                 </div>
+                <button onClick={() => setReelFor(b.display_name)} className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-white/20 px-3.5 py-2 text-sm font-extrabold text-white"><Clapperboard className="h-4 w-4" /> Make a birthday reel</button>
               </div>
             ))}
             <List title="Coming up" items={upcoming} empty={list.length === 0 ? 'When friends add their birthday, it shows up here.' : 'No birthdays in the next two months.'} onWish={wish} opening={opening} />
@@ -152,6 +158,7 @@ export default function BirthdaysScreen() {
           </>
         )}
       </div>
+      <AnimatePresence>{reelFor && <ReelBuilder title={`Happy birthday, ${reelFor.split(' ')[0]}!`} subtitle="Made with love on SUMANOVA" emoji="cake" onClose={() => setReelFor(null)} />}</AnimatePresence>
     </div>
   );
 }

@@ -56,3 +56,40 @@ export function setAccent(id: string) {
   applyAccent(a);
   return a;
 }
+
+/** Page canvas ("background theme"): the soft tone behind the white tiles. */
+export interface Canvas { id: string; label: string; hex: string }
+export const CANVASES: Canvas[] = [
+  { id: 'grey', label: 'Soft grey', hex: '#ECECEF' },
+  { id: 'blush', label: 'Blush', hex: '#F6E7EE' },
+  { id: 'sky', label: 'Sky', hex: '#E3ECF7' },
+  { id: 'mint', label: 'Mint', hex: '#E2F1EA' },
+  { id: 'lilac', label: 'Lilac', hex: '#ECE6F7' },
+  { id: 'sand', label: 'Sand', hex: '#F3EDE3' },
+];
+const CANVAS_KEY = 'snv-canvas';
+
+export function getCanvas(): Canvas {
+  try {
+    const id = localStorage.getItem(CANVAS_KEY);
+    return CANVASES.find((c) => c.id === id) ?? CANVASES[0];
+  } catch {
+    return CANVASES[0];
+  }
+}
+
+export function applyCanvas(c: Canvas = getCanvas()) {
+  document.documentElement.style.setProperty('--canvas', rgb(c.hex));
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', c.hex);
+}
+
+export function setCanvas(id: string) {
+  const c = CANVASES.find((x) => x.id === id) ?? CANVASES[0];
+  try {
+    localStorage.setItem(CANVAS_KEY, c.id);
+  } catch {
+    /* applies for this session */
+  }
+  applyCanvas(c);
+  return c;
+}

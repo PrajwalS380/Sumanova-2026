@@ -16,6 +16,7 @@ import { LocationCard } from './extras/LocationCard';
 import { HangoutCard } from './extras/HangoutCard';
 import { GameCard } from './extras/GameCard';
 import { E2EText } from './extras/E2EText';
+import { ReactionGlyph } from './extras/AvatarReaction';
 
 export type Receipt = 'sending' | 'failed' | 'sent' | 'delivered' | 'seen' | null;
 
@@ -133,11 +134,15 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           {isMedia && m.body && <p className="px-2 pb-1 pt-1.5 text-[14px]">{m.body}</p>}
         </div>
 
-        {Object.keys(counts).length > 0 && (
-          <div className={cn('relative z-10 -mt-1.5 flex gap-1', mine ? 'mr-2' : 'ml-2')}>
-            {Object.entries(counts).map(([e, n]) => (
+        {p.reactions.length > 0 && (
+          <div className={cn('relative z-10 -mt-1.5 flex flex-wrap gap-1', mine ? 'mr-2' : 'ml-2')}>
+            {/* Avatar reactions show each person's own avatar; others group by emoji. */}
+            {p.reactions.filter((r) => r.emoji.startsWith('av:')).map((r) => (
+              <span key={r.user_id} className="flex items-center rounded-full bg-white p-0.5 shadow-sm"><ReactionGlyph value={r.emoji} userId={r.user_id} size={20} /></span>
+            ))}
+            {Object.entries(counts).filter(([e]) => !e.startsWith('av:')).map(([e, n]) => (
               <span key={e} className="flex items-center gap-0.5 rounded-xl bg-white px-1.5 py-0.5 text-xs shadow-sm">
-                {e}
+                <ReactionGlyph value={e} userId="" size={16} />
                 {n > 1 && <span className="text-[10px] text-ink-mute">{n}</span>}
               </span>
             ))}

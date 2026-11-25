@@ -3,7 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { BatteryLow, Check, Ghost, Layers, Loader2, LocateFixed, Navigation, Search, ShieldCheck, Sun, Users } from 'lucide-react';
+import { NOVA_EMOJI_IDS, novaEmojiUrl, type NovaEmojiId } from '@/components/emoji/novaEmoji';
+import { NovaEmoji } from '@/components/emoji/NovaEmoji';
+import { supabase } from '@/lib/supabase';
+import { BatteryLow, Check, ShieldAlert, Smile, Ghost, Layers, Loader2, LocateFixed, Navigation, Search, ShieldCheck, Sun, Users } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { StoryViewer } from '@/features/stories/StoryViewer';
 import { chatApi } from '@/lib/chat/api';
@@ -25,7 +28,7 @@ const DURATIONS = [{ m: 15, l: '15 min' }, { m: 60, l: '1 hour' }, { m: 480, l: 
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 /** Map pin: the person's full-body avatar standing on the map with a "Name · time" tag (face circle if no body picture yet). */
-function pin(f: { display_name: string; avatar_url: string | null; avatar_body_url?: string | null; aura_color: keyof typeof AURA }, tag: string, me = false) {
+function pin(f: { display_name: string; avatar_url: string | null; avatar_body_url?: string | null; aura_color: keyof typeof AURA }, tag: string, me = false, mood?: string | null) {
   const a = AURA[f.aura_color] ?? AURA.violet;
   const initials = escape(f.display_name.split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase());
   const ok = (u?: string | null) => !!u && /^https:\/\//.test(u);
@@ -37,7 +40,7 @@ function pin(f: { display_name: string; avatar_url: string | null; avatar_body_u
     className: '',
     iconSize: [110, h],
     iconAnchor: [55, h],
-    html: `<div class="snv-fig">${figure}<span class="snv-tag${me ? ' me' : ''}">${escape(tag)}</span></div>`,
+    html: `<div class="snv-fig">${mood && (NOVA_EMOJI_IDS as string[]).includes(mood) ? `<img class="snv-mood" src="${novaEmojiUrl(mood as NovaEmojiId)}" alt=""/>` : ''}${figure}<span class="snv-tag${me ? ' me' : ''}">${escape(tag)}</span></div>`,
   });
 }
 
@@ -53,7 +56,7 @@ function tagFor(f: FriendLocation, live: boolean) {
 }
 
 export default function MapScreen() {
-  const { privacy, setPrivacy, profile } = useAuth();
+  const { privacy, setPrivacy, profile, setProfile } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const el = useRef<HTMLDivElement>(null);
@@ -79,6 +82,16 @@ export default function MapScreen() {
   const [place, setPlace] = useState<Place | null>(null);
   const [exploredCount, setExploredCount] = useState<number | null>(null);
   const [storyRings, setStoryRings] = useState<StoryRing[] | null>(null);
+  // Moods (Nova emoji + a few words, 24 h) and safety check-in.
+  const [moods, setMoods] = useState<Record<string, { emoji: string | null; text: string | null }>>({});
+  const [moodSheet, setMoodSheet] = useState(false);
+  const [moodPick, setMoodPick] = useState<string>('smitten');
+  const [moodText, setMoodText] = useState('');
+  const [safetySheet, setSafetySheet] = useState(false);
+  const [safetyFriends, setSafetyFriends] = useState<Set<string>>(new Set());
+  const [safetyMins, setSafetyMins] = useState(60);
+  const [safetyNote, setSafetyNote] = useState('');
+  const [checkin, setCheckin] = useState<{ id: string; due_at: string } | null>(null);
   const layerGroups = useRef<{ heat: L.LayerGroup; places: L.LayerGroup; explored: L.LayerGroup } | null>(null);
 
   // Init map once.
@@ -116,6 +129,57 @@ export default function MapScreen() {
     return () => clearInterval(t);
   }, [loadFriends]);
 
+  // Friends' moods (still valid) for their pins.
+  useEffect(() => {
+    const ids = friendsOnMap.map((f) => f.user_id);
+    if (!ids.length) return;
+    void supabase.from('profiles').select('id,mood_emoji,mood_text,mood_until').in('id', ids).then(({ data }) => {
+      const now = Date.now();
+      setMoods(Object.fromEntries((data ?? []).filter((p) => p.mood_until && new Date(p.mood_until as string).getTime() > now).map((p) => [p.id as string, { emoji: p.mood_emoji as string | null, text: p.mood_text as string | null }])));
+    });
+  }, [friendsOnMap]);
+  useEffect(() => {
+    if (!profile) return;
+    void supabase.from('safety_checkins').select('id,due_at').eq('user_id', profile.id).is('checked_in_at', null).is('alerted_at', null).order('created_at', { ascending: false }).limit(1).maybeSingle().then(({ data }) => setCheckin((data as { id: string; due_at: string } | null) ?? null));
+  }, [profile]);
+
+  async function saveMood(clear = false) {
+    if (!profile) return;
+    const patch = clear ? { mood_emoji: null, mood_text: null, mood_until: null } : { mood_emoji: moodPick, mood_text: moodText.trim().slice(0, 40) || null, mood_until: new Date(Date.now() + 86_400_000).toISOString() };
+    const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id);
+    if (error) return toast(error.message, 'error');
+    setProfile({ ...profile, ...patch } as typeof profile);
+    setMoodSheet(false);
+    toast(clear ? 'Mood cleared' : 'Mood set for 24 hours', 'success');
+  }
+  async function startCheckin() {
+    setBusy(true);
+    try {
+      const due = new Date(Date.now() + safetyMins * 60_000);
+      const { data, error } = await supabase.rpc('start_safety_checkin', { p_friends: [...safetyFriends], p_due: due.toISOString(), p_note: safetyNote.trim() || null });
+      if (error) throw new Error(error.message);
+      // Share my location with them until a little after the deadline.
+      const p = await getPosition().catch(() => null);
+      if (p) {
+        await mapApi.start({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy, minutes: safetyMins + 30, precise: true, audience: 'selected', friends: [...safetyFriends] });
+        setMine(await mapApi.mine());
+      }
+      setCheckin({ id: data as string, due_at: due.toISOString() });
+      setSafetySheet(false);
+      toast('Safety check-in started — tap “I’m safe” when you arrive', 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function imSafe() {
+    const { error } = await supabase.rpc('finish_safety_checkin');
+    if (error) return toast(error.message, 'error');
+    setCheckin(null);
+    toast('Your friends know you’re safe', 'success');
+  }
+
   // Draw friend markers (diffed, so panning stays smooth).
   useEffect(() => {
     const m = map.current;
@@ -127,9 +191,9 @@ export default function MapScreen() {
       const existing = markers.current.get(f.user_id);
       if (existing) {
         existing.setLatLng([f.lat, f.lng]);
-        existing.setIcon(pin(f, tagFor(f, live)));
+        existing.setIcon(pin(f, tagFor(f, live), false, moods[f.user_id]?.emoji));
       } else {
-        const mk = L.marker([f.lat, f.lng], { icon: pin(f, tagFor(f, live)) }).addTo(m).on('click', () => setSelected(f));
+        const mk = L.marker([f.lat, f.lng], { icon: pin(f, tagFor(f, live), false, moods[f.user_id]?.emoji) }).addTo(m).on('click', () => setSelected(f));
         markers.current.set(f.user_id, mk);
       }
     }
@@ -139,7 +203,7 @@ export default function MapScreen() {
         markers.current.delete(id);
       }
     }
-  }, [friendsOnMap]);
+  }, [friendsOnMap, moods]);
 
   // My own pin while sharing.
   useEffect(() => {
@@ -417,10 +481,61 @@ export default function MapScreen() {
         </div>
       </Sheet>
 
+      {checkin && (
+        <div className="absolute inset-x-3.5 top-[calc(var(--safe-top)+4rem)] z-[500] flex items-center gap-3 rounded-tile bg-[#111111] px-4 py-3 text-white">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-ember-gold" />
+          <span className="flex-1 text-sm font-bold">Check in by {new Date(checkin.due_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+          <button onClick={() => void imSafe()} className="rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-ink">I’m safe</button>
+        </div>
+      )}
+
+      <Sheet open={moodSheet} onClose={() => setMoodSheet(false)} title="Your mood">
+        <div className="space-y-3 px-4 pb-6">
+          <div className="grid grid-cols-6 gap-1.5">
+            {(['smitten', 'wow', 'blush', 'shades', 'halo', 'devil', 'flame', 'sparkle', 'hourglass', 'kitty', 'alien', 'cake'] as NovaEmojiId[]).map((id) => (
+              <button key={id} onClick={() => setMoodPick(id)} aria-pressed={moodPick === id} className={cn('grid aspect-square place-items-center rounded-2xl', moodPick === id ? 'bg-ink' : 'bg-[#F1F1F4]')}><NovaEmoji id={id} size={36} /></button>
+            ))}
+          </div>
+          <input value={moodText} onChange={(e) => setMoodText(e.target.value.slice(0, 40))} placeholder="A few words (optional) — e.g. studying, at the beach" aria-label="Mood words" className="h-12 w-full rounded-2xl bg-[#F1F1F4] px-4 text-[15px] font-semibold outline-none" />
+          <p className="px-1 text-xs text-ink-mute">Friends see it on your map pin and profile for 24 hours.</p>
+          <button onClick={() => void saveMood()} className="h-12 w-full rounded-2xl bg-ink text-[15px] font-extrabold text-white">Set mood</button>
+          {profile?.mood_emoji && <button onClick={() => void saveMood(true)} className="w-full py-1 text-sm font-bold text-ink-mute">Clear mood</button>}
+        </div>
+      </Sheet>
+
+      <Sheet open={safetySheet} onClose={() => setSafetySheet(false)} title="Safety check-in">
+        <div className="space-y-3 px-4 pb-6">
+          <p className="px-1 text-sm text-ink-mute">Pick friends and a time. They see your location until then, and get an alert with your last location if you haven’t checked in.</p>
+          <div className="grid grid-cols-4 gap-2">
+            {[30, 60, 120, 240].map((m) => (
+              <button key={m} onClick={() => setSafetyMins(m)} className={cn('rounded-2xl py-2.5 text-sm font-extrabold', safetyMins === m ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>{m < 60 ? `${m} min` : `${m / 60} h`}</button>
+            ))}
+          </div>
+          <input value={safetyNote} onChange={(e) => setSafetyNote(e.target.value.slice(0, 140))} placeholder="Note (optional) — e.g. Walking home from the station" aria-label="Note" className="h-12 w-full rounded-2xl bg-[#F1F1F4] px-4 text-[15px] font-semibold outline-none" />
+          <ul className="max-h-48 space-y-1 overflow-y-auto">
+            {friends.map((f) => {
+              const on = safetyFriends.has(f.id);
+              return (
+                <li key={f.id}>
+                  <button onClick={() => setSafetyFriends((s) => { const n = new Set(s); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left', on ? 'bg-ink/10' : '')}>
+                    <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={34} />
+                    <span className="flex-1 text-sm font-bold">{f.display_name}</span>
+                    {on && <Check className="h-4 w-4 text-ember-sage" />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <button onClick={() => void startCheckin()} disabled={busy || safetyFriends.size === 0} className="flex h-12 w-full items-center justify-center rounded-2xl bg-ember-rose text-[15px] font-extrabold text-white disabled:opacity-50">{busy ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Start check-in'}</button>
+        </div>
+      </Sheet>
+
       <Sheet open={layersOpen} onClose={() => setLayersOpen(false)} title="Map layers">
         <div className="mx-4 mb-6 overflow-hidden rounded-2xl bg-[#F1F1F4]">
           <Toggle label="Public stories" description="Heat of public stories posted around here today — tap a spot to watch" checked={layers.heat} onChange={(v) => setLayers((l) => ({ ...l, heat: v }))} />
           <Toggle label="Places" description="Cafés, parks and sights from OpenStreetMap (zoom in)" checked={layers.places} onChange={(v) => setLayers((l) => ({ ...l, places: v }))} />
+          <button onClick={() => { setLayersOpen(false); setMoodSheet(true); }} className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-[15px] font-medium"><Smile className="h-5 w-5" /> <span className="flex-1">Set my mood</span></button>
+          <button onClick={() => { setLayersOpen(false); setSafetySheet(true); }} className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-[15px] font-medium"><ShieldAlert className="h-5 w-5 text-ember-rose" /> <span className="flex-1">Safety check-in</span></button>
           <Toggle label="Explored" description={exploredCount === null ? 'Areas you’ve shared your location from' : `You’ve explored ${exploredCount} area${exploredCount === 1 ? '' : 's'} (about ${exploredCount} km²)`} checked={layers.explored} onChange={(v) => setLayers((l) => ({ ...l, explored: v }))} />
         </div>
       </Sheet>

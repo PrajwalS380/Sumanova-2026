@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
@@ -34,6 +35,9 @@ export function LensBrowser({ current, onPick, onClose }: { current: string | nu
         ))}
       </div>
       <div className="grid grid-cols-4 gap-2 overflow-y-auto px-4 pb-2">
+        <Link to="/avatar/cam" className="flex flex-col items-center gap-1 rounded-2xl bg-ember-sage p-2 text-center text-[11px] font-bold leading-tight text-white">
+          <NovaEmoji id="nova" size={48} />Avatar Cam
+        </Link>
         <button onClick={() => onPick(null)} className={cn('flex flex-col items-center gap-1 rounded-2xl p-2 text-[11px] font-bold', !current ? 'bg-white/20 ring-2 ring-white' : 'bg-white/[0.06]')}>
           <span className="grid h-12 w-12 place-items-center rounded-xl bg-white/10 text-xs">Off</span>No lens
         </button>

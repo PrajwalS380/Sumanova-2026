@@ -15,7 +15,9 @@ import type { PrivacySettings, UserSettings } from '@/lib/types';
 import { brand } from '@/config/brand';
 import { ChevronLeft, Palette, UserRound } from 'lucide-react';
 import { Ghost } from '@/components/ui/Ghost';
-import { ACCENTS, getAccent, setAccent } from '@/lib/accent';
+import { ACCENTS, CANVASES, getAccent, getCanvas, setAccent, setCanvas } from '@/lib/accent';
+import { APP_ICONS, appIconSupported, getAppIcon, setAppIcon, type AppIconId } from '@/lib/appIcon';
+import { platform } from '@/lib/platform';
 import { ContactSyncToggle, PhoneRow } from './PhoneRows';
 import { SecuritySection } from './SecuritySection';
 import { KeyRound } from 'lucide-react';
@@ -36,6 +38,78 @@ function AccentPicker() {
             className="h-[26px] w-[26px] rounded-full transition-transform active:scale-90"
             style={{ background: a.main, boxShadow: cur === a.id ? `0 0 0 2px #fff, 0 0 0 4px ${a.main}` : undefined }}
           />
+        ))}
+      </span>
+    </div>
+  );
+}
+
+function CanvasPicker() {
+  const [cur, setCur] = useState(() => getCanvas().id);
+  async function pick(id: string) {
+    const c = setCanvas(id);
+    setCur(c.id);
+    if (isNative && platform === 'android') {
+      const { StatusBar } = await import('@capacitor/status-bar');
+      await StatusBar.setBackgroundColor({ color: c.hex }).catch(() => undefined);
+    }
+  }
+  return (
+    <div className="flex items-center gap-3 px-3.5 py-[13px]">
+      <span className="flex-1 text-[15px] font-semibold">Background</span>
+      <span className="flex gap-1.5">
+        {CANVASES.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            aria-label={c.label}
+            aria-pressed={cur === c.id}
+            onClick={() => void pick(c.id)}
+            className="h-[26px] w-[26px] rounded-full border border-ink/15 transition-transform active:scale-90"
+            style={{ background: c.hex, boxShadow: cur === c.id ? '0 0 0 2px #fff, 0 0 0 4px #111' : undefined }}
+          />
+        ))}
+      </span>
+    </div>
+  );
+}
+
+function AppIconPicker() {
+  const toast = useToast();
+  const [cur, setCur] = useState<AppIconId | null>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    void getAppIcon().then((i) => {
+      setCur(i);
+      setReady(i !== null);
+    });
+  }, []);
+  if (!appIconSupported || !ready) return null;
+  async function pick(id: AppIconId) {
+    try {
+      await setAppIcon(id);
+      setCur(id);
+      toast('App icon changed — your home screen may take a moment to update', 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
+  return (
+    <div className="flex items-center gap-3 px-3.5 py-[13px]">
+      <span className="flex-1 text-[15px] font-semibold">App icon</span>
+      <span className="flex gap-1.5">
+        {APP_ICONS.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            aria-label={`${a.id} icon`}
+            aria-pressed={cur === a.id}
+            onClick={() => void pick(a.id)}
+            className="grid h-[26px] w-[26px] place-items-center rounded-[8px] transition-transform active:scale-90"
+            style={{ background: a.hex, boxShadow: cur === a.id ? `0 0 0 2px #fff, 0 0 0 4px ${a.hex}` : undefined }}
+          >
+            <svg viewBox="7 7 50 50" className="h-[18px] w-[18px]" aria-hidden><path d="M32 7C37.8 20 44 26.2 57 32 44 37.8 37.8 44 32 57 26.2 44 20 37.8 7 32 20 26.2 26.2 20 32 7Z" fill="#fff" stroke="#111" strokeWidth="4" strokeLinejoin="round" /></svg>
+          </button>
         ))}
       </span>
     </div>
@@ -161,6 +235,8 @@ export default function SettingsScreen() {
         {settings && (
           <Section title="Look & feel" icon={<Palette className="h-3.5 w-3.5" />}>
             <AccentPicker />
+            <CanvasPicker />
+            <AppIconPicker />
             <Toggle label="Reduce motion" description="Calmer transitions and no background animation" checked={settings.reduce_motion} onChange={(v) => updateSettings({ reduce_motion: v })} />
             <Toggle label="Haptic feedback" description="Subtle vibrations on supported Android phones" checked={settings.haptics} onChange={(v) => updateSettings({ haptics: v })} />
           </Section>

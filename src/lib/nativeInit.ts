@@ -1,4 +1,5 @@
 import { isNative, platform } from './platform';
+import { getCanvas } from './accent';
 
 /** One-time native shell setup: status bar, splash, Android back button. */
 export async function initNative(navigateBack: () => boolean) {
@@ -11,7 +12,7 @@ export async function initNative(navigateBack: () => boolean) {
   document.documentElement.classList.add('native', `native-${platform}`);
   try {
     await StatusBar.setStyle({ style: Style.Light });
-    if (platform === 'android') await StatusBar.setBackgroundColor({ color: '#ECECEF' });
+    if (platform === 'android') await StatusBar.setBackgroundColor({ color: getCanvas().hex });
   } catch {
     /* older devices */
   }

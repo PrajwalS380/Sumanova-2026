@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { chatApi } from '@/lib/chat/api';
+import { offlineCache } from '@/lib/chat/offlineCache';
 import { snapsApi } from '@/lib/snaps/api';
 import type { ConversationSummary } from '@/lib/chat/types';
 import { useAuth } from './AuthProvider';
@@ -46,8 +47,14 @@ export function InboxProvider({ children }: { children: ReactNode }) {
       const list = await chatApi.listConversations();
       setConversations(list);
       setError(null);
+      offlineCache.saveList(me, list);
     } catch (e) {
-      setError((e as Error).message);
+      // Offline: show the copy kept on this phone.
+      const cached = offlineCache.loadList<ConversationSummary>(me);
+      if (cached) {
+        setConversations((cur) => (cur.length ? cur : cached));
+        setError(null);
+      } else setError((e as Error).message);
     } finally {
       setLoading(false);
     }

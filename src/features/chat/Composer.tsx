@@ -1,6 +1,7 @@
+import { dictationSupported, startDictation } from '@/lib/dictation';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CalendarClock, Camera, Lock, Mic, PencilLine, Plus, Reply, SendHorizontal, Smile, Square, Trash2, X } from 'lucide-react';
+import { AudioLines, CalendarClock, Camera, Lock, Mic, PencilLine, Plus, Reply, SendHorizontal, Smile, Square, Trash2, X } from 'lucide-react';
 import { currentKeyOf, encryptFor, ensureMyKey, secretMode } from '@/lib/e2e';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/providers/ToastProvider';
@@ -46,6 +47,23 @@ interface Props {
 
 export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing, onCancel, accent, disabled, conversationId, peerId, others = [] }: Props) {
   const [secret, setSecret] = useState(() => secretMode.get(conversationId));
+  const [listening, setListening] = useState(false);
+  const stopDictation = useRef<(() => void) | null>(null);
+  async function toggleDictation() {
+    if (listening) {
+      stopDictation.current?.();
+      stopDictation.current = null;
+      return setListening(false);
+    }
+    const before = text ? `${text.trim()} ` : '';
+    try {
+      setListening(true);
+      stopDictation.current = await startDictation((t) => setText(before + t), () => setListening(false));
+    } catch (e) {
+      setListening(false);
+      toast((e as Error).message, 'error');
+    }
+  }
   async function toggleSecret() {
     if (!peerId || !session) return;
     if (secret) {
@@ -238,6 +256,11 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
             aria-label="Message"
             className="max-h-[132px] min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] font-semibold leading-snug outline-none placeholder:text-ink-mute"
           />
+          {dictationSupported && !editing && (
+            <button onClick={() => void toggleDictation()} aria-label={listening ? 'Stop speaking to type' : 'Speak to type'} aria-pressed={listening} className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-xl active:scale-90', listening ? 'animate-pulse text-ember-rose' : 'text-ink-faint')}>
+              <AudioLines className="h-4 w-4" />
+            </button>
+          )}
           {peerId && !editing && (
             <button onClick={() => void toggleSecret()} aria-label={secret ? 'Secret chat on — tap to turn off' : 'Turn on secret (end-to-end encrypted) chat'} aria-pressed={secret} className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-xl active:scale-90', secret ? 'text-ember-sage' : 'text-ink-faint')}>
               <Lock className="h-4 w-4" />
