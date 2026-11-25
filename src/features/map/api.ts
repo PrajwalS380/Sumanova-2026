@@ -3,7 +3,7 @@ import { friendlyDbError } from '@/lib/chat/api';
 import type { AuraColor } from '@/lib/types';
 
 export interface FriendLocation {
-  user_id: string; username: string; display_name: string; avatar_url: string | null; aura_color: AuraColor;
+  user_id: string; username: string; display_name: string; avatar_url: string | null; avatar_body_url?: string | null; aura_color: AuraColor;
   lat: number; lng: number; precise: boolean; updated_at: string; expires_at: string;
 }
 export interface MyShare { lat: number; lng: number; precise: boolean; audience: 'friends' | 'selected'; targets: string[]; expires_at: string; updated_at: string }

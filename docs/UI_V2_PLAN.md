@@ -35,7 +35,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [x] Stories: "Friends" row of faces (indigo ring = unseen, "My story" with +), "For you" 2-column tall tiles.
 - [ ] Spotlight: full-screen player, top bar (face, search, Following / For you, more), right action rail,
       creator row with Follow, caption, sound line, progress bar, dark dock.
-- [ ] Map: friends as full-body avatar pins with name · time tags; "You" centred; floating top bar with
+- [x] Map (Places → "Find me"; place/weather chip → sharing status, since there's no free place/weather service): friends as full-body avatar pins with name · time tags; "You" centred; floating top bar with
       place chip; bottom card: My status · Friends · Places · Ghost mode.
 - [x] My profile (exactly as wireframe 6; Notifications stays on the camera bell, Calls via friend profiles): pale hero with full-body avatar (tap → studio), serif name, @username · friends · best streak,
       Edit avatar / Edit profile, cards: My stories, Friends (faces), Memories, Notifications.

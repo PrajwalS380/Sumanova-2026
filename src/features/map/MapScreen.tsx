@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Check, Ghost, Loader2, LocateFixed, MapPin, Navigation, ShieldCheck } from 'lucide-react';
+import { Check, Ghost, Loader2, LocateFixed, Navigation, Search, ShieldCheck, Sun, Users } from 'lucide-react';
 import { Sheet } from '@/components/ui/Sheet';
 import { Toggle } from '@/components/ui/Toggle';
 import { Avatar } from '@/components/Avatar';
@@ -19,16 +19,31 @@ import { distanceM, getPosition, mapApi, type FriendLocation, type MyShare } fro
 const DURATIONS = [{ m: 15, l: '15 min' }, { m: 60, l: '1 hour' }, { m: 480, l: '8 hours' }, { m: 1440, l: '24 hours' }];
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
-function pin(f: { display_name: string; avatar_url: string | null; aura_color: keyof typeof AURA }, live: boolean, me = false) {
+/** Map pin: the person's full-body avatar standing on the map with a "Name · time" tag (face circle if no body picture yet). */
+function pin(f: { display_name: string; avatar_url: string | null; avatar_body_url?: string | null; aura_color: keyof typeof AURA }, tag: string, me = false) {
   const a = AURA[f.aura_color] ?? AURA.violet;
   const initials = escape(f.display_name.split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase());
-  const img = f.avatar_url && /^https:\/\//.test(f.avatar_url) ? `<img src="${escape(f.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:999px"/>` : `<span style="font:700 15px Unbounded Variable,sans-serif;color:${a.to}">${initials}</span>`;
+  const ok = (u?: string | null) => !!u && /^https:\/\//.test(u);
+  const figure = ok(f.avatar_body_url)
+    ? `<img src="${escape(f.avatar_body_url!)}" alt="" style="height:${me ? 110 : 96}px;width:auto;display:block"/>`
+    : `<div class="snv-pin-face" style="width:52px;height:52px">${ok(f.avatar_url) ? `<img src="${escape(f.avatar_url!)}" alt="" style="width:100%;height:100%;object-fit:cover"/>` : `<span style="font:600 18px 'Instrument Serif',serif;font-style:italic;color:${a.from}">${initials}</span>`}</div>`;
+  const h = ok(f.avatar_body_url) ? (me ? 132 : 118) : 76;
   return L.divIcon({
     className: '',
-    iconSize: [54, 64],
-    iconAnchor: [27, 60],
-    html: `<div class="snv-pin${live ? ' live' : ''}${me ? ' me' : ''}" style="--a:${a.from};--b:${a.to}"><div class="snv-pin-ring"><div class="snv-pin-face">${img}</div></div><div class="snv-pin-tail"></div></div>`,
+    iconSize: [110, h],
+    iconAnchor: [55, h],
+    html: `<div class="snv-fig">${figure}<span class="snv-tag${me ? ' me' : ''}">${escape(tag)}</span></div>`,
   });
+}
+
+const WHITE = 'grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full bg-white text-ink shadow-[0_4px_14px_rgba(30,42,74,0.16)] active:scale-90';
+const CHIP = 'flex flex-col items-center gap-1.5 text-xs font-extrabold text-ink disabled:opacity-60';
+const ROUND = 'grid h-12 w-12 place-items-center rounded-full bg-[#eef1fa] text-ink';
+
+function tagFor(f: FriendLocation, live: boolean) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(f.updated_at).getTime()) / 60000));
+  const when = live && mins < 1 ? 'now' : mins < 60 ? `${mins}m` : `${Math.round(mins / 60)}h`;
+  return `${f.display_name.split(' ')[0]} · ${when}`;
 }
 
 export default function MapScreen() {
@@ -43,6 +58,7 @@ export default function MapScreen() {
   const [mine, setMine] = useState<MyShare | null>(null);
   const [sheet, setSheet] = useState(false);
   const [selected, setSelected] = useState<FriendLocation | null>(null);
+  const [finder, setFinder] = useState(false);
   const [minutes, setMinutes] = useState(60);
   const [precise, setPrecise] = useState(false);
   const [audience, setAudience] = useState<'friends' | 'selected'>('friends');
@@ -95,9 +111,9 @@ export default function MapScreen() {
       const existing = markers.current.get(f.user_id);
       if (existing) {
         existing.setLatLng([f.lat, f.lng]);
-        existing.setIcon(pin(f, live));
+        existing.setIcon(pin(f, tagFor(f, live)));
       } else {
-        const mk = L.marker([f.lat, f.lng], { icon: pin(f, live) }).addTo(m).on('click', () => setSelected(f));
+        const mk = L.marker([f.lat, f.lng], { icon: pin(f, tagFor(f, live)) }).addTo(m).on('click', () => setSelected(f));
         markers.current.set(f.user_id, mk);
       }
     }
@@ -114,7 +130,7 @@ export default function MapScreen() {
     const m = map.current;
     if (!m || !profile) return;
     if (sharing && mine) {
-      if (!myMarker.current) myMarker.current = L.marker([mine.lat, mine.lng], { icon: pin(profile, true, true), zIndexOffset: 1000 }).addTo(m);
+      if (!myMarker.current) myMarker.current = L.marker([mine.lat, mine.lng], { icon: pin(profile, 'You', true), zIndexOffset: 1000 }).addTo(m);
       else myMarker.current.setLatLng([mine.lat, mine.lng]);
     } else {
       myMarker.current?.remove();
@@ -191,56 +207,54 @@ export default function MapScreen() {
   const left = sharing ? Math.max(0, Math.round((new Date(mine!.expires_at).getTime() - Date.now()) / 60000)) : 0;
 
   return (
-    <div className="fixed inset-0 bg-noir">
+    <div className="fixed inset-0 bg-[#e9eef0]">
       <div ref={el} className="absolute inset-0 z-0" aria-label="Map" />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] bg-gradient-to-b from-noir/90 to-transparent px-4 pb-10 pt-safe">
-        <div className="pointer-events-auto flex items-center gap-2">
-          <MeButton />
-          <h1 className="flex-1 font-display text-[32px] leading-tight">Map</h1>
-          <button onClick={() => void locate()} className="glass grid h-11 w-11 place-items-center rounded-full" aria-label="Find me"><LocateFixed className="h-5 w-5" /></button>
-        </div>
-        <div className="pointer-events-auto mt-3 flex items-center gap-2">
-          <span className={cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold', sharing ? 'bg-ember-jade/20 text-ember-sage' : 'bg-ink/10 text-ink-soft')}>
-            {sharing ? <Navigation className="h-3.5 w-3.5" /> : <Ghost className="h-3.5 w-3.5" />}
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex items-center gap-2 px-3.5 pt-safe">
+        <span className="pointer-events-auto"><MeButton size={42} /></span>
+        <button onClick={() => setFinder(true)} aria-label="Find a friend on the map" className={cn(WHITE, 'pointer-events-auto')}><Search className="h-5 w-5" /></button>
+        <div className="flex flex-1 justify-center">
+          <span className="pointer-events-auto rounded-full bg-white px-3.5 py-[9px] text-sm font-extrabold shadow-[0_4px_14px_rgba(30,42,74,0.16)]">
             {sharing ? `Sharing · ${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'Ghost mode'}
           </span>
-          <span className="text-xs text-ink-mute">{friendsOnMap.length} {friendsOnMap.length === 1 ? 'friend' : 'friends'} sharing</span>
         </div>
+        <button onClick={() => setSheet(true)} aria-label="Location settings" className={cn(WHITE, 'pointer-events-auto')}><Sun className="h-5 w-5" /></button>
+      </header>
+      <button onClick={() => void locate()} aria-label="Centre on me" className={cn(WHITE, 'absolute right-3.5 z-[500] bottom-[calc(84px+var(--safe-bottom)+8.25rem)]')}><Navigation className="h-5 w-5" /></button>
+
+      {/* Bottom card (wireframe 5): My status · Friends · Find me · Ghost mode */}
+      <div className="absolute inset-x-3.5 bottom-[calc(84px+var(--safe-bottom)+0.75rem)] z-[500] flex justify-around rounded-[22px] bg-white px-2 py-3 shadow-[0_8px_24px_rgba(30,42,74,0.18)]">
+        <button onClick={() => (sharing ? setSheet(true) : setSheet(true))} className={CHIP}>
+          <Avatar name={profile?.display_name ?? 'Me'} url={profile?.avatar_url} aura={profile?.aura_color} size={48} ring={sharing} />
+          {sharing ? `${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'My status'}
+        </button>
+        <button onClick={() => setFinder(true)} className={CHIP}>
+          {friendsOnMap[0] ? <Avatar name={friendsOnMap[0].display_name} url={friendsOnMap[0].avatar_url} aura={friendsOnMap[0].aura_color} size={48} /> : <span className={ROUND}><Users className="h-[22px] w-[22px]" /></span>}
+          Friends · {friendsOnMap.length}
+        </button>
+        <button onClick={() => void locate()} className={CHIP}>
+          <span className={ROUND}><LocateFixed className="h-[22px] w-[22px]" /></span>
+          Find me
+        </button>
+        <button onClick={() => (sharing ? void stop() : setSheet(true))} disabled={busy} className={CHIP} aria-pressed={!sharing}>
+          <span className={cn(ROUND, !sharing && 'bg-ink text-white')}>{busy ? <Loader2 className="h-[22px] w-[22px] animate-spin" /> : <Ghost className="h-[22px] w-[22px]" />}</span>
+          {sharing ? 'Go ghost' : 'Ghost mode'}
+        </button>
       </div>
 
-      {/* Floating widget card: who's out + your sharing control */}
-      <div className="absolute inset-x-3 bottom-[calc(84px+var(--safe-bottom)+0.75rem)] z-[500]">
-        <div className="glass-strong rounded-[26px] p-4">
-          <div className="flex items-center justify-between">
-            <p className="eyebrow">Out right now · {friendsOnMap.length}</p>
-            {sharing && <span className="text-xs font-bold text-ember-sage">You · {left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left</span>}
-          </div>
-          {friendsOnMap.length > 0 ? (
-            <div className="no-scrollbar -mx-1 mt-3 flex gap-2 overflow-x-auto px-1">
-              {friendsOnMap.map((f) => (
-                <button key={f.user_id} onClick={() => { map.current?.flyTo([f.lat, f.lng], 15, { duration: 0.8 }); setSelected(f); }} className="flex shrink-0 items-center gap-2 rounded-full bg-ink/[0.05] py-1.5 pl-1.5 pr-3 active:scale-95">
-                  <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={30} ring={false} />
-                  <span className="text-xs font-bold">{f.display_name.split(' ')[0]}</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-ink-mute">No friends are sharing right now.</p>
-          )}
-          <div className="mt-3">
-            {sharing ? (
-              <button onClick={() => void stop()} disabled={busy} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ink/[0.06] font-bold">
-                {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Ghost className="h-5 w-5" /> Stop sharing</>}
+      <Sheet open={finder} onClose={() => setFinder(false)} title="Friends on the map">
+        <ul className="space-y-1 px-4 pb-6">
+          {friendsOnMap.length === 0 && <li className="px-1 py-3 text-sm text-ink-mute">No friends are sharing right now.</li>}
+          {friendsOnMap.map((f) => (
+            <li key={f.user_id}>
+              <button onClick={() => { setFinder(false); map.current?.flyTo([f.lat, f.lng], 15, { duration: 0.8 }); setSelected(f); }} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left active:bg-ink/[0.05]">
+                <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={44} />
+                <span className="flex-1"><span className="block font-extrabold">{f.display_name}</span><span className="text-xs text-ink-mute">{lastSeenLabel(f.updated_at).replace('Active', 'Updated')}</span></span>
               </button>
-            ) : (
-              <button onClick={() => setSheet(true)} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ember-gradient font-bold text-white shadow-glow">
-                <MapPin className="h-5 w-5" /> Share my location
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
 
       <Sheet open={sheet} onClose={() => setSheet(false)} title="Share location">
         <div className="space-y-4 px-5 pb-5">
