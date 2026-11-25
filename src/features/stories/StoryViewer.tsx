@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Eye, Loader2, MoreHorizontal, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { Camera, Eye, Heart, Loader2, MoreHorizontal, Send, Sparkles, Trash2, X } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
@@ -31,6 +31,7 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
   const [duration, setDuration] = useState(PHOTO_MS);
   const [reply, setReply] = useState('');
   const [typing, setTyping] = useState(false);
+  const [reactOpen, setReactOpen] = useState(false);
   const [viewers, setViewers] = useState<Viewer[] | null>(null);
   const [menu, setMenu] = useState(false);
   const [burst, setBurst] = useState<string | null>(null);
@@ -204,8 +205,8 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
             </span>
           </button>
           <span className="flex-1" />
-          {mine && <button onClick={() => setMenu(true)} aria-label="Story options" className="grid h-10 w-10 place-items-center text-white"><MoreHorizontal className="h-6 w-6" /></button>}
-          <button onClick={onClose} aria-label="Close" className="grid h-10 w-10 place-items-center text-white"><X className="h-6 w-6" /></button>
+          {mine && <button onClick={() => setMenu(true)} aria-label="Story options" className="grid h-[42px] w-[42px] place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white"><MoreHorizontal className="h-[22px] w-[22px]" /></button>}
+          <button onClick={onClose} aria-label="Close" className="grid h-[42px] w-[42px] place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white"><X className="h-[22px] w-[22px]" strokeWidth={2.4} /></button>
         </div>
       </div>
 
@@ -224,16 +225,22 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
           </button>
         ) : (
           <div className="mb-3 space-y-2">
-            {!typing && (
+            {reactOpen && !typing && (
               <div className="flex justify-center gap-2">
                 {REACTIONS.map((e) => (
-                  <button key={e} onClick={() => void react(e)} className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-xl backdrop-blur-md active:scale-90" aria-label={`React ${e}`}>{e}</button>
+                  <button key={e} onClick={() => { setReactOpen(false); void react(e); }} className="grid h-10 w-10 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-xl active:scale-90" aria-label={`React ${e}`}>{e}</button>
                 ))}
               </div>
             )}
+            {/* Reply bar (wireframe 14): snap reply · text reply · react */}
             <form onSubmit={(e) => { e.preventDefault(); void sendReply(reply); }} className="flex items-center gap-2">
-              <input value={reply} onChange={(e) => setReply(e.target.value)} onFocus={() => setTyping(true)} onBlur={() => !reply && setTyping(false)} placeholder={`Reply to ${ring.display_name.split(' ')[0]}…`} maxLength={1000} className="h-12 flex-1 rounded-full bg-white/12 px-5 text-[15px] text-white outline-none ring-1 ring-white/25 backdrop-blur-md placeholder:text-white/60" style={{ backgroundColor: 'rgba(255,255,255,.12)' }} aria-label="Reply" />
-              {reply.trim() && <button type="submit" aria-label="Send reply" className="grid h-12 w-12 place-items-center rounded-full bg-ember-gradient text-noir"><Send className="h-5 w-5" /></button>}
+              <button type="button" onClick={() => { onClose(); navigate('/'); }} aria-label="Reply with a snap" className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white"><Camera className="h-[22px] w-[22px]" /></button>
+              <input value={reply} onChange={(e) => setReply(e.target.value)} onFocus={() => setTyping(true)} onBlur={() => !reply && setTyping(false)} placeholder={`Reply to ${ring.display_name.split(' ')[0]}`} maxLength={1000} className="h-[46px] min-w-0 flex-1 rounded-full border-[1.5px] border-white/60 bg-transparent px-4 text-[15px] font-semibold text-white outline-none placeholder:text-white/70" aria-label="Reply" />
+              {reply.trim() ? (
+                <button type="submit" aria-label="Send reply" className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-ember-flame text-white"><Send className="h-5 w-5" /></button>
+              ) : (
+                <button type="button" onClick={() => setReactOpen((v) => !v)} aria-label="React" aria-expanded={reactOpen} className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white"><Heart className="h-[22px] w-[22px]" /></button>
+              )}
             </form>
           </div>
         )}
