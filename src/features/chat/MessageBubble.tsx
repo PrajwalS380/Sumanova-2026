@@ -9,8 +9,10 @@ import { Avatar } from '@/components/Avatar';
 import { ImageView, VideoView, VoiceView } from './MediaView';
 import { useLongPress } from './useLongPress';
 import { SnapTile, type SnapTileState } from '@/features/snaps/SnapTile';
-import { NovaEmoji } from '@/components/emoji/NovaEmoji';
-import { novaStickerId } from '@/components/emoji/novaEmoji';
+import { parseNovaSticker } from '@/components/emoji/novaEmoji';
+import { NovaSticker } from '@/components/emoji/NovaSticker';
+import { PollCard } from './extras/PollCard';
+import { LocationCard } from './extras/LocationCard';
 
 export type Receipt = 'sending' | 'failed' | 'sent' | 'delivered' | 'seen' | null;
 
@@ -51,8 +53,9 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
     );
   }
 
-  const isMedia = m.kind === 'image' || m.kind === 'video';
-  const isSticker = m.kind === 'sticker' || m.kind === 'snap';
+  const avatarSticker = m.kind === 'image' && !!m.media_meta?.sticker;
+  const isMedia = (m.kind === 'image' && !avatarSticker) || m.kind === 'video';
+  const isSticker = m.kind === 'sticker' || m.kind === 'snap' || m.kind === 'poll' || m.kind === 'location' || avatarSticker;
   const deleted = !!m.deleted_at;
   const counts = p.reactions.reduce<Record<string, number>>((acc, r) => ((acc[r.emoji] = (acc[r.emoji] ?? 0) + 1), acc), {});
   const r = 'rounded-[20px]';
@@ -101,11 +104,17 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           ) : m.kind === 'snap' ? (
             p.snap ? <SnapTile kind={m.body ?? 'image'} state={p.snap.state} screenshot={p.snap.screenshot} mine={mine} onOpen={p.snap.onOpen} /> : null
           ) : m.kind === 'sticker' ? (
-            novaStickerId(m.body) ? (
-              <NovaEmoji id={novaStickerId(m.body)!} size={104} label="Sticker" className="pb-1 drop-shadow-[0_6px_16px_rgba(0,0,0,0.18)]" />
+            parseNovaSticker(m.body) ? (
+              <NovaSticker s={parseNovaSticker(m.body)!} size={104} className="pb-1" />
             ) : (
               <span className="block pb-1 text-[64px] leading-none drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker">{m.body}</span>
             )
+          ) : m.kind === 'poll' ? (
+            <PollCard messageId={m.id} question={m.body ?? ''} options={m.media_meta?.options ?? []} local={!!m.local} />
+          ) : m.kind === 'location' ? (
+            <LocationCard messageId={m.id} meta={m.media_meta ?? {}} mine={mine} local={!!m.local} name={mine ? 'You' : p.sender?.display_name ?? 'Friend'} createdAt={m.created_at} />
+          ) : avatarSticker ? (
+            <span className="block w-[150px]"><ImageView path={m.media_path} localUrl={m.localUrl} meta={m.media_meta} onOpen={() => undefined} /></span>
           ) : m.kind === 'image' ? (
             <ImageView path={m.media_path} localUrl={m.localUrl} meta={m.media_meta} onOpen={p.onOpenImage} />
           ) : m.kind === 'video' ? (

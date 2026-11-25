@@ -240,12 +240,12 @@ export function useConversation(conversationId: string, me: string) {
   }, []);
 
   const send = useCallback(
-    (input: { kind: MessageKind; body?: string | null; blob?: Blob; meta?: MediaMeta; replyTo?: string | null; forwarded?: boolean; mediaPath?: string | null }) => {
+    (input: { kind: MessageKind; body?: string | null; blob?: Blob; meta?: MediaMeta; replyTo?: string | null; forwarded?: boolean; mediaPath?: string | null; clientId?: string }) => {
       const m: LocalMessage = {
         id: `local-${uuid()}`,
         conversation_id: conversationId,
         sender_id: me,
-        client_id: uuid(),
+        client_id: input.clientId ?? uuid(),
         kind: input.kind,
         body: input.body ?? null,
         media_path: input.mediaPath ?? null,

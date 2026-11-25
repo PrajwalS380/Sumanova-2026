@@ -153,10 +153,46 @@ export function badgeArt(label: string): { id: NovaEmojiId; text: string } {
 /** Stickers are stored as text: "nova:<id>" for our own art (anything else is a plain emoji). */
 export const NOVA_STICKER_PREFIX = 'nova:';
 export function novaStickerId(body: string | null | undefined): NovaEmojiId | null {
-  if (!body?.startsWith(NOVA_STICKER_PREFIX)) return null;
-  const id = body.slice(NOVA_STICKER_PREFIX.length);
-  return (NOVA_EMOJI_IDS as string[]).includes(id) ? (id as NovaEmojiId) : null;
+  return parseNovaSticker(body)?.id ?? null;
 }
+
+/** Animated "GIF" stickers: nova:<id>@<motion>#<caption>. */
+export const NOVA_MOTIONS = ['bounce', 'wiggle', 'spin', 'pulse', 'float', 'shake'] as const;
+export type NovaMotion = (typeof NOVA_MOTIONS)[number];
+export interface NovaSticker { id: NovaEmojiId; motion: NovaMotion | null; caption: string | null }
+
+export function parseNovaSticker(body: string | null | undefined): NovaSticker | null {
+  if (!body?.startsWith(NOVA_STICKER_PREFIX)) return null;
+  const m = /^nova:([a-z]+)(?:@([a-z]+))?(?:#(.{1,24}))?$/u.exec(body);
+  if (!m || !(NOVA_EMOJI_IDS as string[]).includes(m[1])) return null;
+  const motion = (NOVA_MOTIONS as readonly string[]).includes(m[2] ?? '') ? (m[2] as NovaMotion) : null;
+  return { id: m[1] as NovaEmojiId, motion, caption: m[3] ?? null };
+}
+export const novaStickerBody = (s: NovaSticker) => `${NOVA_STICKER_PREFIX}${s.id}${s.motion ? `@${s.motion}` : ''}${s.caption ? `#${s.caption}` : ''}`;
+
+/** Our own animated sticker pack (no third-party GIF service). */
+export const NOVA_GIFS: NovaSticker[] = [
+  { id: 'wow', motion: 'shake', caption: 'OMG' },
+  { id: 'smitten', motion: 'pulse', caption: 'Love it' },
+  { id: 'flame', motion: 'wiggle', caption: 'Lit' },
+  { id: 'star', motion: 'spin', caption: 'Star!' },
+  { id: 'hearts', motion: 'float', caption: 'Miss you' },
+  { id: 'crown', motion: 'bounce', caption: 'Queen' },
+  { id: 'devil', motion: 'shake', caption: 'Hehe' },
+  { id: 'halo', motion: 'float', caption: 'Who, me?' },
+  { id: 'kitty', motion: 'wiggle', caption: 'Meow' },
+  { id: 'puppy', motion: 'bounce', caption: 'Pls?' },
+  { id: 'cake', motion: 'bounce', caption: 'HBD!' },
+  { id: 'trophy', motion: 'pulse', caption: 'Winner' },
+  { id: 'shades', motion: 'float', caption: 'Chill' },
+  { id: 'blush', motion: 'pulse', caption: 'Aww' },
+  { id: 'alien', motion: 'wiggle', caption: 'Brb' },
+  { id: 'hourglass', motion: 'spin', caption: 'Waiting…' },
+  { id: 'sparkle', motion: 'spin', caption: 'Yay' },
+  { id: 'chat', motion: 'shake', caption: 'Call me' },
+  { id: 'bunny', motion: 'bounce', caption: 'Hop on' },
+  { id: 'nova', motion: 'pulse', caption: 'GM' },
+];
 
 /** Resolves once the emoji image has decoded (for exports that must include it). */
 export async function loadNovaEmoji(id: NovaEmojiId): Promise<void> {

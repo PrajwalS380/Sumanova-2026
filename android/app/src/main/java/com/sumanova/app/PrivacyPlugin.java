@@ -36,6 +36,18 @@ public class PrivacyPlugin extends Plugin {
         });
     }
 
+    /** Report screenshots (Android 14+) without blocking them — used in chats. */
+    @PluginMethod
+    public void watchScreenshots(PluginCall call) {
+        final boolean on = Boolean.TRUE.equals(call.getBoolean("on", false));
+        final Activity activity = getActivity();
+        activity.runOnUiThread(() -> {
+            if (on) registerCaptureCallback(activity);
+            else unregisterCaptureCallback(activity);
+            call.resolve();
+        });
+    }
+
     private void registerCaptureCallback(Activity activity) {
         if (Build.VERSION.SDK_INT < 34 || captureCallback != null) return;
         Activity.ScreenCaptureCallback cb = () -> notifyListeners("screenshot", null);

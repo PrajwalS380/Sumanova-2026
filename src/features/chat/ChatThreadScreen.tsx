@@ -23,6 +23,8 @@ import { useSnapStatuses } from '@/features/snaps/useSnapStatuses';
 import { snapTileState } from '@/features/snaps/SnapTile';
 import { SnapViewer } from '@/features/snaps/SnapViewer';
 import { streaksApi } from '@/lib/social/api';
+import { watchChatScreenshots } from '@/lib/privacy';
+import { reportChatScreenshot } from '@/lib/chat/extras';
 
 export default function ChatThreadScreen() {
   const { id = '' } = useParams();
@@ -43,6 +45,17 @@ export default function ChatThreadScreen() {
   const [snapView, setSnapView] = useState<{ id: string; mode: 'open' | 'replay' | 'own' } | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  // Screenshot alerts (Android 14+). Paused while a snap is open (the snap viewer blocks screenshots itself).
+  useEffect(() => {
+    if (!id || snapView) return;
+    let stop: (() => void) | null = null;
+    let alive = true;
+    void watchChatScreenshots(() => void reportChatScreenshot(id).catch(() => undefined)).then((s) => (alive ? (stop = s) : s()));
+    return () => {
+      alive = false;
+      stop?.();
+    };
+  }, [id, snapView]);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const topSentinel = useRef<HTMLDivElement>(null);
@@ -298,6 +311,7 @@ export default function ChatThreadScreen() {
         editing={editing}
         onCancel={() => { setReplyTo(null); setEditing(null); }}
         accent={theme.accent}
+        conversationId={id}
         disabled={disabledReason}
       />
 

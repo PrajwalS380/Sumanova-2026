@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Camera, Mic, PencilLine, Reply, SendHorizontal, Smile, Square, Trash2, X } from 'lucide-react';
+import { CalendarClock, Camera, Mic, PencilLine, Plus, Reply, SendHorizontal, Smile, Square, Trash2, X } from 'lucide-react';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/providers/ToastProvider';
 import { MAX_VOICE_SECONDS, prepareMedia, startVoiceRecording, type VoiceRecording } from '@/lib/chat/media';
@@ -9,7 +9,13 @@ import type { LocalMessage, MediaMeta, MessageKind } from '@/lib/chat/types';
 import { haptic } from '@/lib/haptics';
 import { STICKERS } from './themes';
 import { NovaEmoji } from '@/components/emoji/NovaEmoji';
-import { NOVA_EMOJI_IDS, NOVA_STICKER_PREFIX } from '@/components/emoji/novaEmoji';
+import { NOVA_EMOJI_IDS, NOVA_GIFS, NOVA_STICKER_PREFIX, novaStickerBody } from '@/components/emoji/novaEmoji';
+import { NovaSticker } from '@/components/emoji/NovaSticker';
+import { ExtrasSheet, ScheduledList } from './extras/ExtrasSheet';
+import { AvatarStickers } from './extras/AvatarStickers';
+import { liveShare, scheduleApi, type Scheduled } from '@/lib/chat/extras';
+import { useAuth } from '@/providers/AuthProvider';
+import { cn } from '@/lib/cn';
 
 export interface ComposerSend {
   kind: MessageKind;
@@ -17,6 +23,7 @@ export interface ComposerSend {
   blob?: Blob;
   meta?: MediaMeta;
   replyTo?: string | null;
+  clientId?: string;
 }
 
 interface Props {
@@ -29,11 +36,25 @@ interface Props {
   onCancel: () => void;
   accent: string;
   disabled?: string | null;
+  conversationId: string;
 }
 
-export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing, onCancel, accent, disabled }: Props) {
+export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing, onCancel, accent, disabled, conversationId }: Props) {
   const [text, setText] = useState('');
   const [stickers, setStickers] = useState(false);
+  const [tab, setTab] = useState<'nova' | 'gifs' | 'me' | 'emoji'>('nova');
+  const [extras, setExtras] = useState(false);
+  const [scheduled, setScheduled] = useState<Scheduled[]>([]);
+  const [showScheduled, setShowScheduled] = useState(false);
+  const { session } = useAuth();
+  const loadScheduled = () => void scheduleApi.pending(conversationId).then(setScheduled).catch(() => undefined);
+  useEffect(loadScheduled, [conversationId]);
+  function sendSticker(body: string) {
+    haptic(8);
+    onSend({ kind: 'sticker', body, replyTo: replyTo?.id ?? null });
+    setStickers(false);
+    onCancel();
+  }
   const [rec, setRec] = useState<VoiceRecording | null>(null);
   const [recSecs, setRecSecs] = useState(0);
   const [level, setLevel] = useState(0);
@@ -144,6 +165,11 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
         )}
       </AnimatePresence>
 
+      {scheduled.length > 0 && !rec && (
+        <button onClick={() => setShowScheduled(true)} className="mb-2 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-extrabold">
+          <CalendarClock className="h-3.5 w-3.5" /> {scheduled.length} scheduled · next {new Date(scheduled[0].send_at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
+        </button>
+      )}
       {rec ? (
         <div className="flex h-14 items-center gap-3 rounded-2xl bg-white px-2">
           <button onClick={() => { rec.cancel(); setRec(null); }} aria-label="Discard recording" className="grid h-10 w-10 place-items-center rounded-2xl text-ember-rose"><Trash2 className="h-5 w-5" /></button>
@@ -184,6 +210,11 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
             aria-label="Message"
             className="max-h-[132px] min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] font-semibold leading-snug outline-none placeholder:text-ink-mute"
           />
+          {!editing && (
+            <button onClick={() => setExtras(true)} aria-label="Poll, location or schedule" className="-mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-ink-mute active:scale-90">
+              <Plus className="h-5 w-5" strokeWidth={2.4} />
+            </button>
+          )}
           </div>
           <button onClick={() => setStickers(true)} aria-label="Stickers" className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-2xl bg-white text-ink active:scale-90">
             <Smile className="h-5 w-5" />
@@ -203,22 +234,57 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
       )}
 
       <Sheet open={stickers} onClose={() => setStickers(false)} title="Stickers">
-        <p className="eyebrow px-5 pb-1">Nova</p>
-        <div className="grid grid-cols-5 gap-1 px-4 pb-3">
-          {NOVA_EMOJI_IDS.map((id) => (
-            <button key={id} onClick={() => { haptic(8); onSend({ kind: 'sticker', body: NOVA_STICKER_PREFIX + id, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); }} className="grid aspect-square place-items-center rounded-2xl transition-transform hover:bg-ink/5 active:scale-90" aria-label={`Send ${id} sticker`}>
-              <NovaEmoji id={id} size={48} />
-            </button>
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pb-3" role="tablist">
+          {([['nova', 'Nova'], ['gifs', 'Moving'], ['me', 'My avatar'], ['emoji', 'Emoji']] as const).map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={cn('shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold', tab === id ? 'bg-ink text-white' : 'bg-[#F1F1F4] text-ink')}>{label}</button>
           ))}
         </div>
-        <p className="eyebrow px-5 pb-1">Emoji</p>
-        <div className="grid grid-cols-6 gap-1 px-4 pb-6">
-          {STICKERS.map((s) => (
-            <button key={s} onClick={() => { haptic(8); onSend({ kind: 'sticker', body: s, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); }} className="grid aspect-square place-items-center rounded-2xl text-4xl transition-transform hover:bg-ink/5 active:scale-90" aria-label={`Send ${s} sticker`}>
-              {s}
-            </button>
-          ))}
-        </div>
+        {tab === 'nova' && (
+          <div className="grid grid-cols-5 gap-1 px-4 pb-6">
+            {NOVA_EMOJI_IDS.map((id) => (
+              <button key={id} onClick={() => sendSticker(NOVA_STICKER_PREFIX + id)} className="grid aspect-square place-items-center rounded-2xl transition-transform hover:bg-ink/5 active:scale-90" aria-label={`Send ${id} sticker`}>
+                <NovaEmoji id={id} size={48} />
+              </button>
+            ))}
+          </div>
+        )}
+        {tab === 'gifs' && (
+          <div className="grid grid-cols-4 gap-2 px-4 pb-6">
+            {NOVA_GIFS.map((g) => (
+              <button key={g.id + g.caption} onClick={() => sendSticker(novaStickerBody(g))} className="grid aspect-square place-items-center rounded-2xl bg-[#F1F1F4] pt-1 active:scale-90" aria-label={`Send ${g.caption} sticker`}>
+                <NovaSticker s={g} size={46} />
+              </button>
+            ))}
+          </div>
+        )}
+        {tab === 'me' && stickers && (
+          <AvatarStickers onSend={(blob, d) => { haptic(8); onSend({ kind: 'image', blob, meta: { sticker: true, width: 320, height: 320, mime: 'image/png', size: blob.size }, body: null, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); void d; }} />
+        )}
+        {tab === 'emoji' && (
+          <div className="grid grid-cols-6 gap-1 px-4 pb-6">
+            {STICKERS.map((s) => (
+              <button key={s} onClick={() => sendSticker(s)} className="grid aspect-square place-items-center rounded-2xl text-4xl transition-transform hover:bg-ink/5 active:scale-90" aria-label={`Send ${s} sticker`}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </Sheet>
+      <ExtrasSheet
+        open={extras}
+        onClose={() => setExtras(false)}
+        conversationId={conversationId}
+        draft={text}
+        onScheduled={() => { setText(''); loadScheduled(); }}
+        onSend={(m, live) => {
+          const clientId = crypto.randomUUID();
+          onSend({ ...m, clientId, replyTo: replyTo?.id ?? null });
+          if (live && session) liveShare.start(session.user.id, conversationId, clientId, live);
+          onCancel();
+        }}
+      />
+      <Sheet open={showScheduled} onClose={() => setShowScheduled(false)} title="Scheduled messages">
+        <ScheduledList items={scheduled} onCancel={async (id) => { try { await scheduleApi.cancel(id); loadScheduled(); toast('Cancelled', 'success'); } catch (e) { toast((e as Error).message, 'error'); } }} />
       </Sheet>
     </div>
   );

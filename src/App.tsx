@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { initNative } from '@/lib/nativeInit';
 import { startContactAutoSync } from '@/lib/contacts';
+import { liveShare } from '@/lib/chat/extras';
 import { InboxProvider } from '@/providers/InboxProvider';
 import { CallProvider } from '@/providers/CallProvider';
 import { NotificationsProvider } from '@/providers/NotificationsProvider';
@@ -64,6 +65,10 @@ function NativeBridge() {
   const { session } = useAuth();
   const uid = session?.user.id;
   useEffect(() => (uid ? startContactAutoSync(uid) : undefined), [uid]);
+  // Live locations shared in chats keep following me while the app is open.
+  useEffect(() => {
+    if (uid) liveShare.resume(uid);
+  }, [uid]);
   return null;
 }
 

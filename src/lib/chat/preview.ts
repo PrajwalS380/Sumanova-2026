@@ -8,6 +8,8 @@ const KIND_LABEL: Record<MessageKind, string> = {
   sticker: 'Sticker',
   system: '',
   snap: '✦ New snap',
+  poll: 'Poll',
+  location: 'Location',
 };
 
 /** One-line preview for the chat list. */
@@ -15,7 +17,7 @@ export function previewText(c: Pick<ConversationSummary, 'last_body' | 'last_kin
   if (!c.last_kind) return 'Say hi 👋';
   if (c.last_deleted) return 'Message deleted';
   const mine = c.last_sender_id === me;
-  const text = c.last_kind === 'text' || c.last_kind === 'system' ? (c.last_body ?? '') : c.last_kind === 'sticker' ? (c.last_body?.startsWith('nova:') ? 'Sticker' : `${c.last_body ?? ''} Sticker`) : KIND_LABEL[c.last_kind];
+  const text = c.last_kind === 'text' || c.last_kind === 'system' ? (c.last_body ?? '') : c.last_kind === 'sticker' ? (c.last_body?.startsWith('nova:') ? 'Sticker' : `${c.last_body ?? ''} Sticker`) : c.last_kind === 'poll' ? `Poll: ${c.last_body ?? ''}` : c.last_kind === 'location' ? (c.last_body ?? 'Location') : KIND_LABEL[c.last_kind];
   if (c.last_kind === 'system') return text;
   return mine ? `You: ${text}` : text;
 }

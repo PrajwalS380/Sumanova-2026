@@ -10,7 +10,7 @@ import { DEFAULT_LOOK, type Look } from '../look/config';
  * a time on a warm clay mannequin, and results are cached as image URLs, so
  * scrolling a 100-item grid never creates 100 GL contexts.
  */
-export type ThumbFrame = 'head' | 'face' | 'upper' | 'lower' | 'feet' | 'full';
+export type ThumbFrame = 'head' | 'face' | 'upper' | 'lower' | 'feet' | 'full' | 'sticker' | 'seated';
 
 const SIZE = 192;
 const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
@@ -20,6 +20,9 @@ const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number,
   lower: { pos: [0, 0.66, 2.9], target: [0, 0.66, 0], fov: 30 },
   feet: { pos: [0.6, 0.35, 1.4], target: [0, 0.18, 0], fov: 30 },
   full: { pos: [0, 1.26, 4.8], target: [0, 1.2, 0], fov: 30 },
+  /** Knees up, with head-room for raised arms (chat stickers). */
+  sticker: { pos: [0, 1.5, 3.9], target: [0, 1.45, 0], fov: 30 },
+  seated: { pos: [0, 1.05, 3.6], target: [0, 1.0, 0], fov: 30 },
 };
 
 export const CLAY = '#efe4d6';
@@ -44,7 +47,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v6';
+const STORE = 'snv-thumbs-v7';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {
@@ -69,7 +72,7 @@ function pruneOldStores() {
   pruned = true;
   void caches.keys().then((ks) => ks.filter((k) => k.startsWith('snv-thumbs-') && k !== STORE).forEach((k) => void caches.delete(k))).catch(() => undefined);
 }
-type Job = { key: string; look: Look; frame: ThumbFrame; faceless: boolean; resolve: (url: string) => void };
+type Job = { key: string; look: Look; frame: ThumbFrame; faceless: boolean; size: number; resolve: (url: string) => void };
 const queue: Job[] = [];
 let running = false;
 let root: ReconcilerRoot<HTMLCanvasElement> | null = null;
@@ -116,9 +119,12 @@ async function pump() {
       if (!canvas) {
         extend(THREE as unknown as Record<string, new (...args: unknown[]) => unknown>);
         canvas = document.createElement('canvas');
-        canvas.width = canvas.height = SIZE;
+        canvas.width = canvas.height = job.size;
         root = createRoot(canvas);
-        root.configure({ size: { width: SIZE, height: SIZE, top: 0, left: 0 }, dpr: 1, frameloop: 'never', gl: { preserveDrawingBuffer: true, alpha: true, antialias: true }, camera: { fov: 30 } });
+        root.configure({ size: { width: job.size, height: job.size, top: 0, left: 0 }, dpr: 1, frameloop: 'never', gl: { preserveDrawingBuffer: true, alpha: true, antialias: true }, camera: { fov: 30 } });
+      } else if (canvas.width !== job.size) {
+        canvas.width = canvas.height = job.size;
+        root!.configure({ size: { width: job.size, height: job.size, top: 0, left: 0 } });
       }
       const url = await new Promise<string>((resolve) => {
         const onReady = (gl: THREE.WebGLRenderer, scene: THREE.Scene, cam: THREE.Camera) => {
@@ -161,7 +167,7 @@ async function pump() {
 void ready;
 
 /** Returns a preview image URL for a look, rendering it lazily (when `enabled`). */
-export function useThumb(key: string, make: () => Look, frame: ThumbFrame, enabled: boolean, faceless = false) {
+export function useThumb(key: string, make: () => Look, frame: ThumbFrame, enabled: boolean, faceless = false, size = SIZE) {
   const [url, setUrl] = useState(() => cache.get(key) ?? '');
   useEffect(() => {
     if (!enabled) return;
@@ -171,7 +177,7 @@ export function useThumb(key: string, make: () => Look, frame: ThumbFrame, enabl
       return;
     }
     let alive = true;
-    queue.unshift({ key, look: make(), frame, faceless, resolve: (u) => alive && setUrl(u) });
+    queue.unshift({ key, look: make(), frame, faceless, size, resolve: (u) => alive && setUrl(u) });
     void pump();
     return () => {
       alive = false;

@@ -9,6 +9,7 @@ import { isNative, platform } from './platform';
  */
 interface PrivacyPlugin {
   setSecure(opts: { secure: boolean }): Promise<void>;
+  watchScreenshots(opts: { on: boolean }): Promise<void>;
   addListener(event: 'screenshot', cb: () => void): Promise<PluginListenerHandle>;
 }
 const Privacy = registerPlugin<PrivacyPlugin>('Privacy');
@@ -29,3 +30,21 @@ export const screenProtection = {
     }
   },
 };
+
+/**
+ * Chats: report screenshots (Android 14+ only) without blocking them, so the chat can show
+ * "X took a screenshot". Older Android, iPhone and web give no reliable signal — nothing is shown there.
+ */
+export async function watchChatScreenshots(onScreenshot: () => void): Promise<() => void> {
+  if (!screenProtection.supported) return () => undefined;
+  try {
+    await Privacy.watchScreenshots({ on: true });
+    const handle = await Privacy.addListener('screenshot', onScreenshot);
+    return () => {
+      void Privacy.watchScreenshots({ on: false });
+      void handle.remove();
+    };
+  } catch {
+    return () => undefined;
+  }
+}

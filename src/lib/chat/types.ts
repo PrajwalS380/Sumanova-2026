@@ -1,6 +1,6 @@
 import type { AuraColor } from '@/lib/types';
 
-export type MessageKind = 'text' | 'image' | 'video' | 'voice' | 'sticker' | 'system' | 'snap';
+export type MessageKind = 'text' | 'image' | 'video' | 'voice' | 'sticker' | 'system' | 'snap' | 'poll' | 'location';
 export type DisappearMode = 'never' | 'after_view' | '24h';
 export type ChatTheme = 'aurora' | 'sunset' | 'ocean' | 'forest' | 'mono' | 'rose';
 
@@ -11,6 +11,16 @@ export interface MediaMeta {
   mime?: string;
   size?: number;
   waveform?: number[];
+  /** Image sent as a sticker (avatar sticker): shown without a bubble. */
+  sticker?: boolean;
+  /** Poll options (kind 'poll'; the question is the body). */
+  options?: string[];
+  /** Location (kind 'location'). Live while live_until is in the future. */
+  lat?: number;
+  lng?: number;
+  acc?: number | null;
+  live_until?: string;
+  updated_at?: string;
 }
 
 export interface Message {

@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { lathe, mix } from '../sculpt';
@@ -69,9 +69,9 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
     return v;
   }, [pose]);
 
-  useFrame(({ clock }) => {
-    if (!animate) return;
-    const t = clock.getElapsedTime();
+  // Poses are applied every frame when animated; still renders (thumbnails, stickers) apply them once,
+  // frozen at a lively moment of the motion.
+  function applyPose(t: number) {
     const s = (f: number, a: number, ph = 0) => Math.sin(t * f + ph) * a;
     const swing = pose === 'walking' ? s(4, 0.45) : pose === 'dancing' ? s(5, 0.55) : 0;
     const r = refs;
@@ -106,7 +106,14 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
     if (r.kneeL.current) r.kneeL.current.rotation.x = base.knee + (pose === 'walking' ? Math.max(0, s(4, 0.5)) : 0);
     if (r.kneeR.current) r.kneeR.current.rotation.x = base.knee + (pose === 'walking' ? Math.max(0, s(4, -0.5)) : 0);
     if (r.root.current) r.root.current.position.y = pose === 'walking' ? Math.abs(s(8, 0.025)) : 0;
+  }
+  useFrame(({ clock }) => {
+    if (animate) applyPose(clock.getElapsedTime());
   });
+  useLayoutEffect(() => {
+    if (!animate) applyPose(0.3);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animate, pose, base, look.expression]);
 
   const torsoSkin = useMemo(() => lathe(torsoProfile(body, 1.0, -0.004), 40), [body]);
   // Pelvis: tapers into the crotch so trouser legs flow out of it (no "brief" outline).

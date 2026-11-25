@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         sb.from('profiles').select('display_name').eq('id', m.sender_id).maybeSingle(),
       ]);
       const who = sender?.display_name ?? 'Someone';
-      const preview = m.kind === 'text' ? (m.body ?? '').slice(0, 140) : ({ image: '📷 Photo', video: '🎬 Video', voice: '🎙️ Voice note', sticker: `${m.body ?? ''} Sticker`, snap: '✦ New snap' } as Record<string, string>)[m.kind] ?? 'New message';
+      const preview = m.kind === 'text' ? (m.body ?? '').slice(0, 140) : ({ image: '📷 Photo', video: '🎬 Video', voice: '🎙️ Voice note', sticker: String(m.body ?? '').startsWith('nova:') ? 'Sticker' : `${m.body ?? ''} Sticker`, snap: '✦ New snap', poll: `Poll: ${m.body ?? ''}`, location: m.body ?? 'Shared a location' } as Record<string, string>)[m.kind] ?? 'New message';
       const title = conv?.kind === 'group' ? `${who} · ${conv.title}` : who;
       for (const mem of members ?? []) {
         if (mem.user_id === m.sender_id || mem.muted) continue;
