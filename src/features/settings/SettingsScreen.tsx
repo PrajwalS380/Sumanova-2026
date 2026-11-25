@@ -17,6 +17,8 @@ import { ChevronLeft, Palette, UserRound } from 'lucide-react';
 import { Ghost } from '@/components/ui/Ghost';
 import { ACCENTS, getAccent, setAccent } from '@/lib/accent';
 import { ContactSyncToggle, PhoneRow } from './PhoneRows';
+import { SecuritySection } from './SecuritySection';
+import { KeyRound } from 'lucide-react';
 
 function AccentPicker() {
   const [cur, setCur] = useState(() => getAccent().id);
@@ -141,6 +143,10 @@ export default function SettingsScreen() {
             <Toggle label="Ghost mode" description="Hide your location on the map (on by default)" checked={privacy.ghost_mode} onChange={(v) => updatePrivacy({ ghost_mode: v })} />
           </Section>
         )}
+
+        <Section title="Security" icon={<KeyRound className="h-3.5 w-3.5" />}>
+          <SecuritySection />
+        </Section>
 
         <Section title="Notifications" icon={<Bell className="h-3.5 w-3.5" />}>
           {isNative ? (

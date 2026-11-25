@@ -13,6 +13,7 @@ import { friendBirthdays, type FriendBirthday } from '@/lib/birthdays';
 import { formatDayMonth, monthDay, signFor } from '@/lib/zodiac';
 import type { Friend } from '@/lib/chat/types';
 import { cn } from '@/lib/cn';
+import { supabase } from '@/lib/supabase';
 import { NovaEmoji } from '@/components/emoji/NovaEmoji';
 
 const btn = 'grid h-10 w-10 place-items-center rounded-2xl bg-white/90 text-ink active:scale-90';
@@ -28,6 +29,11 @@ export default function ProfileScreen() {
   const { profile, settings } = useAuth();
   const navigate = useNavigate();
   const [friends, setFriends] = useState<Friend[] | null>(null);
+  const [score, setScore] = useState<number | null>(null);
+  useEffect(() => {
+    if (!profile) return;
+    void supabase.rpc('snap_score', { p_user: profile.id }).then(({ data }) => setScore(typeof data === 'number' ? data : null));
+  }, [profile]);
   const [best, setBest] = useState(0);
   const [saved, setSaved] = useState<number | null>(null);
   const [bdays, setBdays] = useState<FriendBirthday[] | null>(null);
@@ -98,10 +104,11 @@ export default function ProfileScreen() {
       <div className="mx-auto flex max-w-md flex-col gap-2.5 px-3.5 pt-3">
         <div className="no-scrollbar -mx-3.5 flex gap-2 overflow-x-auto px-3.5">
           {md ? (
-            <Link to="/birthdays" className={cn(chip, 'bg-ember-rose text-white')}>🎂 {formatDayMonth(md.month, md.day)}</Link>
+            <Link to="/birthdays" className={cn(chip, 'bg-ember-rose text-white')}><NovaEmoji id="cake" size={16} /> {formatDayMonth(md.month, md.day)}</Link>
           ) : (
-            <Link to="/settings" className={cn(chip, 'bg-white text-ink')}>🎂 Add birthday</Link>
+            <Link to="/settings" className={cn(chip, 'bg-white text-ink')}><NovaEmoji id="cake" size={16} /> Add birthday</Link>
           )}
+          {score !== null && <Link to="/trophies" className={cn(chip, 'bg-[#111111] text-white')}><NovaEmoji id="nova" size={16} /> {score.toLocaleString()} · Trophies</Link>}
           {sign && <Link to="/birthdays?tab=zodiac" className={cn(chip, 'bg-[#111111] text-white')}>{sign.glyph} {sign.name}</Link>}
           {best > 0 && <span className={cn(chip, 'bg-ember-gold text-ink')}><NovaEmoji id="flame" size={16} /> {best} best</span>}
           {friends && <Link to="/friends" className={cn(chip, 'bg-white text-ink')}>{friends.length} {friends.length === 1 ? 'friend' : 'friends'}</Link>}

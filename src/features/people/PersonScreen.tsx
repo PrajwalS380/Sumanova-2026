@@ -32,6 +32,7 @@ export default function PersonScreen() {
   const navigate = useNavigate();
   const [c, setC] = useState<Creator | null | undefined>(undefined);
   const [fp, setFp] = useState<FriendshipProfile | null>(null);
+  const [score, setScore] = useState<number | null>(null);
   const [videos, setVideos] = useState<Awaited<ReturnType<typeof spotlightApi.byUser>>>([]);
   const [highlights, setHighlights] = useState<{ id: string; title: string; highlight_items: { story_id: string }[] }[]>([]);
   const [viewing, setViewing] = useState<Story[] | null>(null);
@@ -52,6 +53,7 @@ export default function PersonScreen() {
       void spotlightApi.byUser(cr.id).then(setVideos).catch(() => undefined);
       void storiesApi.highlights(cr.id).then(setHighlights).catch(() => undefined);
       if (cr.is_friend) void streaksApi.friendship(cr.id).then(setFp).catch(() => undefined);
+      if (cr.is_friend) void supabase.rpc('snap_score', { p_user: cr.id }).then(({ data }) => setScore(typeof data === 'number' ? data : null));
       void supabase.from('profiles').select('avatar_body_url,profile_scene').eq('id', cr.id).maybeSingle().then(({ data }) => {
         const row = data as { avatar_body_url: string | null; profile_scene: SceneId | null } | null;
         setBody(row?.avatar_body_url ?? null);
@@ -120,10 +122,11 @@ export default function PersonScreen() {
       </div>
 
       <div className="mx-auto max-w-md px-3.5">
-        {(fp?.streak || bday || c.bio) && (
+        {(fp?.streak || bday || c.bio || score !== null) && (
           <div className="no-scrollbar -mx-3.5 flex gap-2 overflow-x-auto px-3.5 pt-3">
             {fp && fp.streak > 0 && <span className={cn(CHIP, 'bg-ember-gold text-ink')}><NovaEmoji id="flame" size={17} />{fp.streak} days{fp.streak_expiring ? ' · ends soon' : ''}</span>}
-            {bday && <button onClick={() => navigate('/birthdays')} className={cn(CHIP, bday.inDays === 0 ? 'bg-ember-rose text-white' : 'bg-white text-ink')}>🎂 {bday.inDays === 0 ? 'Today!' : formatDayMonth(bday.month, bday.day)}</button>}
+            {bday && <button onClick={() => navigate('/birthdays')} className={cn(CHIP, bday.inDays === 0 ? 'bg-ember-rose text-white' : 'bg-white text-ink')}><NovaEmoji id="cake" size={15} /> {bday.inDays === 0 ? 'Today!' : formatDayMonth(bday.month, bday.day)}</button>}
+            {score !== null && <span className={cn(CHIP, 'bg-[#111111] text-white')}><NovaEmoji id="nova" size={15} /> {score.toLocaleString()}</span>}
             {bday && <button onClick={() => navigate('/birthdays?tab=zodiac')} className={cn(CHIP, 'bg-[#111111] text-white')}>{bday.sign.glyph} {bday.sign.name}</button>}
           </div>
         )}

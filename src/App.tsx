@@ -43,6 +43,8 @@ const AccountsScreen = lazy(() => import('@/features/auth/AccountsScreen'));
 const AvatarOnboardingScreen = lazy(() => import('@/features/avatar/AvatarOnboardingScreen'));
 const SelfieAvatarScreen = lazy(() => import('@/features/avatar/selfie/SelfieAvatarScreen'));
 const AvatarHomeScreen = lazy(() => import('@/features/avatar/AvatarHomeScreen'));
+const TwoStepPage = lazy(() => import('@/features/auth/TwoStepPage'));
+const TrophiesScreen = lazy(() => import('@/features/profile/TrophiesScreen'));
 const ProfilePhotoScreen = lazy(() => import('@/features/profile/ProfilePhotoScreen'));
 
 /** Hooks the native shell (status bar, splash, Android back button) into routing. */
@@ -73,17 +75,19 @@ function NativeBridge() {
 }
 
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { session, loading, recovering } = useAuth();
+  const { session, loading, recovering, mfaPending } = useAuth();
   const location = useLocation();
   if (loading) return <ScreenLoader />;
   if (!session) return <Navigate to="/auth/welcome" replace state={{ from: location }} />;
   if (recovering) return <Navigate to="/auth/reset" replace />;
+  if (mfaPending) return <Navigate to="/auth/two-step" replace />;
   return <>{children}</>;
 }
 
 function GuestOnly({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, mfaPending } = useAuth();
   if (loading) return <ScreenLoader />;
+  if (session && mfaPending) return <Navigate to="/auth/two-step" replace />;
   if (session) {
     // After sign-up / log-in: the avatar step (it forwards to the camera when an avatar exists or was skipped).
     let next = '/onboarding/avatar';
@@ -118,6 +122,7 @@ export default function App() {
           <Route path="/accounts" element={<AccountsScreen />} />
           <Route path="/onboarding/avatar" element={<AvatarOnboardingScreen />} />
           <Route path="/auth/reset" element={<ResetPasswordPage />} />
+          <Route path="/auth/two-step" element={<TwoStepPage />} />
           <Route element={<RequireAuth><InboxProvider><NotificationsProvider><CallProvider><AppShell /></CallProvider></NotificationsProvider></InboxProvider></RequireAuth>}>
             <Route index element={<CameraScreen />} />
             <Route path="camera" element={<Navigate to="/" replace />} />
@@ -126,6 +131,7 @@ export default function App() {
             <Route path="chat/:id/info" element={<ChatInfoScreen />} />
             <Route path="friends" element={<FriendsScreen />} />
             <Route path="birthdays" element={<BirthdaysScreen />} />
+            <Route path="trophies" element={<TrophiesScreen />} />
             <Route path="calls" element={<CallsScreen />} />
             <Route path="notifications" element={<NotificationsScreen />} />
             <Route path="avatar" element={<AvatarStudio />} />

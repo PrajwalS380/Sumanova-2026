@@ -4,6 +4,7 @@ import { savedAccounts } from '@/lib/savedAccounts';
 import { supabase } from '@/lib/supabase';
 import type { PrivacySettings, Profile, UserSettings } from '@/lib/types';
 import { setHapticsEnabled } from '@/lib/haptics';
+import { reportLoginOnce } from '@/lib/security';
 
 interface AuthState {
   session: Session | null;
@@ -13,6 +14,9 @@ interface AuthState {
   loading: boolean;
   /** True after a password-recovery link is opened. */
   recovering: boolean;
+  /** Two-step login is on and this session hasn't entered the code yet. */
+  mfaPending: boolean;
+  recheckMfa: () => Promise<void>;
   refresh: () => Promise<void>;
   setProfile: (p: Profile) => void;
   setSettings: (s: UserSettings) => void;
@@ -30,6 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [privacy, setPrivacy] = useState<PrivacySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [recovering, setRecovering] = useState(false);
+  const [mfaPending, setMfaPending] = useState(false);
+  const recheckMfa = useCallback(async () => {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    setMfaPending(!!data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2');
+  }, []);
 
   const loadUserData = useCallback(async (uid: string) => {
     const [p, s, pr] = await Promise.all([
@@ -47,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
       setSession(data.session);
-      if (data.session) await loadUserData(data.session.user.id);
+      if (data.session) await Promise.all([loadUserData(data.session.user.id), recheckMfa()]);
       if (active) setLoading(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
@@ -58,16 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSettings(null);
         setPrivacy(null);
       }
-      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && next) {
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'MFA_CHALLENGE_VERIFIED') && next) {
         // Defer: calling Supabase inside this callback can deadlock the auth lock.
-        setTimeout(() => void loadUserData(next.user.id), 0);
+        setTimeout(() => {
+          void recheckMfa().then(() => loadUserData(next.user.id));
+          void reportLoginOnce(next.user.id, next.access_token).catch(() => undefined);
+        }, 0);
       }
+      if (event === 'SIGNED_OUT') setMfaPending(false);
     });
     return () => {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, [loadUserData]);
+  }, [loadUserData, recheckMfa]);
 
   // Remember this account on the device ("Welcome back" / switch account).
   useEffect(() => {
@@ -88,6 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       privacy,
       loading,
       recovering,
+      mfaPending,
+      recheckMfa,
       refresh: async () => {
         if (session) await loadUserData(session.user.id);
       },
@@ -100,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       clearRecovering: () => setRecovering(false),
     }),
-    [session, profile, settings, privacy, loading, recovering, loadUserData],
+    [session, profile, settings, privacy, loading, recovering, mfaPending, recheckMfa, loadUserData],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
