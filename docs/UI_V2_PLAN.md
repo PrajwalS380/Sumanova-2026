@@ -39,7 +39,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
       place chip; bottom card: My status · Friends · Places · Ghost mode.
 - [x] My profile (exactly as wireframe 6; Notifications stays on the camera bell, Calls via friend profiles): pale hero with full-body avatar (tap → studio), serif name, @username · friends · best streak,
       Edit avatar / Edit profile, cards: My stories, Friends (faces), Memories, Notifications.
-- [ ] Friend profile: both full-body avatars side by side, streak pill, Chat / Snap / Call / Video, facts card, their story.
+- [x] Friend profile: both full-body avatars side by side, streak pill, Chat / Snap / Call / Video, facts card, their story.
 - [ ] Add friends: search, Share my code card, Added me (Accept / ignore), Quick add.
 - [ ] Notifications: Today / Earlier with face + coloured badge icon, unread dot.
 - [ ] Snap editor: right tool rail, caption bar, bottom = Save, "Story" (my face), "Send to →".
