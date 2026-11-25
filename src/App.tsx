@@ -13,6 +13,7 @@ import { ROOTS } from '@/components/nav';
 
 // Every screen is code-split.
 const CameraScreen = lazy(() => import('@/features/camera/CameraScreen'));
+const WelcomePage = lazy(() => import('@/features/auth/WelcomePage'));
 const SignInPage = lazy(() => import('@/features/auth/SignInPage'));
 const SignUpPage = lazy(() => import('@/features/auth/SignUpPage'));
 const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'));
@@ -44,7 +45,7 @@ function NativeBridge() {
   useEffect(() => {
     void initNative(() => {
       const p = path.current;
-      if (p === '/' || p === '/auth/sign-in') return false;
+      if (p === '/' || p === '/auth/welcome') return false;
       if (ROOTS.includes(p)) navigate('/');
       else if (/^\/chat\/[^/]+$/.test(p)) navigate('/chat');
       else navigate(-1);
@@ -58,7 +59,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading, recovering } = useAuth();
   const location = useLocation();
   if (loading) return <ScreenLoader />;
-  if (!session) return <Navigate to="/auth/sign-in" replace state={{ from: location }} />;
+  if (!session) return <Navigate to="/auth/welcome" replace state={{ from: location }} />;
   if (recovering) return <Navigate to="/auth/reset" replace />;
   return <>{children}</>;
 }
@@ -93,6 +94,7 @@ export default function App() {
       <NetworkBanner />
       <Suspense fallback={<ScreenLoader />}>
         <Routes>
+          <Route path="/auth/welcome" element={<GuestOnly><WelcomePage /></GuestOnly>} />
           <Route path="/auth/sign-in" element={<GuestOnly><SignInPage /></GuestOnly>} />
           <Route path="/auth/sign-up" element={<GuestOnly><SignUpPage /></GuestOnly>} />
           <Route path="/auth/forgot" element={<ForgotPasswordPage />} />

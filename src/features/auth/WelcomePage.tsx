@@ -1,0 +1,39 @@
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
+/** Signed-out landing (wireframe 16): wordmark, tagline, three starter characters, Create account / Log in. */
+export default function WelcomePage() {
+  const figs = [
+    { src: '/welcome/meera.webp', h: 210 },
+    { src: '/welcome/kofi.webp', h: 240 },
+    { src: '/welcome/zoe.webp', h: 210 },
+  ];
+  return (
+    <div className="flex min-h-full flex-col items-center bg-gradient-to-b from-[#dfe6ff] via-[#f6efff] to-[#f4f6fd] pt-safe text-ink">
+      <h1 className="mt-[72px] font-display text-[52px] tracking-[0.04em]">SUMANOVA</h1>
+      <p className="mt-1.5 text-base font-semibold text-ink-soft">Snap, chat and hang out — as you.</p>
+
+      <div className="mt-[60px] flex items-end">
+        {figs.map((f, i) => (
+          <motion.img
+            key={f.src}
+            src={f.src}
+            alt=""
+            draggable={false}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 * i, type: 'spring', stiffness: 220, damping: 22 }}
+            style={{ height: f.h, width: 'auto' }}
+            className={i === 1 ? 'relative z-10 -mx-2' : ''}
+          />
+        ))}
+      </div>
+
+      <div className="mt-auto flex w-full max-w-sm flex-col gap-3 px-6 pb-[max(2.5rem,var(--safe-bottom))] pt-8">
+        <Link to="/auth/sign-up" className="grid h-[54px] place-items-center rounded-full bg-ember-flame text-base font-extrabold text-white active:scale-[0.98]">Create account</Link>
+        <Link to="/auth/sign-in" className="grid h-[54px] place-items-center rounded-full bg-white text-base font-extrabold text-ink active:scale-[0.98]">Log in</Link>
+        <p className="mt-1 text-center text-xs text-ink-mute">No email code needed · you'll design your avatar next</p>
+      </div>
+    </div>
+  );
+}
