@@ -30,7 +30,7 @@ export function Toggle({ checked, onChange, label, description, disabled }: Togg
       <span
         className={cn(
           'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-300',
-          checked ? 'bg-ember-gradient text-noir' : 'bg-ink/[0.08] ring-1 ring-inset ring-ink/10',
+          checked ? 'bg-ember-flame text-noir' : 'bg-ink/[0.08] ring-1 ring-inset ring-ink/10',
         )}
       >
         <motion.span

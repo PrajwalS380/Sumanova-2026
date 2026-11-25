@@ -47,7 +47,7 @@ Tick each box when done (commit after each phase; keep CI green; deploy to Verce
 - [ ] Story viewer: segmented progress, header face + name + place, reply bar (camera, field, react).
 - [ ] Memories: tabs Snaps / Stories / Camera roll / Private, "1 year ago today" card, month grids.
 - [ ] Welcome: wordmark, tagline, three full-body avatars, Create account / Log in.
-- [ ] Settings: grouped cards (Account, Privacy, Look & feel with theme colour dots, Support/Log out).
+- [x] Settings (privacy choices stay as segmented controls so they can be changed in place): grouped cards (Account, Privacy, Look & feel with theme colour dots, Support/Log out).
 
 ## Phase 4 — Finish
 - [ ] typecheck + vitest + build green; screenshots via scratch harness; commit; push (APK build); Vercel deploy.

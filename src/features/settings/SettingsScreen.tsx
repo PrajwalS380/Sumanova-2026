@@ -2,9 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Bell } from 'lucide-react';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '@/lib/push';
 import { isNative } from '@/lib/platform';
-import { LogOut, MonitorSmartphone, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
+import { LogOut, MonitorSmartphone, ShieldCheck, Trash2 } from 'lucide-react';
 import { deleteMyAccount } from '@/lib/account';
-import { ScreenHeader } from '@/components/ScreenHeader';
+import { Link, useNavigate } from 'react-router-dom';
 import { Toggle } from '@/components/ui/Toggle';
 import { Segmented } from '@/components/ui/Segmented';
 import { Button } from '@/components/ui/Button';
@@ -13,27 +13,27 @@ import { useToast } from '@/providers/ToastProvider';
 import { supabase } from '@/lib/supabase';
 import type { PrivacySettings, UserSettings } from '@/lib/types';
 import { brand } from '@/config/brand';
-import { Check, Palette } from 'lucide-react';
+import { ChevronLeft, Palette, UserRound } from 'lucide-react';
 import { ACCENTS, getAccent, setAccent } from '@/lib/accent';
 
 function AccentPicker() {
   const [cur, setCur] = useState(() => getAccent().id);
   return (
-    <div className="grid grid-cols-3 gap-2 p-3">
-      {ACCENTS.map((a) => (
-        <button
-          key={a.id}
-          type="button"
-          aria-pressed={cur === a.id}
-          onClick={() => setCur(setAccent(a.id).id)}
-          className={`flex items-center gap-2 rounded-2xl border px-2.5 py-2 text-left text-sm font-semibold transition-transform active:scale-95 ${cur === a.id ? 'border-ink/30 bg-white' : 'border-ink/5 bg-white/50'}`}
-        >
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-white" style={{ background: `linear-gradient(135deg, ${a.from}, ${a.main} 55%, ${a.to})` }}>
-            {cur === a.id && <Check className="h-4 w-4" />}
-          </span>
-          {a.label}
-        </button>
-      ))}
+    <div className="flex items-center gap-3 px-3.5 py-[13px]">
+      <span className="flex-1 text-[15px] font-semibold">Theme colour</span>
+      <span className="flex gap-1.5">
+        {ACCENTS.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            aria-label={a.label}
+            aria-pressed={cur === a.id}
+            onClick={() => setCur(setAccent(a.id).id)}
+            className="h-[26px] w-[26px] rounded-full transition-transform active:scale-90"
+            style={{ background: a.main, boxShadow: cur === a.id ? `0 0 0 2px #fff, 0 0 0 4px ${a.main}` : undefined }}
+          />
+        ))}
+      </span>
     </div>
   );
 }
@@ -41,17 +41,18 @@ function AccentPicker() {
 function Section({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-2 flex items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">
-        {icon}
+      <h2 className="px-1 pb-1.5 pt-4 text-[13px] font-extrabold uppercase tracking-[0.08em] text-ink-mute">
+        <span className="sr-only">{icon}</span>
         {title}
       </h2>
-      <div className="glass divide-y divide-ink/5 overflow-hidden rounded-3xl">{children}</div>
+      <div className="divide-y divide-[#eef1fa] overflow-hidden rounded-[20px] bg-white">{children}</div>
     </section>
   );
 }
 
 export default function SettingsScreen() {
-  const { session, privacy, settings, setPrivacy, setSettings, signOut } = useAuth();
+  const { session, profile, privacy, settings, setPrivacy, setSettings, signOut } = useAuth();
+  const navigate = useNavigate();
   const toast = useToast();
   const [busy, setBusy] = useState<'local' | 'global' | null>(null);
   const [push, setPush] = useState(false);
@@ -98,9 +99,20 @@ export default function SettingsScreen() {
   }
 
   return (
-    <div className="pb-16">
-      <ScreenHeader title="Settings" back />
-      <div className="mx-auto max-w-md space-y-6 px-4">
+    <div className="min-h-full bg-[#f4f6fd] pb-16">
+      <header className="flex items-center gap-2 px-3.5 pt-safe">
+        <button onClick={() => navigate(-1)} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
+        <h1 className="flex-1 text-center text-lg font-extrabold">Settings</h1>
+        <span className="w-10" aria-hidden />
+      </header>
+      <div className="mx-auto max-w-md px-4">
+        {profile && (
+          <Section title="Account" icon={<UserRound className="h-3.5 w-3.5" />}>
+            <Link to="/profile/edit" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Name</span><span className="text-ink-mute">{profile.display_name}</span></Link>
+            <Link to="/profile/edit" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Username</span><span className="text-ink-mute">@{profile.username}</span></Link>
+            <div className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Email</span><span className="truncate text-ink-mute">{session?.user.email}</span></div>
+          </Section>
+        )}
         {privacy && (
           <Section title="Privacy" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
             <Segmented label="Who can message me" value={privacy.who_can_message} options={[{ value: 'friends', label: 'Friends' }, { value: 'everyone', label: 'Everyone' }]} onChange={(v) => updatePrivacy({ who_can_message: v })} />
@@ -122,12 +134,9 @@ export default function SettingsScreen() {
           )}
         </Section>
 
-        <Section title="Theme colour" icon={<Palette className="h-3.5 w-3.5" />}>
-          <AccentPicker />
-        </Section>
-
         {settings && (
-          <Section title="Experience" icon={<Sparkles className="h-3.5 w-3.5" />}>
+          <Section title="Look & feel" icon={<Palette className="h-3.5 w-3.5" />}>
+            <AccentPicker />
             <Toggle label="Reduce motion" description="Calmer transitions and no background animation" checked={settings.reduce_motion} onChange={(v) => updateSettings({ reduce_motion: v })} />
             <Toggle label="Haptic feedback" description="Subtle vibrations on supported Android phones" checked={settings.haptics} onChange={(v) => updateSettings({ haptics: v })} />
           </Section>
