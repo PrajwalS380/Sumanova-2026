@@ -16,7 +16,7 @@ import { useLongPress } from '@/features/chat/useLongPress';
 
 type Tab = 'all' | 'favourites' | 'albums' | 'archived';
 const TAB_LABEL: Record<Tab, string> = { all: 'Snaps', favourites: 'Favourites', albums: 'Albums', archived: 'Archived' };
-const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90';
+const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-ink active:scale-90';
 
 export default function MemoriesScreen() {
   const navigate = useNavigate();
@@ -136,7 +136,7 @@ export default function MemoriesScreen() {
   }
 
   return (
-    <div className="min-h-full bg-white pb-36">
+    <div className="min-h-full bg-noir pb-36">
       <header className="flex items-center gap-2 px-3.5 pb-3 pt-safe">
         <button onClick={() => (album ? setAlbum(null) : navigate(-1))} aria-label={album ? 'Back to albums' : 'Back to camera'} className={CIRCLE}>{album ? <ChevronLeft className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}</button>
         <h1 className="min-w-0 flex-1 truncate text-center text-lg font-extrabold">{album ? album.title : 'Memories'}</h1>
@@ -148,10 +148,10 @@ export default function MemoriesScreen() {
       <div className="mx-auto max-w-lg px-4">
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-3">
           {(['all', 'favourites', 'albums', 'archived'] as Tab[]).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold', tab === t ? 'bg-ink text-white' : 'bg-[#F1F1F4] text-ink')}>{TAB_LABEL[t]}</button>
+            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-xl px-3.5 py-2 text-[13px] font-extrabold', tab === t ? 'bg-ink text-white' : 'bg-white text-ink')}>{TAB_LABEL[t]}</button>
           ))}
           {month && (
-            <button onClick={() => setMonth('')} className="flex shrink-0 items-center gap-1 rounded-full bg-ember-flame/[0.12] px-3 text-xs font-bold text-ember-flame">
+            <button onClick={() => setMonth('')} className="flex shrink-0 items-center gap-1 rounded-xl bg-white px-3 text-xs font-bold text-ink">
               {new Date(`${month}-01`).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} <X className="h-3 w-3" />
             </button>
           )}
@@ -209,7 +209,7 @@ export default function MemoriesScreen() {
       </div>
 
       {months.length > 1 && (
-        <nav aria-label="Jump to month" className="glass fixed right-1.5 top-1/2 z-20 flex max-h-[60vh] -translate-y-1/2 flex-col items-center gap-0.5 overflow-y-auto rounded-full px-1 py-2 no-scrollbar">
+        <nav aria-label="Jump to month" className="glass fixed right-1.5 top-1/2 z-20 flex max-h-[60vh] -translate-y-1/2 flex-col items-center gap-0.5 overflow-y-auto rounded-xl px-1 py-2 no-scrollbar">
           {months.map((m, i) => (
             <button
               key={m.key}
@@ -262,7 +262,7 @@ export default function MemoriesScreen() {
 }
 
 function IconBtn({ children, label, onClick, danger }: { children: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
-  return <button onClick={onClick} aria-label={label} className={cn('grid h-11 w-11 place-items-center rounded-full', danger ? 'text-ember-rose' : '')}>{children}</button>;
+  return <button onClick={onClick} aria-label={label} className={cn('grid h-11 w-11 place-items-center rounded-2xl', danger ? 'text-ember-rose' : '')}>{children}</button>;
 }
 
 function Tile({ m, selected, selecting, onTap, onLong }: { m: Memory; selected: boolean; selecting: boolean; onTap: () => void; onLong: () => void }) {

@@ -12,7 +12,7 @@ export function ScreenHeader({ title, back, right, kicker }: { title: ReactNode;
   return (
     <header className="sticky top-0 z-30 flex items-center gap-2.5 bg-gradient-to-b from-noir via-noir/85 to-transparent px-4 pb-4 pt-safe">
       {back ? (
-        <button onClick={() => navigate(-1)} className="glass -ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-full" aria-label="Back">
+        <button onClick={() => navigate(-1)} className="-ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white" aria-label="Back">
           <ChevronLeft className="h-5 w-5" />
         </button>
       ) : (
@@ -20,7 +20,7 @@ export function ScreenHeader({ title, back, right, kicker }: { title: ReactNode;
       )}
       <div className="min-w-0 flex-1">
         {kicker && <p className="eyebrow -mb-0.5 truncate text-ember-flame">{kicker}</p>}
-        <h1 className="truncate font-display text-[32px] leading-tight">{title}</h1>
+        <h1 className="truncate font-display text-[30px] leading-tight">{title}</h1>
       </div>
       {right}
     </header>

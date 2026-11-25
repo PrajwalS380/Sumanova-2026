@@ -117,7 +117,7 @@ export default function CallOverlay() {
             </span>
           )}
         </p>
-        {live && !s.remoteMedia.audio && <p className="mt-2 flex items-center gap-1 rounded-full bg-black/40 px-3 py-1 text-xs"><MicOff className="h-3 w-3" /> {name.split(' ')[0]} is muted</p>}
+        {live && !s.remoteMedia.audio && <p className="mt-2 flex items-center gap-1 rounded-xl bg-black/40 px-3 py-1 text-xs"><MicOff className="h-3 w-3" /> {name.split(' ')[0]} is muted</p>}
       </div>
 
       {/* Controls */}
@@ -130,7 +130,7 @@ export default function CallOverlay() {
             </RoundButton>
           </div>
         ) : (
-          <div className="flex items-center gap-3 rounded-full bg-black/35 p-2.5 ring-1 ring-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-3 rounded-full bg-black/35 p-2.5 ring-1 ring-white/10">
             <Ctl label={s.muted ? 'Unmute' : 'Mute'} active={s.muted} onClick={calls.toggleMute}>{s.muted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}</Ctl>
             {isVideo && <Ctl label={s.videoOn ? 'Turn camera off' : 'Turn camera on'} active={!s.videoOn} onClick={calls.toggleVideo}>{s.videoOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}</Ctl>}
             {isVideo && <Ctl label="Switch camera" onClick={() => void calls.switchCamera()}><SwitchCamera className="h-6 w-6" /></Ctl>}
@@ -147,7 +147,7 @@ export default function CallOverlay() {
 
 function Ctl({ children, label, onClick, active }: { children: React.ReactNode; label: string; onClick: () => void; active?: boolean }) {
   return (
-    <button onClick={(e) => { e.stopPropagation(); haptic(6); onClick(); }} aria-label={label} aria-pressed={active} className={cn('grid h-14 w-14 place-items-center rounded-full transition-colors active:scale-95', active ? 'bg-ember-cream text-noir' : 'bg-white/12 text-white hover:bg-white/20')} style={!active ? { backgroundColor: 'rgba(255,255,255,0.12)' } : undefined}>
+    <button onClick={(e) => { e.stopPropagation(); haptic(6); onClick(); }} aria-label={label} aria-pressed={active} className={cn('grid h-14 w-14 place-items-center rounded-2xl transition-colors active:scale-95', active ? 'bg-ember-cream text-noir' : 'bg-white/12 text-white hover:bg-white/20')} style={!active ? { backgroundColor: 'rgba(255,255,255,0.12)' } : undefined}>
       {children}
     </button>
   );

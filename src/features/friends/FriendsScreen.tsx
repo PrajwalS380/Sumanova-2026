@@ -130,7 +130,7 @@ export default function FriendsScreen() {
                     {p.relation === 'friend' ? (
                       <RowButton onClick={() => openChat(p.id)} icon={<MessageCircle className="h-4 w-4" />} label="Chat" />
                     ) : p.relation === 'outgoing' ? (
-                      <span className="rounded-full bg-ink/5 px-3 py-1.5 text-xs text-ink-mute">Requested</span>
+                      <span className="rounded-xl bg-ink/5 px-3 py-1.5 text-xs text-ink-mute">Requested</span>
                     ) : p.relation === 'incoming' ? (
                       <RowButton primary loading={busy === p.id} onClick={() => run(p.id, () => friendsApi.send(p.id), 'You’re now friends!')} icon={<UserCheck className="h-4 w-4" />} label="Accept" />
                     ) : (
@@ -224,7 +224,7 @@ function PersonRow({ person, children, onClick }: { person: PublicProfile; child
 
 function RowButton({ onClick, icon, label, primary, loading }: { onClick: () => void; icon?: React.ReactNode; label: string; primary?: boolean; loading?: boolean }) {
   return (
-    <button onClick={onClick} disabled={loading} className={cn('flex items-center gap-1 rounded-full px-3.5 py-[9px] text-[13px] font-extrabold transition-transform active:scale-95 disabled:opacity-60', primary ? 'bg-ember-flame text-white' : 'bg-[#F1F1F4] text-ink')}>
+    <button onClick={onClick} disabled={loading} className={cn('flex items-center gap-1 rounded-xl px-3.5 py-[9px] text-[13px] font-extrabold transition-transform active:scale-95 disabled:opacity-60', primary ? 'bg-ember-flame text-white' : 'bg-[#F1F1F4] text-ink')}>
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
       {label}
     </button>

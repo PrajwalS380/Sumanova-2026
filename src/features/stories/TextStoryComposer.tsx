@@ -38,8 +38,8 @@ export function TextStoryComposer({ onClose, onPosted }: { onClose: () => void; 
   return createPortal(
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] flex flex-col" style={{ background: STORY_BACKGROUNDS[bgKey] }}>
       <div className="flex items-center justify-between px-4 pt-safe">
-        <button onClick={onClose} aria-label="Close" className="grid h-11 w-11 place-items-center rounded-full bg-black/25 text-white"><X className="h-6 w-6" /></button>
-        <button onClick={() => setStep('share')} disabled={!text.trim()} className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-noir disabled:opacity-50">Next</button>
+        <button onClick={onClose} aria-label="Close" className="grid h-11 w-11 place-items-center rounded-2xl bg-black/25 text-white"><X className="h-6 w-6" /></button>
+        <button onClick={() => setStep('share')} disabled={!text.trim()} className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-noir disabled:opacity-50">Next</button>
       </div>
       <div className="grid flex-1 place-items-center px-8">
         <textarea ref={ta} value={text} onChange={(e) => setText(e.target.value.slice(0, 500))} rows={5} placeholder="What’s on your mind?" className="w-full resize-none bg-transparent text-center font-display text-3xl font-medium leading-tight text-white outline-none placeholder:text-white/50" />

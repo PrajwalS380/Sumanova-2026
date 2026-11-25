@@ -92,7 +92,7 @@ export function SnapViewer({ snapId, mode, onClose }: { snapId: string; mode: 'o
           <div className="h-full rounded-full bg-white transition-[width] duration-100" style={{ width: `${(snap?.kind === 'image' && !snap.duration_seconds ? 0 : progress) * 100}%` }} />
         </div>
       </div>
-      <button onClick={(e) => { e.stopPropagation(); close(); }} aria-label="Close snap" className="absolute right-3 top-[calc(env(safe-area-inset-top)+1rem)] grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur">
+      <button onClick={(e) => { e.stopPropagation(); close(); }} aria-label="Close snap" className="absolute right-3 top-[calc(env(safe-area-inset-top)+1rem)] grid h-10 w-10 place-items-center rounded-2xl bg-black/40 text-white">
         <X className="h-5 w-5" />
       </button>
     </motion.div>,

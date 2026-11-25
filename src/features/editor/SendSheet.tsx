@@ -118,15 +118,15 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
 
   if (!prepared) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-white text-ink">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-noir text-ink">
       <header className="flex items-center gap-2 px-3.5 pb-3 pt-safe">
-        <button onClick={onClose} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-[#F1F1F4] active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
+        <button onClick={onClose} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-2xl bg-white active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
         <h1 className="flex-1 text-center text-lg font-extrabold">Send to</h1>
         <span className="w-10" aria-hidden />
       </header>
       <div className="flex-1 overflow-y-auto pb-28">
         <div className="px-4">
-          <label className="flex h-11 items-center gap-2.5 rounded-full bg-[#F1F1F4] px-3.5">
+          <label className="flex h-11 items-center gap-2.5 rounded-2xl bg-white px-3.5">
             <Search className="h-[18px] w-[18px] text-ink-mute" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search friends" aria-label="Search friends" className="flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:text-ink-mute" />
           </label>
@@ -139,10 +139,10 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
         {prepared.kind === 'video' && <Row on={toSpotlight} onClick={() => setToSpotlight((v) => !v)} icon={<Clapperboard className="h-[22px] w-[22px]" />} tint="bg-[#fff1e6] text-[#C2410C]" title="Spotlight" sub="Public to everyone on SUMANOVA" />}
         {toSpotlight && prepared.kind === 'video' && (
           <div className="space-y-2 px-4 pb-2">
-            <input value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} placeholder="Add a caption for Spotlight" className="h-11 w-full rounded-full bg-[#F1F1F4] px-4 text-[15px] outline-none" />
+            <input value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} placeholder="Add a caption for Spotlight" className="h-11 w-full rounded-2xl bg-white px-4 text-[15px] outline-none" />
             <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
               {CATEGORIES.map((c) => (
-                <button key={c} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize', category === c ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>{c}</button>
+                <button key={c} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold capitalize', category === c ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>{c}</button>
               ))}
             </div>
           </div>
@@ -155,7 +155,7 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
           <p className="px-4 py-5 text-sm text-ink-mute">Add friends to send snaps.</p>
         ) : (
           list.map((f) => (
-            <button key={f.id} onClick={() => toggle(f.id)} aria-pressed={picked.has(f.id)} className={cn('flex w-full items-center gap-3 px-4 py-2 text-left active:bg-ink/[0.04]', GHOST_HOST)}>
+            <button key={f.id} onClick={() => toggle(f.id)} aria-pressed={picked.has(f.id)} className={cn('mx-3 mb-1.5 flex w-[calc(100%-1.5rem)] items-center gap-3 rounded-2xl bg-white px-3 py-2 text-left active:bg-white/70', GHOST_HOST)}>
               <Ghost url={f.avatar_url} />
               <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={48} />
               <span className="min-w-0 flex-1"><span className="block truncate font-extrabold">{f.display_name}</span><span className="block truncate text-xs text-ink-mute">@{f.username}</span></span>
@@ -175,7 +175,7 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
 
       <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-ember-flame px-4 pb-[max(1.75rem,var(--safe-bottom))] pt-3.5 text-white">
         <span className="min-w-0 flex-1 truncate text-[15px] font-extrabold">{names.length ? names.join(', ') : 'Pick friends or your story'}</span>
-        <button onClick={() => void send()} disabled={!anything || sending} aria-label="Send" className="grid h-[52px] w-[52px] place-items-center rounded-full bg-white text-ember-flame disabled:opacity-60">
+        <button onClick={() => void send()} disabled={!anything || sending} aria-label="Send" className="grid h-[52px] w-[52px] place-items-center rounded-2xl bg-white text-ember-flame disabled:opacity-60">
           {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-[22px] w-[22px]" />}
         </button>
       </div>
@@ -195,8 +195,8 @@ function Tick({ on }: { on: boolean }) {
 
 function Row({ on, onClick, icon, tint, title, sub }: { on: boolean; onClick: () => void; icon: React.ReactNode; tint: string; title: string; sub: string }) {
   return (
-    <button onClick={onClick} aria-pressed={on} className="flex w-full items-center gap-3 px-4 py-2 text-left active:bg-ink/[0.04]">
-      <span className={cn('grid h-12 w-12 place-items-center rounded-full', tint)}>{icon}</span>
+    <button onClick={onClick} aria-pressed={on} className="mx-3 mb-1.5 flex w-[calc(100%-1.5rem)] items-center gap-3 rounded-2xl bg-white px-3 py-2 text-left active:bg-white/70">
+      <span className={cn('grid h-12 w-12 place-items-center rounded-2xl', tint)}>{icon}</span>
       <span className="min-w-0 flex-1"><span className="block font-extrabold">{title}</span><span className="block text-xs text-ink-mute">{sub}</span></span>
       <Tick on={on} />
     </button>

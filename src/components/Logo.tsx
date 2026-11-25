@@ -11,7 +11,7 @@ export function LogoMark({ size = 40, className }: { size?: number; className?: 
 
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cn('font-display text-2xl font-medium italic tracking-tight text-ink', className)}>
+    <span className={cn('font-display text-2xl text-ink', className)}>
       {brand.name.charAt(0) + brand.name.slice(1).toLowerCase()}
     </span>
   );

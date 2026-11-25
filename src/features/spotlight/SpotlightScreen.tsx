@@ -2,8 +2,9 @@ import { MeButton } from '@/components/MeButton';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bookmark, Flag, Heart, Loader2, MessageCircle, MoreHorizontal, Plus, Search, Send, Share2, SlidersHorizontal, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { Bookmark, Flag, Heart, Loader2, MessageCircle, MoreHorizontal, Music2, Plus, Search, Send, Share2, SlidersHorizontal, Trash2, Volume2, VolumeX, X } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
+import { Ghost } from '@/components/ui/Ghost';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
@@ -135,7 +136,7 @@ export default function SpotlightScreen() {
             <div>
               <p className="font-display text-xl text-white">{query ? 'No results' : 'Spotlight is warming up'}</p>
               <p className="mt-2 text-sm text-white/70">{query ? 'Try another word or creator.' : 'Be the first to post a short video for everyone on SUMANOVA.'}</p>
-              <button onClick={() => setUpload(true)} className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-extrabold text-ink"><Plus className="h-4 w-4" /> Post a video</button>
+              <button onClick={() => setUpload(true)} className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-5 text-sm font-extrabold text-ink"><Plus className="h-4 w-4" /> Post a video</button>
             </div>
           </div>
         ) : (
@@ -148,9 +149,9 @@ export default function SpotlightScreen() {
       {/* Top bar (wireframe 4): my face, search · Following / For you · more */}
       <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/45 to-transparent pb-8 pt-safe">
         <div className="pointer-events-auto flex items-center gap-2.5 px-3.5">
-          <MeButton size={44} className="shrink-0 rounded-full" />
+          <MeButton size={44} className="shrink-0 rounded-2xl" />
           {searching ? (
-            <label className="flex h-11 flex-1 items-center gap-2 rounded-full bg-[rgba(10,12,24,0.38)] px-4">
+            <label className="flex h-11 flex-1 items-center gap-2 rounded-2xl bg-[rgba(17,17,17,0.55)] px-4">
               <Search className="h-4 w-4 text-white/70" />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search Spotlight" className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/60" />
               <button onClick={() => { setQuery(''); setSearching(false); }} aria-label="Close search"><X className="h-4 w-4 text-white/70" /></button>
@@ -158,9 +159,11 @@ export default function SpotlightScreen() {
           ) : (
             <>
               <TopBtn label="Search" onClick={() => setSearching(true)}><Search className="h-[22px] w-[22px]" /></TopBtn>
-              <div className="flex flex-1 justify-center gap-[18px] text-base font-extrabold text-white" role="tablist">
-                <button role="tab" aria-selected={feed === 'following'} onClick={() => setFeed('following')} className={cn('pb-1', feed === 'following' ? 'border-b-[3px] border-white' : 'text-white/65')}>Following</button>
-                <button role="tab" aria-selected={feed === 'foryou'} onClick={() => setFeed('foryou')} className={cn('pb-1', feed === 'foryou' ? 'border-b-[3px] border-white' : 'text-white/65')}>For you</button>
+              <div className="flex flex-1 justify-center" role="tablist">
+                <div className="flex gap-1 rounded-2xl bg-[rgba(17,17,17,0.55)] p-1 text-[13px] font-extrabold">
+                  <button role="tab" aria-selected={feed === 'following'} onClick={() => setFeed('following')} className={cn('h-8 rounded-xl px-3.5', feed === 'following' ? 'bg-white text-ink' : 'text-white')}>Following</button>
+                  <button role="tab" aria-selected={feed === 'foryou'} onClick={() => setFeed('foryou')} className={cn('h-8 rounded-xl px-3.5', feed === 'foryou' ? 'bg-white text-ink' : 'text-white')}>For you</button>
+                </div>
               </div>
               <TopBtn label="More" onClick={() => setMore2(true)}><MoreHorizontal className="h-[22px] w-[22px]" /></TopBtn>
             </>
@@ -202,7 +205,7 @@ export default function SpotlightScreen() {
                 const next = on ? (settings?.interests ?? []).filter((x) => x !== c) : [...(settings?.interests ?? []), c];
                 if (settings) setSettings({ ...settings, interests: next });
                 await spotlightApi.setInterests(me, next).catch((e) => toast((e as Error).message, 'error'));
-              }} className={cn('rounded-full px-4 py-2 text-sm capitalize', on ? 'bg-ember-gradient text-noir font-semibold' : 'bg-ink/[0.05] ring-1 ring-ink/10')}>{c}</button>
+              }} className={cn('rounded-xl px-4 py-2 text-sm font-bold capitalize', on ? 'bg-[#111111] text-white' : 'bg-ink/[0.05]')}>{c}</button>
             );
           })}
           <p className="mt-2 w-full text-xs text-ink-mute">“For you” ranks videos by likes, comments, saves and views, how recent they are, creators you follow and these interests. It’s a simple, transparent formula — not an AI model.</p>
@@ -214,7 +217,7 @@ export default function SpotlightScreen() {
 }
 
 function TopBtn({ children, label, onClick }: { children: React.ReactNode; label: string; onClick: () => void }) {
-  return <button onClick={onClick} aria-label={label} className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white backdrop-blur-md active:scale-90">{children}</button>;
+  return <button onClick={onClick} aria-label={label} className="grid h-11 w-11 place-items-center rounded-2xl bg-[rgba(17,17,17,0.55)] text-white active:scale-90">{children}</button>;
 }
 
 const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, onSave, onFollow, onComments, onShare, onMenu }: {
@@ -281,17 +284,19 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
 
       {/* Side rail */}
       <div className="absolute bottom-[210px] right-3 flex flex-col items-center gap-5 text-white">
-        <Rail label={fmt(v.like_count)} active={v.liked} onClick={() => onLike()}><Heart className={cn('h-7 w-7', v.liked && 'fill-ember-rose text-ember-rose')} /></Rail>
+        <Rail label={fmt(v.like_count)} active={v.liked} onClick={() => onLike()}><Heart className={cn('h-7 w-7', v.liked && 'fill-white text-white')} /></Rail>
         <Rail label={fmt(v.comment_count)} onClick={onComments}><MessageCircle className="h-7 w-7" /></Rail>
-        <Rail label={fmt(v.save_count)} active={v.saved} onClick={onSave}><Bookmark className={cn('h-7 w-7', v.saved && 'fill-ember-gold text-ember-gold')} /></Rail>
+        <Rail label={fmt(v.save_count)} active={v.saved} onClick={onSave}><Bookmark className={cn('h-7 w-7', v.saved && 'fill-white text-white')} /></Rail>
         <Rail label="Share" onClick={onShare}><Share2 className="h-7 w-7" /></Rail>
         <Rail label="" onClick={onMenu}><MoreHorizontal className="h-7 w-7" /></Rail>
-        <button onClick={onMute} aria-label={muted ? 'Unmute' : 'Mute'} className="grid h-10 w-10 place-items-center rounded-full bg-black/30">{muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
+        <button onClick={onMute} aria-label={muted ? 'Unmute' : 'Mute'} className="grid h-11 w-11 place-items-center rounded-2xl bg-[rgba(17,17,17,0.5)]">{muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
       </div>
 
       {/* Creator + caption */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-4 pb-[104px] pt-16 text-white">
-        <div className="flex items-center gap-2.5 pr-16">
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3.5 pb-[100px] pt-16 text-white">
+        <div className="relative isolate mr-[68px] overflow-hidden rounded-[22px] bg-[rgba(17,17,17,0.55)] p-3">
+        <Ghost size={120} opacity={0.12} className="-bottom-10 -right-6 top-auto"><Music2 className="h-full w-full" strokeWidth={1.4} /></Ghost>
+        <div className="flex items-center gap-2.5">
           <Link to={`/u/${v.username}`} className="flex items-center gap-2.5">
             <Avatar name={v.display_name} url={v.avatar_url} aura={v.aura_color} size={38} />
             <span>
@@ -300,11 +305,12 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
             </span>
           </Link>
           {v.user_id !== me && (
-            <button onClick={onFollow} className={cn('ml-1 rounded-full px-3.5 py-[7px] text-[13px] font-extrabold', v.following ? 'bg-white/20' : 'bg-white text-ink')}>{v.following ? 'Following' : 'Follow'}</button>
+            <button onClick={onFollow} className={cn('ml-auto rounded-xl px-3.5 py-[7px] text-[13px] font-extrabold', v.following ? 'bg-white/20' : 'bg-white text-ink')}>{v.following ? 'Following' : 'Follow'}</button>
           )}
         </div>
-        {v.caption && <p className="mt-2 line-clamp-3 pr-16 text-sm">{v.caption}</p>}
-        <span className="mt-2 inline-block rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] capitalize">{v.category}</span>
+        {v.caption && <p className="mt-2 line-clamp-3 text-sm font-semibold">{v.caption}</p>}
+        <span className="mt-2 inline-block rounded-lg bg-white/15 px-2.5 py-0.5 text-[11px] font-bold capitalize">{v.category}</span>
+        </div>
       </div>
     </section>
   );
@@ -312,9 +318,9 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
 
 function Rail({ children, label, onClick, active }: { children: React.ReactNode; label: string; onClick: () => void; active?: boolean }) {
   return (
-    <motion.button whileTap={{ scale: 0.8 }} onClick={onClick} aria-pressed={active} className="flex flex-col items-center gap-1 drop-shadow-[0_2px_8px_rgba(0,0,0,.5)]">
-      {children}
-      {label && <span className="text-xs font-semibold">{label}</span>}
+    <motion.button whileTap={{ scale: 0.8 }} onClick={onClick} aria-pressed={active} className="flex flex-col items-center gap-1">
+      <span className={cn('grid h-12 w-12 place-items-center rounded-2xl [&>svg]:h-6 [&>svg]:w-6', active ? 'bg-ember-rose' : 'bg-[rgba(17,17,17,0.5)]')}>{children}</span>
+      {label && <span className="text-xs font-extrabold drop-shadow-[0_1px_4px_rgba(0,0,0,.6)]">{label}</span>}
     </motion.button>
   );
 }
@@ -375,8 +381,8 @@ function CommentsSheet({ video, me, onClose, onCount }: { video: SpotlightVideo 
           })}
         </ul>
         <form onSubmit={(e) => { e.preventDefault(); void post(); }} className="flex gap-2 border-t border-ink/5 px-4 py-3">
-          <input value={text} onChange={(e) => setText(e.target.value.slice(0, 500))} placeholder="Add a comment…" className="h-11 flex-1 rounded-full bg-ink/[0.05] px-4 text-[15px] outline-none ring-1 ring-ink/10 focus:ring-ember-amber/60" />
-          <button type="submit" disabled={!text.trim() || busy} aria-label="Post comment" className="grid h-11 w-11 place-items-center rounded-full bg-ember-gradient text-noir disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button>
+          <input value={text} onChange={(e) => setText(e.target.value.slice(0, 500))} placeholder="Add a comment…" className="h-11 flex-1 rounded-2xl bg-ink/[0.05] px-4 text-[15px] outline-none ring-1 ring-ink/10 focus:ring-ember-amber/60" />
+          <button type="submit" disabled={!text.trim() || busy} aria-label="Post comment" className="grid h-11 w-11 place-items-center rounded-2xl bg-ember-gradient text-white disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button>
         </form>
       </div>
     </Sheet>

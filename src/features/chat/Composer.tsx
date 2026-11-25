@@ -128,7 +128,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
   }
 
   return (
-    <div className="relative z-20 border-t border-[#F1F1F4] bg-white px-3 pb-safe pt-2.5">
+    <div className="relative z-20 bg-noir px-3 pb-safe pt-2">
       <AnimatePresence>
         {(replyTo || editing) && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="glass-strong mb-2 flex items-center gap-2 rounded-2xl px-3 py-2">
@@ -143,8 +143,8 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
       </AnimatePresence>
 
       {rec ? (
-        <div className="glass-strong flex h-14 items-center gap-3 rounded-[1.75rem] px-2">
-          <button onClick={() => { rec.cancel(); setRec(null); }} aria-label="Discard recording" className="grid h-10 w-10 place-items-center rounded-full text-ember-rose"><Trash2 className="h-5 w-5" /></button>
+        <div className="flex h-14 items-center gap-3 rounded-2xl bg-white px-2">
+          <button onClick={() => { rec.cancel(); setRec(null); }} aria-label="Discard recording" className="grid h-10 w-10 place-items-center rounded-2xl text-ember-rose"><Trash2 className="h-5 w-5" /></button>
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-ember-rose" />
           <span className="w-10 text-sm tabular-nums">{formatDuration(recSecs)}</span>
           <div className="flex flex-1 items-center justify-center gap-[3px]" aria-hidden>
@@ -152,17 +152,17 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
               <span key={i} className="w-[3px] rounded-full bg-ink/70 transition-[height] duration-100" style={{ height: `${6 + level * 26 * (0.5 + Math.abs(Math.sin(i * 1.7 + recSecs * 6)) * 0.5)}px` }} />
             ))}
           </div>
-          <button onClick={finishRecording} aria-label="Send voice note" className="grid h-11 w-11 place-items-center rounded-full text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #8E5BEA)` }}>
+          <button onClick={finishRecording} aria-label="Send voice note" className="grid h-11 w-11 place-items-center rounded-2xl text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #8E5BEA)` }}>
             <Square className="h-4 w-4 fill-current" />
           </button>
         </div>
       ) : (
         <div className="flex items-end gap-2">
-          <button onClick={() => file.current?.click()} aria-label="Send a photo or video" className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full bg-ember-flame text-white active:scale-90">
+          <button onClick={() => file.current?.click()} aria-label="Send a photo or video" className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-2xl bg-ember-flame text-white active:scale-90">
             <Camera className="h-5 w-5" />
           </button>
           <input ref={file} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => { void pickFiles(e.target.files); e.target.value = ''; }} />
-          <div className="flex min-h-[42px] flex-1 items-center rounded-[21px] bg-[#F1F1F4] px-3.5">
+          <div className="flex min-h-[42px] flex-1 items-center rounded-2xl bg-white px-3.5">
           <textarea
             ref={ta}
             rows={1}
@@ -183,16 +183,16 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
             className="max-h-[132px] min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] font-semibold leading-snug outline-none placeholder:text-ink-mute"
           />
           </div>
-          <button onClick={() => setStickers(true)} aria-label="Stickers" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90">
+          <button onClick={() => setStickers(true)} aria-label="Stickers" className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-2xl bg-white text-ink active:scale-90">
             <Smile className="h-5 w-5" />
           </button>
           <AnimatePresence mode="wait" initial={false}>
             {text.trim() ? (
-              <motion.button key="send" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={() => void submit()} aria-label={editing ? 'Save edit' : 'Send'} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ember-flame text-white active:scale-90">
+              <motion.button key="send" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={() => void submit()} aria-label={editing ? 'Save edit' : 'Send'} className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-2xl bg-ember-flame text-white active:scale-90">
                 <SendHorizontal className="h-5 w-5" />
               </motion.button>
             ) : (
-              <motion.button key="mic" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={startRecording} aria-label="Record voice note" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90">
+              <motion.button key="mic" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={startRecording} aria-label="Record voice note" className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-2xl bg-white text-ink active:scale-90">
                 <Mic className="h-5 w-5" />
               </motion.button>
             )}

@@ -23,19 +23,19 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.05, ease: [0.2, 0.8, 0.2, 1] }}
-          className="font-display text-[44px] font-light leading-[1.02] tracking-tight text-ink"
+          className="font-display text-[44px] leading-[1.02] text-ink"
         >
           Every moment,
           <br />
-          <span className="italic text-ember">glowing.</span>
+          <span className="text-ember-rose">glowing.</span>
         </motion.p>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 240, damping: 30, delay: 0.12 }}
-          className="glass mt-8 rounded-[28px] p-6"
+          className="glass mt-8 rounded-tile p-6"
         >
-          <h1 className="font-display text-[24px] font-medium">{title}</h1>
+          <h1 className="font-display text-[24px]">{title}</h1>
           {subtitle && <p className="mt-1 text-sm leading-relaxed text-ink-mute">{subtitle}</p>}
           <div className="mt-6">{children}</div>
         </motion.div>

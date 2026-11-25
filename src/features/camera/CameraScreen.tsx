@@ -149,9 +149,9 @@ export default function CameraScreen() {
       />
       <canvas ref={overlayRef} className={cn('pointer-events-none absolute inset-0 h-full w-full object-cover', mirror && '-scale-x-100', !lensId && 'hidden')} />
       {filter.tint && <div className="pointer-events-none absolute inset-0" style={{ background: filter.tint }} />}
-      {lensId && lens.state === 'loading' && <div className="absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="flex items-center gap-2 rounded-full bg-black/50 px-4 py-2 text-sm text-white backdrop-blur-md"><Loader2 className="h-4 w-4 animate-spin" /> Loading face tracking…</span></div>}
-      {lensId && lens.state === 'error' && <div className="absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-full bg-black/60 px-4 py-2 text-sm text-white">Lenses need an internet connection the first time</span></div>}
-      {lensId && lens.state === 'ready' && lens.faces === 0 && <div className="pointer-events-none absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-full bg-black/40 px-4 py-2 text-sm text-white/90 backdrop-blur-md">Point the camera at a face</span></div>}
+      {lensId && lens.state === 'loading' && <div className="absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="flex items-center gap-2 rounded-xl bg-black/50 px-4 py-2 text-sm text-white backdrop-blur-md"><Loader2 className="h-4 w-4 animate-spin" /> Loading face tracking…</span></div>}
+      {lensId && lens.state === 'error' && <div className="absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-xl bg-black/60 px-4 py-2 text-sm text-white">Lenses need an internet connection the first time</span></div>}
+      {lensId && lens.state === 'ready' && lens.faces === 0 && <div className="pointer-events-none absolute inset-x-0 top-1/3 z-20 flex justify-center"><span className="rounded-xl bg-black/40 px-4 py-2 text-sm text-white/90 backdrop-blur-md">Point the camera at a face</span></div>}
 
       {cam.status !== 'live' && <CameraState status={cam.status} onRetry={cam.retry} />}
 
@@ -175,16 +175,16 @@ export default function CameraScreen() {
 
       {/* Top bar (wireframe 1): my face, search, activity · add friend, flip */}
       <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2.5 px-3.5 pt-safe">
-        <MeButton size={44} className="shrink-0 rounded-full" />
+        <MeButton size={44} className="shrink-0 rounded-2xl" />
         <Link to="/friends" aria-label="Search people" className={TOP}>
           <Search className="h-[22px] w-[22px]" />
         </Link>
         <Link to="/notifications" aria-label={`Activity${unreadActivity ? `, ${unreadActivity} new` : ''}`} className={cn(TOP, 'relative')}>
           <Bell className="h-[22px] w-[22px]" />
-          {unreadActivity > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-ember-flame px-1 text-[10px] font-bold">{unreadActivity > 9 ? '9+' : unreadActivity}</span>}
+          {unreadActivity > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-ember-rose px-1 text-[10px] font-bold">{unreadActivity > 9 ? '9+' : unreadActivity}</span>}
         </Link>
         <span className="flex-1" />
-        <Link to="/friends" aria-label="Add friends" className={TOP}>
+        <Link to="/friends" aria-label="Add friends" className={cn(TOP, 'bg-white text-ink')}>
           <UserPlus className="h-[22px] w-[22px]" />
         </Link>
         {cam.hasMultiple && (
@@ -195,17 +195,17 @@ export default function CameraScreen() {
       </div>
 
       {/* Right tool rail */}
-      <div className="absolute right-3.5 top-[calc(var(--safe-top)+62px)] z-10 flex flex-col gap-2.5">
+      <div className="absolute right-3.5 top-[calc(var(--safe-top)+62px)] z-10 flex flex-col rounded-[18px] bg-[rgba(17,17,17,0.55)] py-1">
         {cam.caps.torch && (
-          <button onClick={() => { haptic(6); cam.setTorch(!cam.torch); }} aria-label={cam.torch ? 'Flash off' : 'Flash on'} aria-pressed={cam.torch} className={cn(TOP, cam.torch && 'bg-white/30')}>
+          <button onClick={() => { haptic(6); cam.setTorch(!cam.torch); }} aria-label={cam.torch ? 'Flash off' : 'Flash on'} aria-pressed={cam.torch} className={cn(RAIL, cam.torch && 'text-ember-gold')}>
             {cam.torch ? <Zap className="h-[22px] w-[22px]" /> : <ZapOff className="h-[22px] w-[22px]" />}
           </button>
         )}
-        <button onClick={() => { haptic(6); setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length]); }} aria-label={`Timer ${timer ? `${timer}s` : 'off'}`} aria-pressed={timer > 0} className={cn(TOP, 'relative', timer > 0 && 'bg-white/30')}>
+        <button onClick={() => { haptic(6); setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length]); }} aria-label={`Timer ${timer ? `${timer}s` : 'off'}`} aria-pressed={timer > 0} className={cn(RAIL, 'relative', timer > 0 && 'bg-white/30')}>
           <Timer className="h-[22px] w-[22px]" />
-          {timer > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-ember-flame px-1 text-[9px] font-bold">{timer}</span>}
+          {timer > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-ember-rose px-1 text-[9px] font-bold">{timer}</span>}
         </button>
-        <Link to="/settings" aria-label="Camera settings" className={TOP}>
+        <Link to="/settings" aria-label="Camera settings" className={RAIL}>
           <Settings2 className="h-[22px] w-[22px]" />
         </Link>
       </div>
@@ -221,9 +221,9 @@ export default function CameraScreen() {
       <AnimatePresence>
         {lensTray && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="no-scrollbar absolute inset-x-0 bottom-[15.5rem] z-10 flex gap-2 overflow-x-auto px-4" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
-            <button onClick={() => setLensId(null)} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-full text-xs font-semibold text-white ring-2 backdrop-blur-md', !lensId ? 'bg-white/30 ring-white' : 'bg-black/30 ring-white/20')}>Off</button>
+            <button onClick={() => setLensId(null)} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-xs font-bold text-white ring-2', !lensId ? 'bg-white/30 ring-white' : 'bg-black/45 ring-transparent')}>Off</button>
             {LENSES.map((l) => (
-              <button key={l.id} onClick={() => { haptic(6); setLensId(l.id); }} aria-label={l.name} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-full text-2xl ring-2 backdrop-blur-md transition-transform', lensId === l.id ? 'scale-110 bg-white/30 ring-white' : 'bg-black/30 ring-white/20')}>{l.emoji}</button>
+              <button key={l.id} onClick={() => { haptic(6); setLensId(l.id); }} aria-label={l.name} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl ring-2 transition-transform', lensId === l.id ? 'scale-110 bg-white/30 ring-white' : 'bg-black/45 ring-transparent')}>{l.emoji}</button>
             ))}
           </motion.div>
         )}
@@ -241,7 +241,7 @@ export default function CameraScreen() {
         <Link to="/memories" aria-label="Memories" className={BOTTOM}>
           <Images className="h-[22px] w-[22px]" />
         </Link>
-        <button onClick={() => gallery.current?.click()} aria-label="Upload from gallery" className="grid h-[46px] w-[46px] place-items-center rounded-full border-2 border-white/70 bg-gradient-to-br from-[#ffb3d9] to-[#9fb8ff] text-white active:scale-90">
+        <button onClick={() => gallery.current?.click()} aria-label="Upload from gallery" className="grid h-[50px] w-[50px] place-items-center rounded-2xl bg-ember-rose text-white active:scale-90">
           <ImagePlus className="h-5 w-5" />
         </button>
         <button
@@ -251,19 +251,19 @@ export default function CameraScreen() {
           onContextMenu={(e) => e.preventDefault()}
           disabled={cam.status !== 'live' || countdown > 0}
           aria-label="Tap for photo, hold for video"
-          className="group relative grid h-[82px] w-[82px] touch-none select-none place-items-center rounded-full disabled:opacity-40"
+          className="group relative grid h-[84px] w-[84px] touch-none select-none place-items-center rounded-[30px] disabled:opacity-40"
         >
-          <motion.span animate={{ scale: recorder.recording ? 1.2 : 1 }} className="absolute inset-0 rounded-full border-[6px] border-white" />
+          <motion.span animate={{ scale: recorder.recording ? 1.2 : 1 }} className="absolute inset-0 rounded-[30px] border-[6px] border-white" />
           {recorder.recording && (
             <svg className="absolute inset-[-10px] h-[calc(100%+20px)] w-[calc(100%+20px)] -rotate-90" viewBox="0 0 100 100" aria-hidden>
               <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="5" />
               <circle cx="50" cy="50" r="46" fill="none" stroke="#fb7185" strokeWidth="5" strokeLinecap="round" strokeDasharray={289} strokeDashoffset={289 * (1 - recProgress)} />
             </svg>
           )}
-          <span className="absolute inset-[6px] rounded-full bg-white/[0.08]" />
+          <span className="absolute inset-[13px] rounded-[20px] border-2 border-white/70 bg-white/20" />
           {recorder.recording && <motion.span initial={{ scale: 0.4 }} animate={{ scale: 0.55 }} className="absolute inset-[9px] rounded-[30%] bg-ember-rose" />}
         </button>
-        <button onClick={() => setLensTray((v) => !v)} aria-label="Face lenses" aria-pressed={lensTray} className={cn('grid h-[46px] w-[46px] place-items-center rounded-full border-2 border-white/70 bg-gradient-to-br from-[#a8f0dc] to-[#c9b6ff] text-white active:scale-90', (lensTray || lensId) && 'ring-2 ring-white')}>
+        <button onClick={() => setLensTray((v) => !v)} aria-label="Face lenses" aria-pressed={lensTray} className={cn('grid h-[50px] w-[50px] place-items-center rounded-2xl bg-ember-sage text-white active:scale-90', (lensTray || lensId) && 'ring-[3px] ring-white')}>
           <ScanFace className="h-5 w-5" />
         </button>
         <button onClick={() => { setLensId(null); setLensTray(false); }} aria-label="Lenses off" disabled={!lensId} className={cn(BOTTOM, 'disabled:opacity-40')}>
@@ -284,8 +284,10 @@ export default function CameraScreen() {
   );
 }
 
-const TOP = 'grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white active:scale-90';
-const BOTTOM = 'grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.16] text-white active:scale-90';
+const TOP = 'grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[rgba(17,17,17,0.55)] text-white active:scale-90';
+const BOTTOM = 'grid h-[50px] w-[50px] shrink-0 place-items-center rounded-2xl bg-[rgba(17,17,17,0.55)] text-white active:scale-90';
+/** Tools inside the single dark rail panel (no own background). */
+const RAIL = 'relative grid h-11 w-12 place-items-center text-white active:scale-90';
 
 
 function CameraState({ status, onRetry }: { status: string; onRetry: () => void }) {

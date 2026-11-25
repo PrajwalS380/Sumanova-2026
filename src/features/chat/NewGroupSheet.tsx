@@ -5,6 +5,7 @@ import { Sheet } from '@/components/ui/Sheet';
 import { Field } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/Avatar';
+import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
 import { chatApi, friendsApi } from '@/lib/chat/api';
 import type { Friend } from '@/lib/chat/types';
 import { useToast } from '@/providers/ToastProvider';
@@ -75,7 +76,8 @@ export function NewGroupSheet({ open, onClose, addTo, exclude = [] }: { open: bo
                 const on = picked.has(f.id);
                 return (
                   <li key={f.id}>
-                    <button onClick={() => toggle(f.id)} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors', on ? 'bg-ink/10' : 'hover:bg-ink/5')} aria-pressed={on}>
+                    <button onClick={() => toggle(f.id)} className={cn('flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors', GHOST_HOST, on ? 'bg-ink/10' : 'hover:bg-ink/5')} aria-pressed={on}>
+                      <Ghost url={f.avatar_url} />
                       <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={40} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{f.display_name}</span>

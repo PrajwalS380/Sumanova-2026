@@ -285,7 +285,7 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
       {/* Tool trays */}
       <AnimatePresence>
         {tool === 'draw' && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-28 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/50 p-2 backdrop-blur-md">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-28 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/50 p-2">
             {COLORS.map((c) => (
               <button key={c} onClick={() => setColor(c)} aria-label={`Colour ${c}`} className={cn('h-7 w-7 rounded-full ring-2 transition-transform', color === c ? 'scale-110 ring-white' : 'ring-white/20')} style={{ background: c }} />
             ))}
@@ -293,19 +293,19 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
           </motion.div>
         )}
         {tool === 'crop' && !isVideo && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-28 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/55 p-1.5 backdrop-blur-md">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute bottom-28 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/55 p-1.5">
             {ASPECTS.map((a) => (
-              <button key={a.label} onClick={() => setAspect(a.value)} className={cn('rounded-full px-3 py-1.5 text-xs font-semibold', aspect === a.value ? 'bg-white text-black' : 'text-white')}>{a.label}</button>
+              <button key={a.label} onClick={() => setAspect(a.value)} className={cn('rounded-xl px-3 py-1.5 text-xs font-semibold', aspect === a.value ? 'bg-white text-black' : 'text-white')}>{a.label}</button>
             ))}
-            <button onClick={() => setRotation((r) => r + 90)} aria-label="Rotate" className="grid h-8 w-8 place-items-center rounded-full text-white"><RotateCw className="h-4 w-4" /></button>
-            <button onClick={() => void applyCrop()} aria-label="Apply crop" className="grid h-8 w-8 place-items-center rounded-full bg-ember-gradient text-noir"><Check className="h-4 w-4" /></button>
+            <button onClick={() => setRotation((r) => r + 90)} aria-label="Rotate" className="grid h-8 w-8 place-items-center rounded-2xl text-white"><RotateCw className="h-4 w-4" /></button>
+            <button onClick={() => void applyCrop()} aria-label="Apply crop" className="grid h-8 w-8 place-items-center rounded-2xl bg-ember-gradient text-noir"><Check className="h-4 w-4" /></button>
           </motion.div>
         )}
         {selected && tool === 'none' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute bottom-28 left-1/2 flex -translate-x-1/2 gap-2 rounded-full bg-black/55 p-1.5 backdrop-blur-md">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute bottom-28 left-1/2 flex -translate-x-1/2 gap-2 rounded-full bg-black/55 p-1.5">
             <button onClick={() => resize(selected, 0.85)} className="h-8 w-8 rounded-full text-lg text-white" aria-label="Smaller">−</button>
             <button onClick={() => resize(selected, 1.18)} className="h-8 w-8 rounded-full text-lg text-white" aria-label="Bigger">+</button>
-            <button onClick={() => { setItems((l) => l.filter((x) => x.id !== selected)); setSelected(null); }} className="grid h-8 w-8 place-items-center rounded-full text-ember-rose" aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
+            <button onClick={() => { setItems((l) => l.filter((x) => x.id !== selected)); setSelected(null); }} className="grid h-8 w-8 place-items-center rounded-2xl text-ember-rose" aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -313,7 +313,7 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
       {/* Trash target while dragging */}
       <AnimatePresence>
         {drag.current && (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: overTrash ? 1.25 : 1 }} exit={{ scale: 0 }} className={cn('absolute bottom-10 left-1/2 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full', overTrash ? 'bg-ember-rose' : 'bg-black/50')}>
+          <motion.div initial={{ scale: 0 }} animate={{ scale: overTrash ? 1.25 : 1 }} exit={{ scale: 0 }} className={cn('absolute bottom-10 left-1/2 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-2xl', overTrash ? 'bg-ember-rose' : 'bg-black/50')}>
             <Trash2 className="h-6 w-6 text-white" />
           </motion.div>
         )}
@@ -322,14 +322,14 @@ export default function MediaEditor({ captured, onClose }: { captured: Captured;
       {/* Bottom bar */}
       {tool === 'none' && !selected && (
         <div className="absolute inset-x-0 bottom-0 flex items-center gap-2.5 px-4 pb-[max(1.875rem,var(--safe-bottom))] pt-10">
-          <button onClick={() => void save()} disabled={busy} aria-label="Save to Memories" className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white disabled:opacity-50">
+          <button onClick={() => void save()} disabled={busy} aria-label="Save to Memories" className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[rgba(10,12,24,0.38)] text-white disabled:opacity-50">
             <Download className="h-[22px] w-[22px]" />
           </button>
           <button onClick={() => void openSend()} disabled={busy} className="flex items-center gap-2 rounded-full bg-white/[0.92] py-1.5 pl-1.5 pr-3.5 text-sm font-extrabold text-ink disabled:opacity-60">
             <MeFace size={36} /> Story
           </button>
           <span className="flex-1" />
-          <button onClick={() => void openSend()} disabled={busy} className="flex items-center gap-2 rounded-full bg-ember-flame px-5 py-3.5 text-base font-extrabold text-white disabled:opacity-60">
+          <button onClick={() => void openSend()} disabled={busy} className="flex items-center gap-2 rounded-xl bg-ember-flame px-5 py-3.5 text-base font-extrabold text-white disabled:opacity-60">
             Send to <ArrowRight className="h-[18px] w-[18px]" strokeWidth={2.4} />
           </button>
         </div>
@@ -369,10 +369,10 @@ function TextEditor({ item, onDone }: { item: OverlayItem; onDone: (it: OverlayI
   useEffect(() => ref.current?.focus(), []);
   const styles: OverlayItem['style'][] = ['pill', 'plain', 'glow'];
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-10 flex flex-col bg-black/60 backdrop-blur-sm">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-10 flex flex-col bg-black/60">
       <div className="flex items-center justify-between px-4 pt-safe">
-        <button onClick={() => setIt({ ...it, style: styles[(styles.indexOf(it.style) + 1) % styles.length] })} className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold capitalize">{it.style}</button>
-        <button onClick={() => onDone(it)} className="rounded-full bg-ember-gradient text-noir px-4 py-1.5 text-sm font-semibold">Done</button>
+        <button onClick={() => setIt({ ...it, style: styles[(styles.indexOf(it.style) + 1) % styles.length] })} className="rounded-xl bg-white/15 px-3 py-1.5 text-xs font-semibold capitalize">{it.style}</button>
+        <button onClick={() => onDone(it)} className="rounded-xl bg-ember-gradient text-noir px-4 py-1.5 text-sm font-semibold">Done</button>
       </div>
       <div className="grid flex-1 place-items-center px-6">
         <textarea
@@ -408,7 +408,7 @@ function CropGuide({ aspect, box }: { aspect: number; box: { w: number; h: numbe
 
 function EdBtn({ children, label, onClick, active }: { children: React.ReactNode; label: string; onClick: () => void; active?: boolean }) {
   return (
-    <button onClick={() => { haptic(6); onClick(); }} aria-label={label} aria-pressed={active} className={cn('pointer-events-auto grid h-11 w-11 place-items-center rounded-full text-white backdrop-blur-md transition-colors active:scale-90', active ? 'bg-white text-black' : 'bg-black/35')}>
+    <button onClick={() => { haptic(6); onClick(); }} aria-label={label} aria-pressed={active} className={cn('pointer-events-auto grid h-11 w-11 place-items-center rounded-2xl text-white transition-colors active:scale-90', active ? 'bg-white text-black' : 'bg-black/35')}>
       {children}
     </button>
   );

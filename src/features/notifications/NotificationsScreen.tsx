@@ -87,7 +87,7 @@ function Group({ title, list, people, onOpen }: { title: string; list: AppNotifi
               <button onClick={() => onOpen(n)} className={cn('flex w-full items-center gap-3 px-4 py-2.5 text-left active:bg-ink/[0.05]', GHOST_HOST, !n.read_at && 'bg-[#F5F5F8]')}>
                 <Ghost url={who?.avatar_url} />
                 <span className="relative shrink-0">
-                  {who ? <Avatar name={who.display_name} url={who.avatar_url} aura={who.aura_color} size={48} /> : <span className="grid h-12 w-12 place-items-center rounded-full bg-[#F1F1F4]"><Bell className="h-5 w-5 text-ink-mute" /></span>}
+                  {who ? <Avatar name={who.display_name} url={who.avatar_url} aura={who.aura_color} size={48} /> : <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#F1F1F4]"><Bell className="h-5 w-5 text-ink-mute" /></span>}
                   <span className={cn('absolute -bottom-[3px] -right-[3px] grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-white text-white', b.bg)}><I className="h-3 w-3" strokeWidth={2.6} /></span>
                 </span>
                 <span className="min-w-0 flex-1 text-sm leading-[1.35]">
@@ -105,4 +105,4 @@ function Group({ title, list, people, onOpen }: { title: string; list: AppNotifi
   );
 }
 
-const CIRCLE = 'grid h-10 w-10 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90';
+const CIRCLE = 'grid h-10 w-10 place-items-center rounded-2xl bg-[#F1F1F4] text-ink active:scale-90';

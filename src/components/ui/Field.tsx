@@ -19,7 +19,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
       <div className={cn('w-full', className)}>
         <div
           className={cn(
-            'group relative rounded-2xl bg-ink/[0.04] ring-1 ring-ink/10 transition-shadow focus-within:ring-2 focus-within:ring-ember-amber/70',
+            'group relative rounded-2xl bg-[#F1F1F4] ring-1 ring-transparent transition-shadow focus-within:ring-2 focus-within:ring-ink/25',
             error && 'ring-ember-rose/60 focus-within:ring-ember-rose/80',
           )}
         >
@@ -30,7 +30,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
             placeholder=" "
             aria-invalid={Boolean(error) || undefined}
             aria-describedby={error || hint ? `${id}-msg` : undefined}
-            className="peer block h-14 w-full rounded-2xl bg-transparent px-4 pb-1.5 pt-5 text-[16px] text-ink outline-none placeholder:text-transparent [color-scheme:dark]"
+            className="peer block h-14 w-full rounded-2xl bg-transparent px-4 pb-1.5 pt-5 text-[16px] text-ink outline-none placeholder:text-transparent [color-scheme:light]"
             {...props}
           />
           <label

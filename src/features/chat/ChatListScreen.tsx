@@ -93,7 +93,7 @@ export default function ChatListScreen() {
         )}
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 pt-1" role="tablist" aria-label="Filter chats">
           {([['all', 'All'], ['unread', unreadCount ? `Unread · ${unreadCount}` : 'Unread'], ['groups', 'Groups'], ['streaks', 'Streaks']] as const).map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={chip === id} onClick={() => setChip(id)} className={cn('shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-bold', chip === id ? 'bg-ink text-white' : 'bg-white text-ink')}>
+            <button key={id} role="tab" aria-selected={chip === id} onClick={() => setChip(id)} className={cn('shrink-0 rounded-xl px-3.5 py-1.5 text-[13px] font-bold', chip === id ? 'bg-ink text-white' : 'bg-white text-ink')}>
               {label}
             </button>
           ))}
@@ -157,7 +157,7 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
         <Ghost url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} />
         <span className="relative">
           {c.kind === 'group' && !c.avatar_url ? (
-            <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-ember-flame/40 to-ember-jade/40 ring-1 ring-ink/10">
+            <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-[#DDE8FF] text-ember-sky">
               <Users className="h-5 w-5" />
             </span>
           ) : (

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Archive, Plus, Type } from 'lucide-react';
 import { TopBar, BarButton } from '@/components/TopBar';
 import { Avatar } from '@/components/Avatar';
+import { Ghost } from '@/components/ui/Ghost';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { supabase } from '@/lib/supabase';
@@ -42,7 +43,7 @@ export default function StoriesScreen() {
   const discover = (rings ?? []).filter((r) => !r.is_me && !r.is_friend);
 
   return (
-    <div className="min-h-full bg-white pb-6">
+    <div className="min-h-full bg-noir pb-28">
       <TopBar
         title="Stories"
         right={
@@ -51,11 +52,12 @@ export default function StoriesScreen() {
           </BarButton>
         }
       />
-      <div className="mx-auto max-w-lg">
-        <section className="pt-2">
+      <div className="mx-auto max-w-lg px-3.5">
+        <section className="relative isolate mt-1 overflow-hidden rounded-tile bg-white pt-3.5">
+          <Ghost url={friends[0]?.avatar_url ?? profile?.avatar_url} size={150} className="-right-8 -top-10" />
           <div className="flex items-center justify-between px-4">
             <h2 className="text-[17px] font-extrabold">Friends</h2>
-            <button onClick={() => setComposer(true)} className="flex items-center gap-1 rounded-full bg-ink/[0.06] px-3 py-1.5 text-[13px] font-bold"><Type className="h-3.5 w-3.5" /> Text story</button>
+            <button onClick={() => setComposer(true)} className="flex items-center gap-1 rounded-xl bg-ink/[0.06] px-3 py-1.5 text-[13px] font-bold"><Type className="h-3.5 w-3.5" /> Text story</button>
           </div>
           <div className="no-scrollbar flex gap-3.5 overflow-x-auto px-4 pb-2 pt-3">
             <div className="flex w-[68px] shrink-0 flex-col items-center gap-1.5">
@@ -79,12 +81,12 @@ export default function StoriesScreen() {
           {rings !== null && friends.length === 0 && <p className="px-4 pb-2 text-sm text-ink-mute">No new stories from friends right now.</p>}
         </section>
 
-        <section className="px-4 pt-4">
-          <h2 className="text-[17px] font-extrabold">For you</h2>
+        <section className="pt-5">
+          <h2 className="px-1 text-[17px] font-extrabold">For you</h2>
           {rings === null ? (
             <Skeleton />
           ) : discover.length === 0 ? (
-            <p className="mt-3 rounded-3xl bg-ink/[0.04] p-6 text-center text-sm text-ink-mute">Public stories from people you don't follow yet will show up here.</p>
+            <p className="mt-3 rounded-tile bg-white p-6 text-center text-sm text-ink-mute">Public stories from people you don't follow yet will show up here.</p>
           ) : (
             <div className="mt-3 grid grid-cols-2 gap-2.5">
               {discover.map((r, i) => (
@@ -111,13 +113,14 @@ function RingTile({ r, onClick, delay }: { r: StoryRing; onClick: () => void; de
       whileTap={{ scale: 0.97 }}
       transition={{ delay: Math.min(delay, 9) * 0.035, type: 'spring', stiffness: 300, damping: 28 }}
       onClick={onClick}
-      className={cn('relative h-[236px] overflow-hidden rounded-[18px] text-left', r.unseen && 'ring-2 ring-ember-flame ring-offset-2')}
+      className={cn('relative isolate h-[236px] overflow-hidden rounded-tile text-left', r.unseen && 'ring-[3px] ring-ink ring-offset-2 ring-offset-noir')}
       style={{ background: `linear-gradient(170deg, ${a.to} 0%, ${a.from} 100%)` }}
     >
+      <Ghost url={r.avatar_url} size={200} opacity={0.28} className="-bottom-12 -left-10 right-auto top-auto" />
       <span className="absolute inset-x-0 top-[22%] grid place-items-center">
         <Avatar name={r.display_name} url={r.avatar_url} aura={r.aura_color} size={86} />
       </span>
-      {r.story_count > 1 && <span className="absolute right-2.5 top-2.5 rounded-full bg-black/30 px-2 py-0.5 text-[11px] font-bold text-white">{r.story_count}</span>}
+      {r.story_count > 1 && <span className="absolute right-2.5 top-2.5 rounded-lg bg-white px-2 py-0.5 text-[11px] font-extrabold text-ink">{r.story_count} new</span>}
       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent p-3 pt-8 text-white">
         <span className="block truncate text-[15px] font-extrabold">{r.display_name}</span>
         <span className="block text-xs font-semibold text-white/85">{shortTime(r.latest_at)}</span>
@@ -127,5 +130,5 @@ function RingTile({ r, onClick, delay }: { r: StoryRing; onClick: () => void; de
 }
 
 function Skeleton() {
-  return <div className="mt-3 grid grid-cols-2 gap-2.5">{[0, 1].map((i) => <div key={i} className="h-[236px] animate-pulse rounded-[18px] bg-ink/[0.05]" />)}</div>;
+  return <div className="mt-3 grid grid-cols-2 gap-2.5">{[0, 1].map((i) => <div key={i} className="h-[236px] animate-pulse rounded-tile bg-white" />)}</div>;
 }

@@ -205,8 +205,8 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
             </span>
           </button>
           <span className="flex-1" />
-          {mine && <button onClick={() => setMenu(true)} aria-label="Story options" className="grid h-[42px] w-[42px] place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white"><MoreHorizontal className="h-[22px] w-[22px]" /></button>}
-          <button onClick={onClose} aria-label="Close" className="grid h-[42px] w-[42px] place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white"><X className="h-[22px] w-[22px]" strokeWidth={2.4} /></button>
+          {mine && <button onClick={() => setMenu(true)} aria-label="Story options" className="grid h-[42px] w-[42px] place-items-center rounded-2xl bg-[rgba(10,12,24,0.38)] text-white"><MoreHorizontal className="h-[22px] w-[22px]" /></button>}
+          <button onClick={onClose} aria-label="Close" className="grid h-[42px] w-[42px] place-items-center rounded-2xl bg-[rgba(10,12,24,0.38)] text-white"><X className="h-[22px] w-[22px]" strokeWidth={2.4} /></button>
         </div>
       </div>
 
@@ -220,7 +220,7 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
       {/* Bottom: reply/reactions or owner viewers */}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3 pb-safe pt-10">
         {mine ? (
-          <button onClick={async () => setViewers(await storiesApi.viewers(story!.id).catch(() => []))} disabled={!story} className="mx-auto mb-3 flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md">
+          <button onClick={async () => setViewers(await storiesApi.viewers(story!.id).catch(() => []))} disabled={!story} className="mx-auto mb-3 flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold text-white">
             <Eye className="h-4 w-4" /> Viewers
           </button>
         ) : (
@@ -228,18 +228,18 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
             {reactOpen && !typing && (
               <div className="flex justify-center gap-2">
                 {REACTIONS.map((e) => (
-                  <button key={e} onClick={() => { setReactOpen(false); void react(e); }} className="grid h-10 w-10 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-xl active:scale-90" aria-label={`React ${e}`}>{e}</button>
+                  <button key={e} onClick={() => { setReactOpen(false); void react(e); }} className="grid h-10 w-10 place-items-center rounded-2xl bg-[rgba(10,12,24,0.38)] text-xl active:scale-90" aria-label={`React ${e}`}>{e}</button>
                 ))}
               </div>
             )}
             {/* Reply bar (wireframe 14): snap reply · text reply · react */}
             <form onSubmit={(e) => { e.preventDefault(); void sendReply(reply); }} className="flex items-center gap-2">
-              <button type="button" onClick={() => { onClose(); navigate('/'); }} aria-label="Reply with a snap" className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white"><Camera className="h-[22px] w-[22px]" /></button>
+              <button type="button" onClick={() => { onClose(); navigate('/'); }} aria-label="Reply with a snap" className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-2xl bg-[rgba(10,12,24,0.38)] text-white"><Camera className="h-[22px] w-[22px]" /></button>
               <input value={reply} onChange={(e) => setReply(e.target.value)} onFocus={() => setTyping(true)} onBlur={() => !reply && setTyping(false)} placeholder={`Reply to ${ring.display_name.split(' ')[0]}`} maxLength={1000} className="h-[46px] min-w-0 flex-1 rounded-full border-[1.5px] border-white/60 bg-transparent px-4 text-[15px] font-semibold text-white outline-none placeholder:text-white/70" aria-label="Reply" />
               {reply.trim() ? (
-                <button type="submit" aria-label="Send reply" className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-ember-flame text-white"><Send className="h-5 w-5" /></button>
+                <button type="submit" aria-label="Send reply" className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-2xl bg-ember-flame text-white"><Send className="h-5 w-5" /></button>
               ) : (
-                <button type="button" onClick={() => setReactOpen((v) => !v)} aria-label="React" aria-expanded={reactOpen} className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-[rgba(10,12,24,0.38)] text-white"><Heart className="h-[22px] w-[22px]" /></button>
+                <button type="button" onClick={() => setReactOpen((v) => !v)} aria-label="React" aria-expanded={reactOpen} className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-2xl bg-[rgba(10,12,24,0.38)] text-white"><Heart className="h-[22px] w-[22px]" /></button>
               )}
             </form>
           </div>

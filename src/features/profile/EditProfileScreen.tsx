@@ -79,7 +79,7 @@ export default function EditProfileScreen() {
         <div className="flex flex-col items-center">
           <button type="button" onClick={() => fileRef.current?.click()} className="relative active:scale-95" aria-label="Change photo">
             <Avatar name={displayName || profile.display_name} url={avatarUrl} aura={aura} size={112} />
-            <span className={cn('absolute bottom-0 right-0 grid h-9 w-9 place-items-center rounded-full bg-ember-gradient text-noir ring-4 ring-noir', uploading && 'animate-pulse')}>
+            <span className={cn('absolute bottom-0 right-0 grid h-9 w-9 place-items-center rounded-2xl bg-ember-gradient text-noir ring-4 ring-noir', uploading && 'animate-pulse')}>
               <Camera className="h-4 w-4" />
             </span>
           </button>
@@ -118,7 +118,7 @@ export default function EditProfileScreen() {
                 }}
                 aria-label={AURA[k].label}
                 aria-pressed={aura === k}
-                className={cn('grid h-11 w-11 place-items-center rounded-full transition-transform', aura === k ? 'scale-110 ring-2 ring-ember-flame' : 'ring-1 ring-ink/10')}
+                className={cn('grid h-11 w-11 place-items-center rounded-2xl transition-transform', aura === k ? 'scale-110 ring-2 ring-ember-flame' : 'ring-1 ring-ink/10')}
                 style={{ background: `linear-gradient(135deg, ${AURA[k].from}, ${AURA[k].to})` }}
               >
                 {aura === k && <Check className="h-5 w-5 text-white drop-shadow" />}

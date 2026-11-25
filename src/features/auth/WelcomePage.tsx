@@ -13,7 +13,7 @@ export default function WelcomePage() {
     { src: '/welcome/zoe.webp', h: 210 },
   ];
   return (
-    <div className="flex min-h-full flex-col items-center bg-gradient-to-b from-[#dfe6ff] via-[#f6efff] to-[#ECECEF] pt-safe text-ink">
+    <div className="flex min-h-full flex-col items-center bg-noir pt-safe text-ink">
       <h1 className="mt-[72px] font-display text-[52px] tracking-[0.04em]">SUMANOVA</h1>
       <p className="mt-1.5 text-base font-semibold text-ink-soft">Snap, chat and hang out — as you.</p>
 
@@ -34,8 +34,8 @@ export default function WelcomePage() {
       </div>
 
       <div className="mt-auto flex w-full max-w-sm flex-col gap-3 px-6 pb-[max(2.5rem,var(--safe-bottom))] pt-8">
-        <Link to="/auth/sign-up" className="grid h-[54px] place-items-center rounded-full bg-ember-flame text-base font-extrabold text-white active:scale-[0.98]">Create account</Link>
-        <Link to="/auth/sign-in" className="grid h-[54px] place-items-center rounded-full bg-white text-base font-extrabold text-ink active:scale-[0.98]">Log in</Link>
+        <Link to="/auth/sign-up" className="grid h-[54px] place-items-center rounded-2xl bg-ember-flame text-base font-extrabold text-white active:scale-[0.98]">Create account</Link>
+        <Link to="/auth/sign-in" className="grid h-[54px] place-items-center rounded-2xl bg-white text-base font-extrabold text-ink active:scale-[0.98]">Log in</Link>
         <p className="mt-1 text-center text-xs text-ink-mute">No email code needed · you'll design your avatar next</p>
       </div>
     </div>

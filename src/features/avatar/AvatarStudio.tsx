@@ -138,7 +138,7 @@ export default function AvatarStudio() {
   const rail = cat.color ?? null;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-gradient-to-b from-[#dfe6ff] to-[#f6efff]">
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-noir">
       <header className="relative z-10 flex items-center gap-2 px-3 pt-safe">
         <button onClick={() => navigate(-1)} aria-label="Close" className={STUDIO_BTN}><X className="h-5 w-5" /></button>
         <h1 className="flex-1 text-center text-lg font-extrabold">My avatar</h1>
@@ -159,8 +159,8 @@ export default function AvatarStudio() {
           <div className="grid h-full place-items-center"><Avatar2D config={look} size={200} /></div>
         )}
         <div className="absolute bottom-3 left-3 flex gap-1.5">
-          <button onClick={() => setHist((h) => ({ ...h, i: Math.max(0, h.i - 1) }))} disabled={hist.i === 0} aria-label="Undo" className="glass grid h-10 w-10 place-items-center rounded-full disabled:opacity-35"><Undo2 className="h-5 w-5" /></button>
-          <button onClick={() => setHist((h) => ({ ...h, i: Math.min(h.list.length - 1, h.i + 1) }))} disabled={hist.i >= hist.list.length - 1} aria-label="Redo" className="glass grid h-10 w-10 place-items-center rounded-full disabled:opacity-35"><Redo2 className="h-5 w-5" /></button>
+          <button onClick={() => setHist((h) => ({ ...h, i: Math.max(0, h.i - 1) }))} disabled={hist.i === 0} aria-label="Undo" className="glass grid h-10 w-10 place-items-center rounded-2xl disabled:opacity-35"><Undo2 className="h-5 w-5" /></button>
+          <button onClick={() => setHist((h) => ({ ...h, i: Math.min(h.list.length - 1, h.i + 1) }))} disabled={hist.i >= hist.list.length - 1} aria-label="Redo" className="glass grid h-10 w-10 place-items-center rounded-2xl disabled:opacity-35"><Redo2 className="h-5 w-5" /></button>
         </div>
         {rail && <ColorRail palette={rail.palette} value={look.color[rail.key] ?? null} allowNone={rail.allowNone} onPick={(c) => setColor(rail.key, c)} second={cat.color2 ? { ...cat.color2, value: look.color[cat.color2.key] ?? null, onPick: (c: string | null) => setColor(cat.color2!.key, c) } : undefined} />}
       </div>
@@ -212,7 +212,7 @@ export default function AvatarStudio() {
   );
 }
 
-const STUDIO_BTN = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/85 text-ink active:scale-90';
+const STUDIO_BTN = 'grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/85 text-ink active:scale-90';
 
 /* ------------------------------------------------------------------ panels */
 
@@ -274,7 +274,7 @@ function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; l
 
 function FamilyChip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-colors', on ? 'bg-ember-cream text-noir' : 'bg-ink/[0.05] text-ink-mute')}>
+    <button onClick={onClick} className={cn('shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition-colors', on ? 'bg-ember-cream text-noir' : 'bg-ink/[0.05] text-ink-mute')}>
       {children}
     </button>
   );
@@ -348,7 +348,7 @@ function ColorRail({ palette, value, allowNone, onPick, second }: { palette: str
       )}
       <div className="no-scrollbar glass flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto rounded-full p-1.5">
         {cur.allowNone && (
-          <button onClick={() => cur.onPick(null)} aria-label="Default colour" className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink/[0.06] ring-2', cur.value === null ? 'ring-ember-amber' : 'ring-transparent')}>
+          <button onClick={() => cur.onPick(null)} aria-label="Default colour" className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-2xl bg-ink/[0.06] ring-2', cur.value === null ? 'ring-ember-amber' : 'ring-transparent')}>
             <Ban className="h-4 w-4 text-ink-faint" />
           </button>
         )}

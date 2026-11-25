@@ -95,7 +95,7 @@ export const VoiceView = memo(function VoiceView({ path, localUrl, meta, mine }:
 
   return (
     <div className="flex w-[min(64vw,240px)] items-center gap-2.5 py-1">
-      <button onClick={toggle} disabled={!url} aria-label={playing ? 'Pause' : 'Play voice note'} className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-full', mine ? 'bg-white/25' : 'bg-white/10')}>
+      <button onClick={toggle} disabled={!url} aria-label={playing ? 'Pause' : 'Play voice note'} className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-2xl', mine ? 'bg-white/25' : 'bg-white/10')}>
         {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
       </button>
       <div className="flex h-8 flex-1 items-center gap-[2px]" aria-hidden>

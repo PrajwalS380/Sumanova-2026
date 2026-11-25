@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Ban, BellOff, Bell, Camera, Clock3, Crown, Eraser, Eye, Flag, LogOut, MoreHorizontal, PencilLine, Pin, PinOff, Shield, Trash2, UserMinus, UserPlus, Users } from 'lucide-react';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Avatar } from '@/components/Avatar';
+import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
 import { Segmented } from '@/components/ui/Segmented';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { Field } from '@/components/ui/Field';
@@ -105,13 +106,13 @@ export default function ChatInfoScreen() {
         <div className="flex flex-col items-center text-center">
           <div className="relative">
             {isGroup && !conv.avatar_url ? (
-              <span className="grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br from-ember-flame/50 to-ember-jade/50 ring-4 ring-ink/5"><Users className="h-10 w-10" /></span>
+              <span className="grid h-28 w-28 place-items-center rounded-full bg-[#DDE8FF] text-ember-sky"><Users className="h-10 w-10" /></span>
             ) : (
               <Avatar name={name || '?'} url={isGroup ? conv.avatar_url : otherP?.avatar_url} aura={otherP?.aura_color} size={112} />
             )}
             {isGroup && isAdmin && (
               <>
-                <button onClick={() => file.current?.click()} className="absolute bottom-0 right-0 grid h-9 w-9 place-items-center rounded-full bg-ember-gradient text-noir ring-4 ring-noir" aria-label="Change group photo"><Camera className="h-4 w-4" /></button>
+                <button onClick={() => file.current?.click()} className="absolute bottom-0 right-0 grid h-9 w-9 place-items-center rounded-2xl bg-ember-gradient text-noir ring-4 ring-noir" aria-label="Change group photo"><Camera className="h-4 w-4" /></button>
                 <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => void changePhoto(e.target.files?.[0])} />
               </>
             )}
@@ -122,7 +123,7 @@ export default function ChatInfoScreen() {
           </h2>
           <p className="text-sm text-ink-mute">{isGroup ? `${members.length} members` : `@${otherP?.username ?? ''}`}</p>
           {!isGroup && since && <p className="mt-1 text-xs text-ink-faint">Chatting since {since}</p>}
-          {!isGroup && otherP && <button onClick={() => navigate(`/u/${otherP.username}`)} className="mt-3 rounded-full bg-ink/10 px-4 py-2 text-sm font-semibold">View profile & friendship</button>}
+          {!isGroup && otherP && <button onClick={() => navigate(`/u/${otherP.username}`)} className="mt-3 rounded-xl bg-ink/10 px-4 py-2 text-sm font-semibold">View profile & friendship</button>}
         </div>
 
         <section className="glass divide-y divide-ink/5 overflow-hidden rounded-3xl">
@@ -165,14 +166,15 @@ export default function ChatInfoScreen() {
                 const p = people[m.user_id];
                 if (!p) return null;
                 return (
-                  <li key={m.user_id} className="flex items-center gap-3 px-3 py-2.5">
+                  <li key={m.user_id} className={cn("flex items-center gap-3 px-3 py-2.5", GHOST_HOST)}>
+                    <Ghost url={p.avatar_url} />
                     <Avatar name={p.display_name} url={p.avatar_url} aura={p.aura_color} size={40} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold">{p.display_name}{m.user_id === me && ' (you)'}</span>
                       <span className="block truncate text-xs text-ink-mute">@{p.username}</span>
                     </span>
                     {m.role !== 'member' && (
-                      <span className={cn('flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', m.role === 'owner' ? 'bg-ember-gold/15 text-ember-gold' : 'bg-ember-amber/15 text-ember-amber')}>
+                      <span className={cn('flex items-center gap-1 rounded-xl px-2 py-0.5 text-[11px] font-semibold', m.role === 'owner' ? 'bg-ember-gold/15 text-ember-gold' : 'bg-ember-amber/15 text-ember-amber')}>
                         {m.role === 'owner' ? <Crown className="h-3 w-3" /> : <Shield className="h-3 w-3" />}{m.role}
                       </span>
                     )}

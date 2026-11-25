@@ -14,6 +14,7 @@ import type { Friend } from '@/lib/chat/types';
 import { AURA } from '@/lib/types';
 import { lastSeenLabel } from '@/lib/chat/time';
 import { cn } from '@/lib/cn';
+import { Ghost as GhostLayer } from '@/components/ui/Ghost';
 import { distanceM, getPosition, mapApi, type FriendLocation, type MyShare } from './api';
 
 const DURATIONS = [{ m: 15, l: '15 min' }, { m: 60, l: '1 hour' }, { m: 480, l: '8 hours' }, { m: 1440, l: '24 hours' }];
@@ -36,9 +37,9 @@ function pin(f: { display_name: string; avatar_url: string | null; avatar_body_u
   });
 }
 
-const WHITE = 'grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full bg-white text-ink shadow-[0_4px_14px_rgba(30,42,74,0.16)] active:scale-90';
-const CHIP = 'flex flex-col items-center gap-1.5 text-xs font-extrabold text-ink disabled:opacity-60';
-const ROUND = 'grid h-12 w-12 place-items-center rounded-full bg-[#F1F1F4] text-ink';
+const WHITE = 'grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-ink shadow-[0_8px_20px_-12px_rgba(17,17,17,0.5)] active:scale-90';
+const CHIP = 'relative isolate flex h-[96px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-[22px] bg-white text-xs font-extrabold text-ink shadow-[0_8px_20px_-12px_rgba(17,17,17,0.45)] disabled:opacity-60';
+const ROUND = 'grid h-12 w-12 place-items-center rounded-2xl bg-[#F1F1F4] text-ink';
 
 function tagFor(f: FriendLocation, live: boolean) {
   const mins = Math.max(0, Math.round((Date.now() - new Date(f.updated_at).getTime()) / 60000));
@@ -207,14 +208,14 @@ export default function MapScreen() {
   const left = sharing ? Math.max(0, Math.round((new Date(mine!.expires_at).getTime() - Date.now()) / 60000)) : 0;
 
   return (
-    <div className="fixed inset-0 bg-[#e9eef0]">
+    <div className="fixed inset-0 bg-[#E4E8E3]">
       <div ref={el} className="absolute inset-0 z-0" aria-label="Map" />
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex items-center gap-2 px-3.5 pt-safe">
-        <span className="pointer-events-auto"><MeButton size={42} /></span>
+        <span className="pointer-events-auto"><MeButton size={44} className="rounded-2xl" /></span>
         <button onClick={() => setFinder(true)} aria-label="Find a friend on the map" className={cn(WHITE, 'pointer-events-auto')}><Search className="h-5 w-5" /></button>
         <div className="flex flex-1 justify-center">
-          <span className="pointer-events-auto rounded-full bg-white px-3.5 py-[9px] text-sm font-extrabold shadow-[0_4px_14px_rgba(30,42,74,0.16)]">
+          <span className="pointer-events-auto rounded-2xl bg-white px-4 py-[11px] text-sm font-extrabold shadow-[0_8px_20px_-12px_rgba(17,17,17,0.5)]">
             {sharing ? `Sharing · ${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'Ghost mode'}
           </span>
         </div>
@@ -223,20 +224,24 @@ export default function MapScreen() {
       <button onClick={() => void locate()} aria-label="Centre on me" className={cn(WHITE, 'absolute right-3.5 z-[500] bottom-[calc(84px+var(--safe-bottom)+8.25rem)]')}><Navigation className="h-5 w-5" /></button>
 
       {/* Bottom card (wireframe 5): My status · Friends · Find me · Ghost mode */}
-      <div className="absolute inset-x-3.5 bottom-[calc(84px+var(--safe-bottom)+0.75rem)] z-[500] flex justify-around rounded-[22px] bg-white px-2 py-3 shadow-[0_8px_24px_rgba(30,42,74,0.18)]">
+      <div className="absolute inset-x-3.5 bottom-[calc(84px+var(--safe-bottom)+0.75rem)] z-[500] grid grid-cols-4 gap-2">
         <button onClick={() => (sharing ? setSheet(true) : setSheet(true))} className={CHIP}>
+          <GhostLayer url={profile?.avatar_url} size={90} className="-bottom-7 -right-6 top-auto" />
           <Avatar name={profile?.display_name ?? 'Me'} url={profile?.avatar_url} aura={profile?.aura_color} size={48} ring={sharing} />
           {sharing ? `${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'My status'}
         </button>
         <button onClick={() => setFinder(true)} className={CHIP}>
+          <GhostLayer url={friendsOnMap[0]?.avatar_url} size={90} className="-bottom-7 -right-6 top-auto" />
           {friendsOnMap[0] ? <Avatar name={friendsOnMap[0].display_name} url={friendsOnMap[0].avatar_url} aura={friendsOnMap[0].aura_color} size={48} /> : <span className={ROUND}><Users className="h-[22px] w-[22px]" /></span>}
           Friends · {friendsOnMap.length}
         </button>
         <button onClick={() => void locate()} className={CHIP}>
-          <span className={ROUND}><LocateFixed className="h-[22px] w-[22px]" /></span>
+          <GhostLayer size={86} className="-bottom-6 -right-5 top-auto"><LocateFixed className="h-full w-full" strokeWidth={1.4} /></GhostLayer>
+          <span className={cn(ROUND, 'bg-ember-rose text-white')}><LocateFixed className="h-[22px] w-[22px]" /></span>
           Find me
         </button>
         <button onClick={() => (sharing ? void stop() : setSheet(true))} disabled={busy} className={CHIP} aria-pressed={!sharing}>
+          <GhostLayer size={86} className="-bottom-6 -right-5 top-auto"><Ghost className="h-full w-full" strokeWidth={1.4} /></GhostLayer>
           <span className={cn(ROUND, !sharing && 'bg-ink text-white')}>{busy ? <Loader2 className="h-[22px] w-[22px] animate-spin" /> : <Ghost className="h-[22px] w-[22px]" />}</span>
           {sharing ? 'Go ghost' : 'Ghost mode'}
         </button>
@@ -262,15 +267,15 @@ export default function MapScreen() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">For</p>
             <div className="grid grid-cols-4 gap-2">
               {DURATIONS.map((d) => (
-                <button key={d.m} onClick={() => setMinutes(d.m)} className={cn('rounded-2xl py-2.5 text-sm', minutes === d.m ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 ring-1 ring-ink/10')}>{d.l}</button>
+                <button key={d.m} onClick={() => setMinutes(d.m)} className={cn('rounded-2xl py-2.5 text-sm', minutes === d.m ? 'bg-[#111111] font-extrabold text-white' : 'bg-ink/5 ring-1 ring-ink/10')}>{d.l}</button>
               ))}
             </div>
           </div>
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">With</p>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setAudience('friends')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'friends' ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 ring-1 ring-ink/10')}>All friends</button>
-              <button onClick={() => setAudience('selected')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'selected' ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/5 ring-1 ring-ink/10')}>Choose friends</button>
+              <button onClick={() => setAudience('friends')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'friends' ? 'bg-[#111111] font-extrabold text-white' : 'bg-ink/5 ring-1 ring-ink/10')}>All friends</button>
+              <button onClick={() => setAudience('selected')} className={cn('rounded-2xl py-2.5 text-sm', audience === 'selected' ? 'bg-[#111111] font-extrabold text-white' : 'bg-ink/5 ring-1 ring-ink/10')}>Choose friends</button>
             </div>
             {audience === 'selected' && (
               <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
@@ -307,7 +312,7 @@ export default function MapScreen() {
               <p className="font-semibold">{selected.display_name}</p>
               <p className="text-xs text-ink-mute">{lastSeenLabel(selected.updated_at).replace('Active', 'Updated')} · {selected.precise ? 'precise' : 'approximate'}</p>
             </div>
-            <button onClick={() => navigate(`/u/${selected.username}`)} className="rounded-full bg-ink/10 px-4 py-2 text-sm font-semibold">Profile</button>
+            <button onClick={() => navigate(`/u/${selected.username}`)} className="rounded-2xl bg-[#111111] px-4 py-2 text-sm font-extrabold text-white">Profile</button>
           </div>
         )}
       </Sheet>

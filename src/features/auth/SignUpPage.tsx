@@ -123,7 +123,7 @@ export default function SignUpPage() {
                     )
                   }
                 />
-                <Field label="Birthday" type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} error={errors.dateOfBirth} max={max.toISOString().slice(0, 10)} hint="Private — never shown on your profile" />
+                <Field label="Birthday" type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} error={errors.dateOfBirth} max={max.toISOString().slice(0, 10)} hint="Friends see only the day and month — never the year (you can turn it off in Settings)" />
               </>
             ) : (
               <>

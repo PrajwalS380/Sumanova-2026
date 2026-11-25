@@ -81,7 +81,7 @@ export default function DuoStudio() {
     <div className="fixed inset-0 flex flex-col bg-noir">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[55vh]" style={{ background: 'radial-gradient(70% 60% at 50% 40%, rgba(251,113,133,.25), transparent 70%), radial-gradient(60% 50% at 50% 70%, rgba(139,92,246,.25), transparent 70%)' }} />
       <header className="relative z-10 flex items-center gap-2 px-3 pt-safe">
-        <button onClick={() => navigate(-1)} aria-label="Back" className="glass grid h-10 w-10 place-items-center rounded-full"><ChevronLeft className="h-5 w-5" /></button>
+        <button onClick={() => navigate(-1)} aria-label="Back" className="glass grid h-10 w-10 place-items-center rounded-2xl"><ChevronLeft className="h-5 w-5" /></button>
         <h1 className="flex-1 font-display text-lg font-medium">Duo stickers</h1>
       </header>
 
@@ -108,7 +108,7 @@ export default function DuoStudio() {
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-mute">Scene</p>
           <div className="flex flex-wrap gap-2">
             {SCENES.map((s) => (
-              <button key={s.id} onClick={() => { haptic(5); setScene(s); }} className={cn('rounded-full px-3.5 py-2 text-sm transition-all', scene.id === s.id ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/[0.06] text-ink-soft ring-1 ring-ink/10')}>{s.label}</button>
+              <button key={s.id} onClick={() => { haptic(5); setScene(s); }} className={cn('rounded-xl px-3.5 py-2 text-sm transition-all', scene.id === s.id ? 'bg-ember-cream font-semibold text-noir' : 'bg-ink/[0.06] text-ink-soft ring-1 ring-ink/10')}>{s.label}</button>
             ))}
           </div>
         </div>

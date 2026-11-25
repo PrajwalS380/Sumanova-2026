@@ -44,7 +44,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
   if (m.kind === 'system') {
     return (
       <div className="my-3 flex justify-center px-6">
-        <span className="rounded-full bg-ink/5 px-3 py-1 text-center text-xs text-ink-mute">{m.body}</span>
+        <span className="rounded-xl bg-white px-3 py-1 text-center text-xs font-semibold text-ink-mute">{m.body}</span>
       </div>
     );
   }
@@ -74,8 +74,8 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           onDoubleClick={() => !m.local && !deleted && p.onQuickReact(m)}
           className={cn(
             'relative select-none touch-manipulation',
-            !isSticker && !isMedia && cn(r, corner, topCorner, 'px-3.5 py-2', mine ? 'text-white' : 'bg-[#F1F1F4] text-ink'),
-            isMedia && cn('overflow-hidden p-1', r, corner, topCorner, mine ? '' : 'bg-ink/[0.06]'),
+            !isSticker && !isMedia && cn(r, corner, topCorner, 'px-3.5 py-2', mine ? 'text-white' : 'bg-white text-ink'),
+            isMedia && cn('overflow-hidden p-1', r, corner, topCorner, mine ? '' : 'bg-white'),
             deleted && 'bg-transparent italic text-ink-mute ring-1 ring-ink/10',
             m.local === 'failed' && 'opacity-70',
           )}
@@ -113,7 +113,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
         {Object.keys(counts).length > 0 && (
           <div className={cn('relative z-10 -mt-1.5 flex gap-1', mine ? 'mr-2' : 'ml-2')}>
             {Object.entries(counts).map(([e, n]) => (
-              <span key={e} className="flex items-center gap-0.5 rounded-full bg-noir-700 px-1.5 py-0.5 text-xs ring-1 ring-ink/10">
+              <span key={e} className="flex items-center gap-0.5 rounded-xl bg-white px-1.5 py-0.5 text-xs shadow-sm">
                 {e}
                 {n > 1 && <span className="text-[10px] text-ink-mute">{n}</span>}
               </span>

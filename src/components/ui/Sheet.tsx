@@ -32,12 +32,12 @@ export function Sheet({ open, onClose, children, title, className }: { open: boo
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 420, damping: 40 }}
-            className={cn('glass-strong relative max-h-[88vh] w-full max-w-lg overflow-hidden rounded-t-[28px] pb-safe', className)}
+            className={cn('glass-strong relative max-h-[88vh] w-full max-w-lg overflow-hidden rounded-t-[26px] pb-safe', className)}
           >
             <div className="flex cursor-grab touch-none justify-center pb-1 pt-3" onPointerDown={(e) => drag.start(e)}>
               <span className="h-1.5 w-10 rounded-full bg-ink/20" />
             </div>
-            {title && <h2 className="px-5 pb-2 pt-1 font-display text-xl font-medium">{title}</h2>}
+            {title && <h2 className="px-5 pb-2 pt-1 text-lg font-extrabold">{title}</h2>}
             <div className="max-h-[calc(88vh-3rem)] overflow-y-auto overscroll-contain">{children}</div>
           </motion.div>
         </motion.div>

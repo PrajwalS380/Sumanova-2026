@@ -9,17 +9,17 @@ const button = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-ember-gradient text-noir shadow-glow hover:brightness-110',
-        glass: 'glass text-ink hover:bg-ink/[0.08]',
-        cream: 'bg-ember-cream text-noir hover:brightness-110',
+        primary: 'bg-ember-gradient text-white hover:brightness-110',
+        glass: 'bg-white text-ink hover:bg-white/80',
+        cream: 'bg-ember-cream text-white hover:brightness-110',
         ghost: 'text-ink-soft hover:bg-ink/5 hover:text-ink',
-        danger: 'bg-ember-rose/15 text-ember-rose ring-1 ring-ember-rose/30 hover:bg-ember-rose/25',
+        danger: 'bg-[#FFE4E1] text-[#B42318] hover:bg-[#FFD6D1]',
       },
       size: {
         sm: 'h-9 rounded-xl px-3 text-sm',
-        md: 'h-12 rounded-2xl px-5 text-[15px]',
-        lg: 'h-14 rounded-[1.25rem] px-6 text-base',
-        icon: 'h-11 w-11 rounded-full',
+        md: 'h-12 rounded-2xl px-5 text-[15px] font-extrabold',
+        lg: 'h-14 rounded-2xl px-6 text-base font-extrabold',
+        icon: 'h-11 w-11 rounded-2xl',
       },
       block: { true: 'w-full' },
     },

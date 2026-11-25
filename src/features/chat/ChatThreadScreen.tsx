@@ -164,16 +164,16 @@ export default function ChatThreadScreen() {
   const close = (a: LocalMessage, b?: LocalMessage) => !!b && b.kind !== 'system' && a.kind !== 'system' && a.sender_id === b.sender_id && Math.abs(new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) < 3 * 60_000;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white" style={{ backgroundImage: theme.wallpaper }}>
+    <div className="fixed inset-0 flex flex-col bg-noir" style={{ backgroundImage: theme.wallpaper }}>
       {/* Header */}
-      <header className="z-30 flex items-center gap-2.5 border-b border-[#F1F1F4] bg-white px-3.5 pb-3 pt-safe">
+      <header className="z-30 flex items-center gap-2.5 bg-noir px-3.5 pb-3 pt-safe">
         <button onClick={() => navigate('/chat')} className={CIRCLE} aria-label="Back to chats">
           <ChevronLeft className="h-5 w-5" />
         </button>
         <Link to={isGroup ? `/chat/${id}/info` : otherProfile?.username ? `/u/${otherProfile.username}` : `/chat/${id}/info`} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl py-1 pr-2 active:bg-ink/5">
           {isGroup ? (
             info?.avatar_url ? <Avatar name={title} url={info.avatar_url} size={40} /> : (
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-ember-flame/50 to-ember-jade/50"><Users className="h-5 w-5" /></span>
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-ember-flame/50 to-ember-jade/50"><Users className="h-5 w-5" /></span>
             )
           ) : (
             <span className="relative">
@@ -227,7 +227,7 @@ export default function ChatThreadScreen() {
           <>
             <AnimatePresence>
               {typingNames.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="ml-3 mt-2 w-fit rounded-full bg-ink/[0.08] px-4 py-3">
+                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="ml-3 mt-2 w-fit rounded-2xl bg-white px-4 py-3">
                   <TypingDots />
                 </motion.div>
               )}
@@ -235,7 +235,7 @@ export default function ChatThreadScreen() {
             {rows.map((r) =>
               r.node === 'day' ? (
                 <div key={r.key} className="sticky top-2 z-10 my-3 flex justify-center">
-                  <span className="glass rounded-full px-3 py-1 text-[11px] font-medium text-ink-soft">{r.label}</span>
+                  <span className="rounded-xl bg-white px-3 py-1 text-[11px] font-bold text-ink-soft">{r.label}</span>
                 </div>
               ) : (
                 <Fragment key={r.key}>
@@ -283,7 +283,7 @@ export default function ChatThreadScreen() {
 
       <AnimatePresence>
         {!atBottom && (
-          <motion.button initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} onClick={scrollToBottom} aria-label="Jump to latest" className="glass-strong absolute bottom-28 right-4 z-30 grid h-11 w-11 place-items-center rounded-full">
+          <motion.button initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} onClick={scrollToBottom} aria-label="Jump to latest" className="glass-strong absolute bottom-28 right-4 z-30 grid h-11 w-11 place-items-center rounded-2xl">
             <ChevronDown className="h-5 w-5" />
           </motion.button>
         )}
@@ -309,7 +309,7 @@ export default function ChatThreadScreen() {
               {QUICK_REACTIONS.map((e) => {
                 const active = conv.reactions.some((r) => r.message_id === menu.id && r.user_id === me && r.emoji === e);
                 return (
-                  <button key={e} onClick={() => { haptic(10); void safe(() => conv.react(menu.id, e)); setMenu(null); }} className={cn('grid h-12 w-12 place-items-center rounded-full text-2xl transition-transform active:scale-90', active ? 'bg-ink/15 ring-1 ring-ink/30' : 'hover:bg-ink/5')} aria-label={`React ${e}`}>
+                  <button key={e} onClick={() => { haptic(10); void safe(() => conv.react(menu.id, e)); setMenu(null); }} className={cn('grid h-12 w-12 place-items-center rounded-2xl text-2xl transition-transform active:scale-90', active ? 'bg-ink/15 ring-1 ring-ink/30' : 'hover:bg-ink/5')} aria-label={`React ${e}`}>
                     {e}
                   </button>
                 );
@@ -371,4 +371,4 @@ function TypingDots() {
 }
 
 
-const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90';
+const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-ink active:scale-90';
