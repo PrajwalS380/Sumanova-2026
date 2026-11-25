@@ -88,7 +88,7 @@ function App() {
     <div style={{ display: 'flex', flexWrap: 'wrap' }}>
       {looks.map((l, i) => (
         <div key={i} style={{ width: size, height: size * (frame === 'head' ? 1 : 1.3), position: 'relative' }}>
-          <AvatarStage configs={[l]} interactive={false} framing={frame} />
+          <AvatarStage configs={[l]} poses={[(q.get('poses') ? q.get('poses')!.split(',')[i] : q.get('pose')) as never]} interactive={false} framing={frame} turn={q.get('turns') ? +q.get('turns')!.split(',')[i] : +(q.get('turn') ?? 0)} cam={q.get('cam') ? (() => { const n = q.get('cam')!.split(',').map(Number); return { pos: [n[0], n[1], n[2]] as [number, number, number], target: [n[3], n[4], n[5]] as [number, number, number] }; })() : undefined} />
           <span style={{ position: 'absolute', left: 6, top: 4, color: '#aaa', font: '11px sans-serif' }}>{i + +(q.get('from') ?? 0)}</span>
         </div>
       ))}

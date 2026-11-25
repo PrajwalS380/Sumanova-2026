@@ -13,6 +13,7 @@ import { hasWebGL } from './config';
 import type { Expression, Look, Pose } from './look/config';
 import { AvatarStage, type AvatarStageHandle } from './AvatarStage';
 import { avatarApi } from './api';
+import { prepareLook } from './render/lookParts';
 
 const SCENES: { id: string; label: string; poses: [Pose, Pose]; mood: Expression }[] = [
   { id: 'hi', label: '👋 Hey there', poses: ['waving', 'waving'], mood: 'happy' },
@@ -61,6 +62,7 @@ export default function DuoStudio() {
     if (!friend || !stage.current) return;
     setSending(true);
     try {
+      await Promise.all(configs.map((c) => prepareLook(c)));
       const png = await stage.current.capture('full');
       const conv = await chatApi.getOrCreateDirect(friend.id);
       const prepared = await prepareMedia(png);

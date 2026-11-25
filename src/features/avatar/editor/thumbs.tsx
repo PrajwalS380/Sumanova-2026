@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { createRoot, extend, useThree, type ReconcilerRoot } from '@react-three/fiber';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Figure } from '../render/Figure';
+import { prepareLook } from '../render/lookParts';
 import { DEFAULT_LOOK, type Look } from '../look/config';
 
 /**
@@ -51,7 +52,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v8';
+const STORE = 'snv-thumbs-v9';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {
@@ -130,6 +131,8 @@ async function pump() {
         canvas.width = canvas.height = job.size;
         root!.configure({ size: { width: job.size, height: job.size, top: 0, left: 0 } });
       }
+      // every sculpted piece must be ready before the single still frame is taken
+      await prepareLook(job.look, job.frame === 'head' || job.frame === 'face' ? 'head' : undefined);
       const url = await new Promise<string>((resolve) => {
         const onReady = (gl: THREE.WebGLRenderer, scene: THREE.Scene, cam: THREE.Camera) => {
           gl.setClearColor(0x000000, 0);

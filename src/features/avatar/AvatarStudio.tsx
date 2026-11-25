@@ -14,6 +14,7 @@ import { avatarApi, FASHION_SLOTS, type SavedOutfit } from './api';
 import { PRESETS } from './look/presets';
 import { DEFAULT_LOOK, OPTIONAL, SLOTS, normalizeLook, randomLook, type ColorKey, type Look, type Slot } from './look/config';
 import { isHidden } from './look/hidden';
+import { prepareLook } from './render/lookParts';
 import { CATEGORIES, EXPRESSIONS, POSES, type Category, type Mode } from './editor/categories';
 import { mannequin, useThumb } from './editor/thumbs';
 
@@ -109,6 +110,7 @@ export default function AvatarStudio() {
       setSaved(look);
       // Your avatar is your picture everywhere: publish the face (profile picture) and the full body (map, profiles).
       if (gl && stage.current) {
+        await prepareLook(look);
         const face = await stage.current.capture('bust');
         const body = await stage.current.capture('full');
         const urls = await avatarApi.publishImages(me, face, body, !!profile?.photo_mode);
@@ -140,6 +142,7 @@ export default function AvatarStudio() {
   async function exportImage() {
     if (!stage.current) return;
     try {
+      await prepareLook(look);
       await saveMedia(await stage.current.capture('full'), `sumanova-avatar-${Date.now()}.png`);
     } catch (e) {
       toast((e as Error).message, 'error');

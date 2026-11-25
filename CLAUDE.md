@@ -80,6 +80,20 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   12 original starter characters in `look/presets.ts` (Looks tab → "Start from a character"); random = wearable outfits.
   Visual check: `npx vite --config vite.avatar-test.config.ts` (`?presets=1&n=8`) (port 5199, `?slot=hair&ids=1,2&frame=head`, `?random=8`).
   Keep ≤8 canvases per harness page (swiftshader). Python/sed multi-file edits get blocked by the sandbox classifier — use Edit.
+  **Sculpted avatars (owner, 2026-11-25: "no assembled-primitive characters")** — `features/avatar/sculpt3d/`:
+  `sdf.ts` (signed-distance volumes: round cones, ellipsoids, boxes, tori, `loft` profiles, `fn`; smooth "clay" unions,
+  per-part `kAt` blend, clips, subtract, displacement; rotations = three.js Euler XYZ), `mesh.ts` (narrow-band surface nets
+  + projection, skin weights that respect part ownership, UV/colour callbacks), `anatomy.ts` (36-bone skeleton, lofted
+  trunk, arms/legs/feet, 5-finger hands), `rig.ts` (Skeleton, gestures open/fist/point/peace/thumbsup/wave/pocket),
+  `garments.ts` (tops/jackets/bottoms/dresses/socks/shoes as the body puffed out by ease, cut at hems; trims with tones;
+  tops drape over the widest trousers), `hair.ts` (cap + flattened lock lobes / helical curls / plaits / buns / tails as
+  one mesh; vertex colour = (shade, root→tip), mixed in `render/SculptHair` shader). Built off the UI thread
+  (`async.ts` + `worker.ts`, `useSculpt`), cached in memory + Cache Storage `snv-sculpt-vN` (bump `SCULPT_VERSION` in
+  `jobs.ts` when any builder output changes). `render/Figure.tsx` = SculptBody (skinned body+hands, head via portal on
+  the head bone) + SculptClothes + SculptHair; `render/lookParts.ts` `prepareLook()` must be awaited before stills
+  (thumbnails, captures). Poses incl. pointing/peace/crossed/pockets. Starter pictures: `e2e/preset-images.e2e.cjs`.
+  Harness views: `&turns=0,1.57`, `&cam=x,y,z,tx,ty,tz`, `&poses=a,b`. The face (`render/Face.tsx`) is still the earlier
+  sculpted-sphere face rig. Old primitive `Hair.tsx` / garment parts of `Clothes.tsx` are no longer used by Figure.
   Wardrobe uniqueness (owner, 2026-11-25: "no duplicates"): in `look/fashion.ts` every cut's 10 items have different, bold
   patterns and rotating trim colours (the colour rail only replaces c1, so plain-colour-only variants collapse into copies).
   Duplicate checker: harness `?dupes=<slot>&frame=<thumb frame>&color=6f7680` renders every item like the studio grid and

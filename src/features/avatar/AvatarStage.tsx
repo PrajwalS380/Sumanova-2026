@@ -87,12 +87,12 @@ function Capturer({ apiRef }: { apiRef: React.MutableRefObject<AvatarStageHandle
   return null;
 }
 
-export const AvatarStage = forwardRef<AvatarStageHandle, { configs: Look[]; poses?: (Pose | undefined)[]; interactive?: boolean; className?: string; framing?: Framing }>(function AvatarStage({ configs, poses = [], interactive = true, className, framing = 'full' }, ref) {
+export const AvatarStage = forwardRef<AvatarStageHandle, { configs: Look[]; poses?: (Pose | undefined)[]; interactive?: boolean; className?: string; framing?: Framing; /** turn the figure (radians) — inspection views */ turn?: number; /** explicit camera — inspection close-ups */ cam?: { pos: [number, number, number]; target: [number, number, number] } }>(function AvatarStage({ configs, poses = [], interactive = true, className, framing = 'full', turn = 0, cam }, ref) {
   const apiRef = useRef<AvatarStageHandle['capture'] | null>(null);
   const controls = useRef<Controls | null>(null);
   useImperativeHandle(ref, () => ({ capture: (f) => apiRef.current!(f) }), []);
   const duo = configs.length > 1;
-  const start = duo ? { pos: [0, 1.4, 6.9] as [number, number, number], target: [0, 1.22, 0] as [number, number, number] } : FRAMES[framing];
+  const start = cam ?? (duo ? { pos: [0, 1.4, 6.9] as [number, number, number], target: [0, 1.22, 0] as [number, number, number] } : FRAMES[framing]);
   return (
     <Canvas
       className={className}
@@ -110,14 +110,14 @@ export const AvatarStage = forwardRef<AvatarStageHandle, { configs: Look[]; pose
       <directionalLight position={[2.5, 1.4, -3]} intensity={0.9} color="#ffb07a" />
       <Suspense fallback={null}>
         {configs.map((c, i) => (
-          <group key={i} position={[duo ? (i === 0 ? -0.55 : 0.55) : 0, 0, 0]} rotation={[0, duo ? (i === 0 ? 0.35 : -0.35) : 0, 0]}>
+          <group key={i} position={[duo ? (i === 0 ? -0.55 : 0.55) : 0, 0, 0]} rotation={[0, duo ? (i === 0 ? 0.35 : -0.35) : turn, 0]}>
             <Figure look={c} poseOverride={poses[i]} />
           </group>
         ))}
       </Suspense>
       <ContactShadows position={[0, 0, 0]} opacity={0.55} scale={6} blur={2.6} far={3} color="#1a0d06" />
       {interactive && <OrbitControls ref={controls as never} target={start.target} enablePan={false} minDistance={1.2} maxDistance={7} minPolarAngle={0.6} maxPolarAngle={1.75} enableDamping dampingFactor={0.08} />}
-      {!duo && <CameraRig framing={framing} controls={controls} />}
+      {!duo && !cam && <CameraRig framing={framing} controls={controls} />}
       <StudioEnvironment />
       <Capturer apiRef={apiRef} />
     </Canvas>

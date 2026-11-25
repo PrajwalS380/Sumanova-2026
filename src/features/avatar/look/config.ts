@@ -8,7 +8,7 @@ import type { Variant } from './face';
 import { isHidden } from './hidden';
 
 export type Expression = 'neutral' | 'happy' | 'sad' | 'angry' | 'surprised' | 'laughing' | 'crying' | 'winking' | 'blushing' | 'sleeping' | 'tongue';
-export type Pose = 'standing' | 'sitting' | 'dancing' | 'waving' | 'walking' | 'thumbsup' | 'celebrating';
+export type Pose = 'standing' | 'sitting' | 'dancing' | 'waving' | 'walking' | 'thumbsup' | 'celebrating' | 'pointing' | 'peace' | 'crossed' | 'pockets';
 
 /** Every pickable slot. `null` means "none" for optional slots. */
 export const SLOTS = {
@@ -57,7 +57,7 @@ export function variant<S extends Slot>(look: Look, slot: S): (typeof SLOTS)[S][
 
 const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 const EXPRESSIONS: Expression[] = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'laughing', 'crying', 'winking', 'blushing', 'sleeping', 'tongue'];
-const POSES: Pose[] = ['standing', 'sitting', 'dancing', 'waving', 'walking', 'thumbsup', 'celebrating'];
+const POSES: Pose[] = ['standing', 'sitting', 'dancing', 'waving', 'walking', 'thumbsup', 'celebrating', 'pointing', 'peace', 'crossed', 'pockets'];
 
 /** Validate untrusted JSON (from the server) into a Look, migrating v1 configs. */
 export function normalizeLook(raw: unknown): Look {

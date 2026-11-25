@@ -71,4 +71,5 @@ export const EXPRESSIONS = [
 ] as const;
 export const POSES = [
   ['standing', '🧍', 'Stand'], ['waving', '👋', 'Wave'], ['celebrating', '🙌', 'Cheer'], ['thumbsup', '👍', 'Thumbs up'], ['dancing', '💃', 'Dance'], ['walking', '🚶', 'Walk'], ['sitting', '🪑', 'Sit'],
+  ['pointing', '👉', 'Point'], ['peace', '✌️', 'Peace'], ['crossed', '🙅', 'Arms crossed'], ['pockets', '😎', 'Pockets'],
 ] as const;
