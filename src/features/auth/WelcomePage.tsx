@@ -1,5 +1,6 @@
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { savedAccounts } from '@/lib/savedAccounts';
+import { LogoMark, Wordmark } from '@/components/Logo';
 import { motion } from 'framer-motion';
 
 /** Signed-out landing (wireframe 16): wordmark, tagline, three starter characters, Create account / Log in. */
@@ -14,10 +15,10 @@ export default function WelcomePage() {
   ];
   return (
     <div className="flex min-h-full flex-col items-center bg-noir pt-safe text-ink">
-      <h1 className="mt-[72px] font-display text-[52px] tracking-[0.04em]">SUMANOVA</h1>
-      <p className="mt-1.5 text-base font-semibold text-ink-soft">Snap, chat and hang out — as you.</p>
+      <LogoMark size={96} className="mt-[64px]" />
+      <h1 className="mt-4"><Wordmark className="text-[40px]" /></h1>
 
-      <div className="mt-[60px] flex items-end">
+      <div className="mt-[48px] flex items-end">
         {figs.map((f, i) => (
           <motion.img
             key={f.src}

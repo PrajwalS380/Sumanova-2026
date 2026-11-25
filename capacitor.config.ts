@@ -4,25 +4,25 @@ const config: CapacitorConfig = {
   appId: 'com.sumanova.app',
   appName: 'SUMANOVA',
   webDir: 'dist',
-  backgroundColor: '#F4F6FD',
+  backgroundColor: '#ECECEF',
   android: {
     // Ship web assets inside the APK (fast, works offline). No remote URL.
     allowMixedContent: false,
   },
   ios: {
     contentInset: 'never',
-    backgroundColor: '#F4F6FD',
+    backgroundColor: '#ECECEF',
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 600,
       launchAutoHide: true,
-      backgroundColor: '#F4F6FD',
+      backgroundColor: '#FF4F9A',
       showSpinner: false,
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#F4F6FD',
+      backgroundColor: '#ECECEF',
       overlaysWebView: false,
     },
   },

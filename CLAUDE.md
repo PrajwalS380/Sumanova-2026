@@ -46,7 +46,9 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   picture = avatar face or selfie (/profile/photo; `avatar_face_url` keeps the face, `photo_mode`). Birthdays & zodiac
   (/birthdays, `friend_birthdays()` = day+month only, `privacy_settings.show_birthday`, `lib/zodiac.ts`), profile code
   (/profile/code, QR + BarcodeDetector scan), saved accounts (/accounts, `lib/savedAccounts.ts`, tokens only, never passwords),
-  streak Restore pill in the chat list. Earlier design (superseded): Design system **"Pearl"** (owner-approved from 5 wireframe options; canvas
+  streak Restore pill in the chat list. Logo (owner asked for a Snapchat-level iconic mark, original): "Nova" — white four-point
+  star mascot with bold black outline and a face, on a hot-pink #FF4F9A tile (`components/Logo.tsx`, `public/favicon.svg`,
+  `assets/*` → Android res via `npx @capacitor/assets generate --android`). Auth/welcome pages: logo + SUMANOVA wordmark, no slogans. Earlier design (superseded): Design system **"Pearl"** (owner-approved from 5 wireframe options; canvas
   https://claude.ai/artifact/QeBwqyGdk5sy2xz7PHFneG). Light theme: milky glass over blue/pink/mint pearl sheen, navy
   ink, indigo accent, Instrument Serif display + Manrope. Token names are legacy: `noir.*` = light surfaces,
   `ink.*` = navy text, `ember.*` = accents (`ember-flame` indigo, `ember-cream` = navy active capsule with `text-noir`),

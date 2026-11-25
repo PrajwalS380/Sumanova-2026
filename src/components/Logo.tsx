@@ -1,18 +1,25 @@
-import { useId } from 'react';
-import { brand } from '@/config/brand';
 import { cn } from '@/lib/cn';
 
-/** Original SUMANOVA mark: an ember planet with a cream orbit and a nova spark. */
-export function LogoMark({ size = 40, className }: { size?: number; className?: string }) {
-  const id = useId().replace(/:/g, '');
-  const svg = `<defs><linearGradient id="snv-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EAF1FF"/><stop offset=".5" stop-color="#F7EEFF"/><stop offset="1" stop-color="#E4FAF3"/></linearGradient><radialGradient id="snv-s" cx=".34" cy=".28" r=".8"><stop offset="0" stop-color="#C9D4FF"/><stop offset=".45" stop-color="#5B6CF0"/><stop offset="1" stop-color="#6A3FD1"/></radialGradient><linearGradient id="snv-o" x1="0" x2="1"><stop offset="0" stop-color="#9FB8FF" stop-opacity=".3"/><stop offset=".5" stop-color="#FFB3D9"/><stop offset="1" stop-color="#5FD6B6"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="18" fill="url(#snv-bg)"/><circle cx="30" cy="35" r="15.5" fill="url(#snv-s)"/><ellipse cx="31" cy="35" rx="25" ry="7.5" transform="rotate(-20 31 35)" fill="none" stroke="url(#snv-o)" stroke-width="2.4"/><path d="M47 9.5c.7 4.4 2.4 6.3 6.5 7-4.1.7-5.8 2.6-6.5 7-.7-4.4-2.4-6.3-6.5-7 4.1-.7 5.8-2.6 6.5-7z" fill="#1E2A4A"/>`.replace(/snv-/g, `snv${id}-`);
-  return <svg width={size} height={size} viewBox="0 0 64 64" className={className} aria-hidden dangerouslySetInnerHTML={{ __html: svg }} />;
+/**
+ * SUMANOVA mark: "Nova", an original four-point star mascot (white, bold black
+ * outline, friendly face) on a hot-pink tile. One flat colour, readable at 16px.
+ * `bare` draws just the mascot (for coloured backgrounds).
+ */
+export function LogoMark({ size = 40, bare = false, className }: { size?: number; bare?: boolean; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} aria-hidden>
+      {!bare && <rect x="2" y="2" width="60" height="60" rx="18" fill="#FF4F9A" />}
+      <g transform="rotate(-8 32 32)">
+        <path d="M32 7C37.8 20 44 26.2 57 32 44 37.8 37.8 44 32 57 26.2 44 20 37.8 7 32 20 26.2 26.2 20 32 7Z" fill="#FFFFFF" stroke="#111111" strokeWidth="3" strokeLinejoin="round" />
+        <ellipse cx="27.3" cy="30.4" rx="2.4" ry="3.4" fill="#111111" />
+        <ellipse cx="36.7" cy="30.4" rx="2.4" ry="3.4" fill="#111111" />
+        <path d="M28.4 36.6Q32 40.2 35.6 36.6" fill="none" stroke="#111111" strokeWidth="2.4" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
 }
 
+/** Wordmark: SUMANOVA in heavy, wide-tracked Inter. */
 export function Wordmark({ className }: { className?: string }) {
-  return (
-    <span className={cn('font-display text-2xl text-ink', className)}>
-      {brand.name.charAt(0) + brand.name.slice(1).toLowerCase()}
-    </span>
-  );
+  return <span className={cn('font-display text-2xl uppercase tracking-[0.08em] text-ink', className)}>SUMANOVA</span>;
 }
