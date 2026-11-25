@@ -6,7 +6,12 @@ import { AvatarFigure } from '@/components/AvatarFigure';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useCalls } from '@/providers/CallProvider';
 import { supabase } from '@/lib/supabase';
-import { AURA } from '@/lib/types';
+import type { SceneId } from '@/lib/types';
+import { Scene } from '@/components/Scene';
+import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
+import { friendBirthdays, type FriendBirthday } from '@/lib/birthdays';
+import { formatDayMonth, matchScore, monthDay, signFor } from '@/lib/zodiac';
+import { cn } from '@/lib/cn';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/providers/AuthProvider';
@@ -31,8 +36,10 @@ export default function PersonScreen() {
   const [busy, setBusy] = useState(false);
   const [menu, setMenu] = useState(false);
   const [body, setBody] = useState<string | null>(null);
+  const [scene, setScene] = useState<SceneId>('dusk');
+  const [bday, setBday] = useState<FriendBirthday | null>(null);
   const [theirStories, setTheirStories] = useState<Story[]>([]);
-  const { profile } = useAuth();
+  const { settings } = useAuth();
   const calls = useCalls();
 
   async function load() {
@@ -43,7 +50,12 @@ export default function PersonScreen() {
       void spotlightApi.byUser(cr.id).then(setVideos).catch(() => undefined);
       void storiesApi.highlights(cr.id).then(setHighlights).catch(() => undefined);
       if (cr.is_friend) void streaksApi.friendship(cr.id).then(setFp).catch(() => undefined);
-      void supabase.from('profiles').select('avatar_body_url').eq('id', cr.id).maybeSingle().then(({ data }) => setBody((data as { avatar_body_url: string | null } | null)?.avatar_body_url ?? null));
+      void supabase.from('profiles').select('avatar_body_url,profile_scene').eq('id', cr.id).maybeSingle().then(({ data }) => {
+        const row = data as { avatar_body_url: string | null; profile_scene: SceneId | null } | null;
+        setBody(row?.avatar_body_url ?? null);
+        setScene(row?.profile_scene ?? 'dusk');
+      });
+      if (cr.is_friend) void friendBirthdays().then((l) => setBday(l.find((b) => b.user_id === cr.id) ?? null)).catch(() => undefined);
       void storiesApi.ofUser(cr.id).then(setTheirStories).catch(() => undefined);
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -85,32 +97,35 @@ export default function PersonScreen() {
   };
 
   return (
-    <div className="min-h-full bg-[#f4f6fd] pb-16">
-      {/* Hero (wireframe 7): both avatars side by side */}
-      <div className="relative h-[300px]" style={{ background: `linear-gradient(180deg, ${AURA[c.aura_color]?.to ?? '#ffd6e8'}66 0%, #f4f6fd 100%)` }}>
-        <header className="flex items-center gap-2 px-3.5 pt-safe">
+    <div className="min-h-full bg-noir pb-16">
+      {/* Hero (wireframe 7): their full-body avatar in their scene */}
+      <div className="relative h-[340px]">
+        <Scene id={scene} className="absolute inset-0" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(17,17,17,.5) 100%)' }} />
+        <header className="relative z-10 flex items-center gap-2 px-3.5 pt-safe">
           <button onClick={() => navigate(-1)} aria-label="Back" className={CIRCLE}><ChevronLeft className="h-5 w-5" /></button>
           <span className="flex-1" />
           <button onClick={() => setMenu(true)} aria-label="More options" className={CIRCLE}><MoreHorizontal className="h-5 w-5" /></button>
         </header>
-        <div className="absolute inset-x-0 top-[calc(var(--safe-top)+52px)] flex items-end justify-center gap-1.5">
-          <AvatarFigure name={c.display_name} bodyUrl={body} faceUrl={c.avatar_url} aura={c.aura_color} height={230} />
-          {c.is_friend && profile && <AvatarFigure name={profile.display_name} bodyUrl={profile.avatar_body_url} faceUrl={profile.avatar_url} aura={profile.aura_color} height={230} />}
+        <div className="absolute bottom-0 right-5">
+          <AvatarFigure name={c.display_name} bodyUrl={body} faceUrl={c.avatar_url} aura={c.aura_color} height={270} />
+        </div>
+        <div className="absolute bottom-[18px] left-[18px] text-white">
+          <span className="inline-block rounded-full border-4 border-white"><Avatar name={c.display_name} url={c.avatar_url} aura={c.aura_color} size={80} /></span>
+          <h1 className="mt-2 font-display text-[32px] leading-none" style={{ textShadow: '0 2px 10px rgba(17,17,17,.35)' }}>{c.display_name}</h1>
+          <p className="text-[13px] font-bold opacity-90">@{c.username}{c.is_friend ? ` · ${fp?.is_best_friend ? 'Best friends' : 'Friends'}` : ''}</p>
         </div>
       </div>
 
-      <div className="mx-auto max-w-md px-4">
-        <div className="mt-1 text-center">
-          <h1 className="font-display text-[34px] leading-[1.1]">{c.display_name}</h1>
-          <p className="mt-0.5 text-[13px] font-semibold text-ink-mute">@{c.username}{c.is_friend ? ` · ${fp?.is_best_friend ? 'Best friends' : 'Friends'}` : ''}</p>
-          {fp && fp.streak > 0 && (
-            <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-[#fff1e6] px-3.5 py-[7px] text-[13px] font-extrabold text-[#c2410c]">
-              <Flame className="h-[15px] w-[15px] fill-[#f97316] text-[#f97316]" />
-              {fp.streak}-day streak{fp.streak_expiring ? ' · keep it going today' : ''}
-            </span>
-          )}
-          {c.bio && <p className="mx-auto mt-2 max-w-xs text-sm text-ink-soft">{c.bio}</p>}
-        </div>
+      <div className="mx-auto max-w-md px-3.5">
+        {(fp?.streak || bday || c.bio) && (
+          <div className="no-scrollbar -mx-3.5 flex gap-2 overflow-x-auto px-3.5 pt-3">
+            {fp && fp.streak > 0 && <span className={cn(CHIP, 'bg-ember-gold text-ink')}><Flame className="h-[14px] w-[14px] fill-current" />{fp.streak} days{fp.streak_expiring ? ' · ends soon' : ''}</span>}
+            {bday && <button onClick={() => navigate('/birthdays')} className={cn(CHIP, bday.inDays === 0 ? 'bg-ember-rose text-white' : 'bg-white text-ink')}>🎂 {bday.inDays === 0 ? 'Today!' : formatDayMonth(bday.month, bday.day)}</button>}
+            {bday && <button onClick={() => navigate('/birthdays?tab=zodiac')} className={cn(CHIP, 'bg-[#111111] text-white')}>{bday.sign.glyph} {bday.sign.name}</button>}
+          </div>
+        )}
+        {c.bio && <p className="mt-2 px-1 text-sm text-ink-soft">{c.bio}</p>}
 
         {c.is_friend ? (
           <div className="flex gap-2 py-4">
@@ -121,13 +136,35 @@ export default function PersonScreen() {
           </div>
         ) : (
           <div className="flex gap-2 py-4">
-            <button disabled={busy} onClick={() => void run(() => friendsApi.send(c.id), 'Friend request sent')} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-ember-flame font-extrabold text-white disabled:opacity-60"><UserPlus className="h-5 w-5" /> Add friend</button>
-            <button disabled={busy} onClick={() => void run(() => (c.is_following ? spotlightApi.unfollow(me, c.id) : spotlightApi.follow(me, c.id)))} className="h-12 flex-1 rounded-full bg-white font-extrabold">{c.is_following ? 'Following' : 'Follow'}</button>
+            <button disabled={busy} onClick={() => void run(() => friendsApi.send(c.id), 'Friend request sent')} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#111111] font-extrabold text-white disabled:opacity-60"><UserPlus className="h-5 w-5" /> Add friend</button>
+            <button disabled={busy} onClick={() => void run(() => (c.is_following ? spotlightApi.unfollow(me, c.id) : spotlightApi.follow(me, c.id)))} className="h-12 flex-1 rounded-2xl bg-white font-extrabold">{c.is_following ? 'Following' : 'Follow'}</button>
           </div>
         )}
 
+        {bday && bday.inDays === 0 && (
+          <button onClick={() => navigate('/')} className={cn('mb-2.5 flex w-full items-center gap-3 rounded-tile bg-ember-rose p-4 text-left text-white', GHOST_HOST)}>
+            <Ghost size={120} opacity={0.25} className="-right-2 -top-6"><span className="text-[96px] leading-none">🎂</span></Ghost>
+            <span className="flex-1"><span className="eyebrow text-white/85">Birthday today</span><span className="block text-base font-extrabold">Send {first} a birthday snap</span></span>
+            <span className="rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-ink">Wish</span>
+          </button>
+        )}
+        {bday && settings?.date_of_birth && (() => {
+          const md = monthDay(settings.date_of_birth);
+          if (!md) return null;
+          const m = matchScore(signFor(md.month, md.day), bday.sign);
+          return (
+            <button onClick={() => navigate('/birthdays?tab=zodiac')} className={cn('mb-2.5 block w-full rounded-tile bg-[#111111] p-4 text-left text-white', GHOST_HOST)}>
+              <Ghost size={170} opacity={0.14} className="-right-4 -top-8"><span className="text-[150px] font-black leading-none">{bday.sign.glyph}</span></Ghost>
+              <span className="eyebrow text-white/70">Zodiac match</span>
+              <span className="mt-1 block font-display text-[22px] leading-tight">{bday.sign.name} × {signFor(md.month, md.day).name}</span>
+              <span className="mt-3 block h-2 overflow-hidden rounded-full bg-white/20"><span className="block h-full rounded-full bg-ember-rose" style={{ width: `${m.score}%` }} /></span>
+              <span className="mt-1.5 block text-[13px] font-extrabold">{m.score}% · {m.line}</span>
+            </button>
+          );
+        })()}
         {fp && (
-          <div className="rounded-[20px] bg-white px-4 py-3.5">
+          <div className={cn('rounded-tile bg-white px-4 py-3.5', GHOST_HOST)}>
+            <Ghost url={c.avatar_url} />
             <div className="flex justify-between py-1.5 text-sm"><span className="text-ink-mute">Friends since</span><span className="font-extrabold">{new Date(fp.friends_since).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span></div>
             <div className="flex justify-between py-1.5 text-sm"><span className="text-ink-mute">Snaps shared</span><span className="font-extrabold">{fp.snaps_exchanged.toLocaleString()}</span></div>
             <div className="flex justify-between py-1.5 text-sm"><span className="text-ink-mute">Best streak</span><span className="font-extrabold">{fp.best_streak}</span></div>
@@ -137,7 +174,8 @@ export default function PersonScreen() {
         )}
 
         {theirStories.length > 0 && (
-          <button onClick={() => setViewing(theirStories)} className="mt-2.5 flex w-full items-center gap-3 rounded-[20px] bg-white px-4 py-3.5 text-left">
+          <button onClick={() => setViewing(theirStories)} className={cn('mt-2.5 flex w-full items-center gap-3 rounded-tile bg-white px-4 py-3.5 text-left', GHOST_HOST)}>
+            <Ghost url={c.avatar_url} />
             <Avatar name={c.display_name} url={c.avatar_url} aura={c.aura_color} size={46} ring />
             <span className="flex-1"><span className="block font-extrabold">{first}'s story</span><span className="text-xs text-ink-mute">{theirStories.length} {theirStories.length === 1 ? 'snap' : 'snaps'}</span></span>
             <ChevronRight className="h-[18px] w-[18px] text-ink-faint" />
@@ -185,8 +223,9 @@ export default function PersonScreen() {
   );
 }
 
-const CIRCLE = 'grid h-10 w-10 place-items-center rounded-full bg-white/80 text-ink active:scale-90';
-const ACT = 'flex flex-1 flex-col items-center gap-1.5 rounded-[18px] bg-white py-3 text-xs font-extrabold text-ink active:scale-95';
+const CIRCLE = 'grid h-10 w-10 place-items-center rounded-2xl bg-white/90 text-ink active:scale-90';
+const ACT = 'flex flex-1 flex-col items-center gap-1.5 rounded-2xl bg-white py-3 text-xs font-extrabold text-ink active:scale-95';
+const CHIP = 'inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-extrabold';
 
 
 function RestoreStreak({ friendId, onDone }: { friendId: string; onDone: () => void }) {

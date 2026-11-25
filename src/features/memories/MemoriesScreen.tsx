@@ -16,7 +16,7 @@ import { useLongPress } from '@/features/chat/useLongPress';
 
 type Tab = 'all' | 'favourites' | 'albums' | 'archived';
 const TAB_LABEL: Record<Tab, string> = { all: 'Snaps', favourites: 'Favourites', albums: 'Albums', archived: 'Archived' };
-const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90';
+const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90';
 
 export default function MemoriesScreen() {
   const navigate = useNavigate();
@@ -148,7 +148,7 @@ export default function MemoriesScreen() {
       <div className="mx-auto max-w-lg px-4">
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-3">
           {(['all', 'favourites', 'albums', 'archived'] as Tab[]).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold', tab === t ? 'bg-ink text-white' : 'bg-[#eef1fa] text-ink')}>{TAB_LABEL[t]}</button>
+            <button key={t} onClick={() => { setTab(t); setAlbum(null); }} className={cn('shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold', tab === t ? 'bg-ink text-white' : 'bg-[#F1F1F4] text-ink')}>{TAB_LABEL[t]}</button>
           ))}
           {month && (
             <button onClick={() => setMonth('')} className="flex shrink-0 items-center gap-1 rounded-full bg-ember-flame/[0.12] px-3 text-xs font-bold text-ember-flame">
@@ -161,7 +161,7 @@ export default function MemoriesScreen() {
           <button onClick={() => setViewer(flashback.items[0])} className="mb-3.5 flex w-full items-center gap-3 rounded-[20px] bg-[#fff1e6] p-3 text-left">
             <span className="grid h-20 w-16 shrink-0 place-items-center rounded-xl bg-[#b06a3b] text-white"><Sparkles className="h-5 w-5" /></span>
             <span className="flex-1">
-              <span className="block text-xs font-extrabold uppercase tracking-[0.08em] text-[#c2410c]">{flashback.years === 1 ? '1 year' : `${flashback.years} years`} ago today</span>
+              <span className="block text-xs font-extrabold uppercase tracking-[0.08em] text-[#C2410C]">{flashback.years === 1 ? '1 year' : `${flashback.years} years`} ago today</span>
               <span className="text-xs text-ink-mute">{flashback.items.length} {flashback.items.length === 1 ? 'snap' : 'snaps'} · tap to relive</span>
             </span>
           </button>

@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import type { PrivacySettings, UserSettings } from '@/lib/types';
 import { brand } from '@/config/brand';
 import { ChevronLeft, Palette, UserRound } from 'lucide-react';
+import { Ghost } from '@/components/ui/Ghost';
 import { ACCENTS, getAccent, setAccent } from '@/lib/accent';
 
 function AccentPicker() {
@@ -45,7 +46,10 @@ function Section({ title, icon, children }: { title: string; icon: ReactNode; ch
         <span className="sr-only">{icon}</span>
         {title}
       </h2>
-      <div className="divide-y divide-[#eef1fa] overflow-hidden rounded-[20px] bg-white">{children}</div>
+      <div className="relative isolate divide-y divide-[#F1F1F4] overflow-hidden rounded-tile bg-white">
+        <Ghost size={120} opacity={0.06} className="-right-4 -top-6 [&>svg]:h-full [&>svg]:w-full">{icon}</Ghost>
+        {children}
+      </div>
     </section>
   );
 }
@@ -99,9 +103,9 @@ export default function SettingsScreen() {
   }
 
   return (
-    <div className="min-h-full bg-[#f4f6fd] pb-16">
+    <div className="min-h-full bg-noir pb-16">
       <header className="flex items-center gap-2 px-3.5 pt-safe">
-        <button onClick={() => navigate(-1)} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
+        <button onClick={() => navigate(-1)} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-2xl bg-white text-ink active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
         <h1 className="flex-1 text-center text-lg font-extrabold">Settings</h1>
         <span className="w-10" aria-hidden />
       </header>
@@ -111,6 +115,14 @@ export default function SettingsScreen() {
             <Link to="/profile/edit" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Name</span><span className="text-ink-mute">{profile.display_name}</span></Link>
             <Link to="/profile/edit" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Username</span><span className="text-ink-mute">@{profile.username}</span></Link>
             <div className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Email</span><span className="truncate text-ink-mute">{session?.user.email}</span></div>
+            <Link to="/profile/photo" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Profile picture</span><span className="text-ink-mute">{profile.photo_mode ? 'Photo' : 'Avatar face'} ›</span></Link>
+            {settings && (
+              <label className="flex items-center gap-3 px-3.5 py-[11px] text-[15px] font-semibold">
+                <span className="flex-1">Birthday</span>
+                <input type="date" value={settings.date_of_birth ?? ''} max={new Date(new Date().getFullYear() - 13, new Date().getMonth(), new Date().getDate()).toISOString().slice(0, 10)} min="1900-01-02" onChange={(e) => e.target.value && updateSettings({ date_of_birth: e.target.value })} className="rounded-xl bg-ink/[0.05] px-2.5 py-1.5 text-[15px] text-ink-soft" aria-label="Birthday" />
+              </label>
+            )}
+            <Link to="/accounts" className="flex items-center gap-3 px-3.5 py-[13px] text-[15px] font-semibold"><span className="flex-1">Switch account</span><span className="text-ink-mute">Saved on this phone ›</span></Link>
           </Section>
         )}
         {privacy && (
@@ -120,6 +132,7 @@ export default function SettingsScreen() {
             <Segmented label="Who can view my story" value={privacy.who_can_view_story === 'custom' ? 'friends' : privacy.who_can_view_story} options={[{ value: 'friends', label: 'Friends' }, { value: 'everyone', label: 'Everyone' }]} onChange={(v) => updatePrivacy({ who_can_view_story: v })} />
             <Toggle label="Show when I was last active" checked={privacy.show_last_seen} onChange={(v) => updatePrivacy({ show_last_seen: v })} />
             <Toggle label="Appear in friend suggestions" description="Others can still add you by exact username" checked={privacy.show_in_discovery} onChange={(v) => updatePrivacy({ show_in_discovery: v })} />
+            <Toggle label="Show my birthday to friends" description="Day and month only — never the year" checked={privacy.show_birthday ?? true} onChange={(v) => updatePrivacy({ show_birthday: v })} />
             <Toggle label="Ghost mode" description="Hide your location on the map (on by default)" checked={privacy.ghost_mode} onChange={(v) => updatePrivacy({ ghost_mode: v })} />
           </Section>
         )}

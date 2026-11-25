@@ -38,7 +38,7 @@ function pin(f: { display_name: string; avatar_url: string | null; avatar_body_u
 
 const WHITE = 'grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full bg-white text-ink shadow-[0_4px_14px_rgba(30,42,74,0.16)] active:scale-90';
 const CHIP = 'flex flex-col items-center gap-1.5 text-xs font-extrabold text-ink disabled:opacity-60';
-const ROUND = 'grid h-12 w-12 place-items-center rounded-full bg-[#eef1fa] text-ink';
+const ROUND = 'grid h-12 w-12 place-items-center rounded-full bg-[#F1F1F4] text-ink';
 
 function tagFor(f: FriendLocation, live: boolean) {
   const mins = Math.max(0, Math.round((Date.now() - new Date(f.updated_at).getTime()) / 60000));

@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { firstError, friendlyAuthError, signInSchema } from '@/lib/validation';
 
 export default function SignInPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => new URLSearchParams(location.search).get('email') ?? '');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);

@@ -1,97 +1,135 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronDown, ChevronRight, Grid2x2, Settings, Share2 } from 'lucide-react';
+import { Camera, ChevronDown, ChevronRight, Grid2x2, QrCode, Settings, Shirt } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
 import { AvatarFigure } from '@/components/AvatarFigure';
+import { Scene } from '@/components/Scene';
+import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
 import { useAuth } from '@/providers/AuthProvider';
-import { useToast } from '@/providers/ToastProvider';
 import { friendsApi } from '@/lib/chat/api';
 import { memoriesApi, streaksApi } from '@/lib/social/api';
+import { friendBirthdays, type FriendBirthday } from '@/lib/birthdays';
+import { formatDayMonth, monthDay, signFor } from '@/lib/zodiac';
 import type { Friend } from '@/lib/chat/types';
+import { cn } from '@/lib/cn';
 
-const circle = 'grid h-10 w-10 place-items-center rounded-full bg-white/80 text-ink active:scale-90';
-const card = 'rounded-[20px] bg-white px-4 py-3.5 shadow-[0_1px_0_rgba(30,42,74,0.06),0_8px_22px_-14px_rgba(30,42,74,0.3)]';
+const btn = 'grid h-10 w-10 place-items-center rounded-2xl bg-white/90 text-ink active:scale-90';
+const tile = cn('block rounded-tile bg-white px-4 py-3.5', GHOST_HOST);
+const chip = 'inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-extrabold';
 
-/** My profile (wireframe 6): full-body avatar hero, name line, two actions, My stories / Friends / Memories cards. */
+/**
+ * My profile (Snapchat-familiar layout, Bento look): my full-body avatar stands
+ * in my scene at the back — tap it to dress up. Picture bottom-left (avatar face
+ * or selfie), birthday / zodiac / streak chips, then tiles.
+ */
 export default function ProfileScreen() {
-  const { profile } = useAuth();
-  const toast = useToast();
+  const { profile, settings } = useAuth();
   const navigate = useNavigate();
   const [friends, setFriends] = useState<Friend[] | null>(null);
   const [best, setBest] = useState(0);
   const [saved, setSaved] = useState<number | null>(null);
+  const [bdays, setBdays] = useState<FriendBirthday[] | null>(null);
   useEffect(() => {
     void friendsApi.list().then(setFriends).catch(() => setFriends([]));
     void streaksApi.mine().then((l) => setBest(l.reduce((m, s) => Math.max(m, s.best, s.count), 0))).catch(() => undefined);
     void memoriesApi.usage().then((u) => setSaved(u?.items ?? 0)).catch(() => undefined);
+    void friendBirthdays().then(setBdays).catch(() => setBdays([]));
   }, []);
   if (!profile) return null;
 
-  async function share() {
-    const text = `Add me on SUMANOVA: @${profile!.username}`;
-    try {
-      if (navigator.share) await navigator.share({ title: 'SUMANOVA', text, url: location.origin });
-      else {
-        await navigator.clipboard.writeText(text);
-        toast('Copied your handle', 'success');
-      }
-    } catch {
-      /* user cancelled */
-    }
-  }
-
-  const line = [`@${profile.username}`, friends ? `${friends.length} ${friends.length === 1 ? 'friend' : 'friends'}` : null, best > 0 ? `Best streak ${best}` : null].filter(Boolean).join(' · ');
-  const shown = (friends ?? []).slice(0, 4);
+  const md = monthDay(settings?.date_of_birth);
+  const sign = md ? signFor(md.month, md.day) : null;
+  const shown = (friends ?? []).slice(0, 5);
   const more = (friends?.length ?? 0) - shown.length;
+  const next = bdays?.[0];
 
   return (
-    <div className="min-h-full bg-[#f4f6fd] pb-10">
-      <div className="relative h-[330px] bg-gradient-to-b from-[#dfe6ff] to-[#f4f6fd]">
-        <header className="flex items-center gap-2 px-3.5 pt-safe">
-          <button onClick={() => navigate(-1)} aria-label="Back" className={circle}>
+    <div className="min-h-full bg-noir pb-10">
+      <div className="relative h-[368px]">
+        <Scene id={profile.profile_scene ?? 'dusk'} className="absolute inset-0" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(17,17,17,.5) 100%)' }} />
+        <header className="relative z-10 flex items-center gap-2 px-3.5 pt-safe">
+          <button onClick={() => navigate(-1)} aria-label="Back" className={btn}>
             <ChevronDown className="h-5 w-5" />
           </button>
           <span className="flex-1" />
-          <button onClick={() => void share()} aria-label="Share profile" className={circle}>
-            <Share2 className="h-5 w-5" />
-          </button>
-          <Link to="/settings" aria-label="Settings" className={circle}>
+          <Link to="/profile/code" aria-label="My profile code" className={btn}>
+            <QrCode className="h-5 w-5" />
+          </Link>
+          <Link to="/avatar/home" aria-label="My avatar and outfits" className={btn}>
+            <Shirt className="h-5 w-5" />
+          </Link>
+          <Link to="/settings" aria-label="Settings" className={btn}>
             <Settings className="h-5 w-5" />
           </Link>
         </header>
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }} className="absolute inset-x-0 top-[calc(var(--safe-top)+42px)] flex justify-center">
-          <Link to="/avatar" aria-label="Edit my avatar" className="active:scale-[0.98]">
-            <AvatarFigure name={profile.display_name} bodyUrl={profile.avatar_body_url} faceUrl={profile.avatar_url} aura={profile.aura_color} height={250} />
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }} className="absolute bottom-0 right-4">
+          <Link to="/avatar/home" aria-label="Open my avatar" className="block active:scale-[0.98]">
+            <AvatarFigure name={profile.display_name} bodyUrl={profile.avatar_body_url} faceUrl={profile.avatar_face_url ?? profile.avatar_url} aura={profile.aura_color} height={290} />
           </Link>
         </motion.div>
-      </div>
-
-      <div className="-mt-1.5 text-center">
-        <h1 className="font-display text-[34px] leading-[1.1]">{profile.display_name}</h1>
-        <p className="mt-0.5 text-[13px] font-semibold text-ink-mute">{line}</p>
-        <div className="mt-3.5 flex justify-center gap-2.5">
-          <Link to="/avatar" className="rounded-full bg-ember-flame px-[18px] py-[11px] text-sm font-extrabold text-white active:scale-[0.97]">Edit avatar</Link>
-          <Link to="/profile/edit" className="rounded-full bg-white px-[18px] py-[11px] text-sm font-extrabold shadow-[0_1px_0_rgba(30,42,74,0.08)] active:scale-[0.97]">Edit profile</Link>
+        <Link to="/avatar/home" className="absolute right-6 top-[calc(var(--safe-top)+64px)] rounded-xl bg-white/90 px-2.5 py-1.5 text-[11px] font-extrabold text-ink">
+          Tap me to dress up
+        </Link>
+        <div className="absolute bottom-[18px] left-[18px] text-white">
+          <Link to="/profile/photo" aria-label="Change profile picture" className="relative inline-block rounded-full border-4 border-white">
+            <Avatar name={profile.display_name} url={profile.avatar_url} aura={profile.aura_color} size={84} />
+            <span className="absolute -bottom-1 -right-1 grid h-[30px] w-[30px] place-items-center rounded-xl border-[3px] border-white bg-[#111111]">
+              <Camera className="h-[15px] w-[15px] text-white" />
+            </span>
+          </Link>
+          <h1 className="mt-2 font-display text-[32px] leading-none" style={{ textShadow: '0 2px 10px rgba(17,17,17,.35)' }}>{profile.display_name}</h1>
+          <p className="text-[13px] font-bold opacity-90">@{profile.username}</p>
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-md flex-col gap-2.5 px-4 pt-[18px]">
-        <div className={card}>
-          <h2 className="text-[15px] font-extrabold">My stories</h2>
-          <Link to="/" className="mt-2.5 flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-ember-flame/[0.12] text-2xl font-extrabold text-ember-flame">+</span>
+      <div className="mx-auto flex max-w-md flex-col gap-2.5 px-3.5 pt-3">
+        <div className="no-scrollbar -mx-3.5 flex gap-2 overflow-x-auto px-3.5">
+          {md ? (
+            <Link to="/birthdays" className={cn(chip, 'bg-ember-rose text-white')}>🎂 {formatDayMonth(md.month, md.day)}</Link>
+          ) : (
+            <Link to="/settings" className={cn(chip, 'bg-white text-ink')}>🎂 Add birthday</Link>
+          )}
+          {sign && <Link to="/birthdays?tab=zodiac" className={cn(chip, 'bg-[#111111] text-white')}>{sign.glyph} {sign.name}</Link>}
+          {best > 0 && <span className={cn(chip, 'bg-ember-gold text-ink')}>🔥 {best} best</span>}
+          {friends && <Link to="/friends" className={cn(chip, 'bg-white text-ink')}>{friends.length} {friends.length === 1 ? 'friend' : 'friends'}</Link>}
+        </div>
+
+        <Link to="/" className={tile}>
+          <Ghost><Camera className="h-full w-full" strokeWidth={1.4} /></Ghost>
+          <span className="eyebrow">My story</span>
+          <span className="mt-1 flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-ink/[0.06] text-2xl font-extrabold">+</span>
             <span className="flex-1">
               <span className="block font-extrabold">Add to my story</span>
               <span className="block text-xs text-ink-mute">Friends can see it for 24 hours</span>
             </span>
-          </Link>
-        </div>
+          </span>
+        </Link>
 
-        <div className={card}>
+        {next && (
+          <Link to="/birthdays" className={cn(tile, next.inDays === 0 ? 'bg-ember-rose text-white' : '')}>
+            <Ghost url={next.avatar_url} opacity={next.inDays === 0 ? 0.25 : 0.1} />
+            <span className={cn('eyebrow', next.inDays === 0 && 'text-white/85')}>{next.inDays === 0 ? 'Birthday today 🎂' : 'Next birthday'}</span>
+            <span className="mt-1 flex items-center gap-3">
+              <Avatar name={next.display_name} url={next.avatar_url} aura={next.aura_color} size={44} />
+              <span className="flex-1">
+                <span className="block font-extrabold">{next.display_name}</span>
+                <span className={cn('block text-xs', next.inDays === 0 ? 'text-white/85' : 'text-ink-mute')}>
+                  {formatDayMonth(next.month, next.day)} · {next.inDays === 0 ? 'today' : next.inDays === 1 ? 'tomorrow' : `in ${next.inDays} days`} · {next.sign.glyph}
+                </span>
+              </span>
+              <ChevronRight className="h-[18px] w-[18px] opacity-60" />
+            </span>
+          </Link>
+        )}
+
+        <div className={tile}>
+          <Ghost url={shown[0]?.avatar_url} />
           <div className="flex items-baseline justify-between">
-            <h2 className="text-[15px] font-extrabold">Friends</h2>
-            <Link to="/friends" className="text-[13px] font-extrabold text-ember-flame">Add friends</Link>
+            <span className="eyebrow">Friends</span>
+            <Link to="/friends" className="text-[13px] font-extrabold">Add friends</Link>
           </div>
           <div className="mt-2.5 flex gap-2.5">
             {friends === null ? (
@@ -111,8 +149,9 @@ export default function ProfileScreen() {
           </div>
         </div>
 
-        <Link to="/memories" className={`${card} flex items-center gap-3`}>
-          <span className="grid h-11 w-11 place-items-center rounded-[14px] bg-[#d8f5ea] text-ember-jade">
+        <Link to="/memories" className={cn(tile, 'flex items-center gap-3')}>
+          <Ghost><Grid2x2 className="h-full w-full" strokeWidth={1.4} /></Ghost>
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#D8F5EA] text-ember-jade">
             <Grid2x2 className="h-[22px] w-[22px]" />
           </span>
           <span className="flex-1">

@@ -11,7 +11,7 @@ export async function initNative(navigateBack: () => boolean) {
   document.documentElement.classList.add('native', `native-${platform}`);
   try {
     await StatusBar.setStyle({ style: Style.Light });
-    if (platform === 'android') await StatusBar.setBackgroundColor({ color: '#F4F6FD' });
+    if (platform === 'android') await StatusBar.setBackgroundColor({ color: '#ECECEF' });
   } catch {
     /* older devices */
   }

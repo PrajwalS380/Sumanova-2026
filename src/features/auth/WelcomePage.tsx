@@ -1,15 +1,19 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { savedAccounts } from '@/lib/savedAccounts';
 import { motion } from 'framer-motion';
 
 /** Signed-out landing (wireframe 16): wordmark, tagline, three starter characters, Create account / Log in. */
 export default function WelcomePage() {
+  const [params] = useSearchParams();
+  // Accounts saved on this phone → "Welcome back" first (like the familiar flow).
+  if (!params.get('fresh') && savedAccounts.list().length > 0) return <Navigate to="/accounts" replace />;
   const figs = [
     { src: '/welcome/meera.webp', h: 210 },
     { src: '/welcome/kofi.webp', h: 240 },
     { src: '/welcome/zoe.webp', h: 210 },
   ];
   return (
-    <div className="flex min-h-full flex-col items-center bg-gradient-to-b from-[#dfe6ff] via-[#f6efff] to-[#f4f6fd] pt-safe text-ink">
+    <div className="flex min-h-full flex-col items-center bg-gradient-to-b from-[#dfe6ff] via-[#f6efff] to-[#ECECEF] pt-safe text-ink">
       <h1 className="mt-[72px] font-display text-[52px] tracking-[0.04em]">SUMANOVA</h1>
       <p className="mt-1.5 text-base font-semibold text-ink-soft">Snap, chat and hang out — as you.</p>
 

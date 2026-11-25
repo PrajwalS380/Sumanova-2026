@@ -31,12 +31,12 @@ export const Avatar = memo(function Avatar({ name, url, aura = 'gold', size = 44
     >
       <span
         className={cn('grid h-full w-full place-items-center overflow-hidden rounded-full', ring && 'ring-2 ring-white')}
-        style={{ background: `radial-gradient(circle at 50% 35%, #FFFFFF, ${a.to}55)` }}
+        style={{ background: `${a.to}33` }}
       >
         {url ? (
           <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <span className="font-display font-medium italic" style={{ fontSize: size * 0.4, color: a.from }}>
+          <span className="font-display" style={{ fontSize: size * 0.4, color: a.from }}>
             {initials || '✦'}
           </span>
         )}

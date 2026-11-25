@@ -35,6 +35,11 @@ const MapScreen = lazy(() => import('@/features/map/MapScreen'));
 const SpotlightScreen = lazy(() => import('@/features/spotlight/SpotlightScreen'));
 const MemoriesScreen = lazy(() => import('@/features/memories/MemoriesScreen'));
 const PersonScreen = lazy(() => import('@/features/people/PersonScreen'));
+const BirthdaysScreen = lazy(() => import('@/features/friends/BirthdaysScreen'));
+const ProfileCodeScreen = lazy(() => import('@/features/profile/ProfileCodeScreen'));
+const AccountsScreen = lazy(() => import('@/features/auth/AccountsScreen'));
+const AvatarHomeScreen = lazy(() => import('@/features/avatar/AvatarHomeScreen'));
+const ProfilePhotoScreen = lazy(() => import('@/features/profile/ProfilePhotoScreen'));
 
 /** Hooks the native shell (status bar, splash, Android back button) into routing. */
 function NativeBridge() {
@@ -98,6 +103,7 @@ export default function App() {
           <Route path="/auth/sign-in" element={<GuestOnly><SignInPage /></GuestOnly>} />
           <Route path="/auth/sign-up" element={<GuestOnly><SignUpPage /></GuestOnly>} />
           <Route path="/auth/forgot" element={<ForgotPasswordPage />} />
+          <Route path="/accounts" element={<AccountsScreen />} />
           <Route path="/auth/reset" element={<ResetPasswordPage />} />
           <Route element={<RequireAuth><InboxProvider><NotificationsProvider><CallProvider><AppShell /></CallProvider></NotificationsProvider></InboxProvider></RequireAuth>}>
             <Route index element={<CameraScreen />} />
@@ -106,10 +112,12 @@ export default function App() {
             <Route path="chat/:id" element={<ChatThreadScreen />} />
             <Route path="chat/:id/info" element={<ChatInfoScreen />} />
             <Route path="friends" element={<FriendsScreen />} />
+            <Route path="birthdays" element={<BirthdaysScreen />} />
             <Route path="calls" element={<CallsScreen />} />
             <Route path="notifications" element={<NotificationsScreen />} />
             <Route path="avatar" element={<AvatarStudio />} />
             <Route path="avatar/duo" element={<DuoStudio />} />
+            <Route path="avatar/home" element={<AvatarHomeScreen />} />
             <Route path="stories" element={<StoriesScreen />} />
             <Route path="stories/archive" element={<StoryArchiveScreen />} />
             <Route path="u/:username" element={<PersonScreen />} />
@@ -118,6 +126,8 @@ export default function App() {
             <Route path="memories" element={<MemoriesScreen />} />
             <Route path="profile" element={<ProfileScreen />} />
             <Route path="profile/edit" element={<EditProfileScreen />} />
+            <Route path="profile/photo" element={<ProfilePhotoScreen />} />
+            <Route path="profile/code" element={<ProfileCodeScreen />} />
             <Route path="settings" element={<SettingsScreen />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

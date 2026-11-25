@@ -33,7 +33,10 @@ export default function AvatarStudio() {
   const [hist, setHist] = useState<{ list: Look[]; i: number }>({ list: [DEFAULT_LOOK], i: 0 });
   const look = hist.list[hist.i];
   const [saved, setSaved] = useState<Look | null>(null);
-  const [mode, setMode] = useState<Mode>('style');
+  const [mode, setMode] = useState<Mode>(() => {
+    const q = new URLSearchParams(location.search).get('mode');
+    return MODES.some((m) => m.id === q) ? (q as Mode) : 'style';
+  });
   const [catId, setCatId] = useState('top');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,8 +98,8 @@ export default function AvatarStudio() {
       if (gl && stage.current) {
         const face = await stage.current.capture('bust');
         const body = await stage.current.capture('full');
-        const urls = await avatarApi.publishImages(me, face, body);
-        if (profile) setProfile({ ...profile, avatar_url: urls.face, avatar_body_url: urls.body });
+        const urls = await avatarApi.publishImages(me, face, body, !!profile?.photo_mode);
+        if (profile) setProfile({ ...profile, avatar_url: profile.photo_mode ? profile.avatar_url : urls.face, avatar_face_url: urls.face, avatar_body_url: urls.body });
       }
       haptic([10, 40, 10]);
       toast('Avatar saved ✦', 'success');

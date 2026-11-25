@@ -128,7 +128,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
   }
 
   return (
-    <div className="relative z-20 border-t border-[#eef1fa] bg-white px-3 pb-safe pt-2.5">
+    <div className="relative z-20 border-t border-[#F1F1F4] bg-white px-3 pb-safe pt-2.5">
       <AnimatePresence>
         {(replyTo || editing) && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="glass-strong mb-2 flex items-center gap-2 rounded-2xl px-3 py-2">
@@ -162,7 +162,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
             <Camera className="h-5 w-5" />
           </button>
           <input ref={file} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => { void pickFiles(e.target.files); e.target.value = ''; }} />
-          <div className="flex min-h-[42px] flex-1 items-center rounded-[21px] bg-[#eef1fa] px-3.5">
+          <div className="flex min-h-[42px] flex-1 items-center rounded-[21px] bg-[#F1F1F4] px-3.5">
           <textarea
             ref={ta}
             rows={1}
@@ -183,7 +183,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
             className="max-h-[132px] min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] font-semibold leading-snug outline-none placeholder:text-ink-mute"
           />
           </div>
-          <button onClick={() => setStickers(true)} aria-label="Stickers" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90">
+          <button onClick={() => setStickers(true)} aria-label="Stickers" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90">
             <Smile className="h-5 w-5" />
           </button>
           <AnimatePresence mode="wait" initial={false}>
@@ -192,7 +192,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
                 <SendHorizontal className="h-5 w-5" />
               </motion.button>
             ) : (
-              <motion.button key="mic" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={startRecording} aria-label="Record voice note" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90">
+              <motion.button key="mic" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }} onClick={startRecording} aria-label="Record voice note" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90">
                 <Mic className="h-5 w-5" />
               </motion.button>
             )}

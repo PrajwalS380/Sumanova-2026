@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { savedAccounts } from '@/lib/savedAccounts';
 import { supabase } from '@/lib/supabase';
 import type { PrivacySettings, Profile, UserSettings } from '@/lib/types';
 import { setHapticsEnabled } from '@/lib/haptics';
@@ -68,6 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [loadUserData]);
 
+  // Remember this account on the device ("Welcome back" / switch account).
+  useEffect(() => {
+    if (session && profile && session.user.id === profile.id) savedAccounts.remember(session, profile);
+  }, [session, profile]);
+
   useEffect(() => {
     if (!settings) return;
     setHapticsEnabled(settings.haptics);
@@ -89,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSettings,
       setPrivacy,
       signOut: async (everywhere = false) => {
+        if (session) savedAccounts.forgetTokens(session.user.id);
         await supabase.auth.signOut({ scope: everywhere ? 'global' : 'local' });
       },
       clearRecovering: () => setRecovering(false),

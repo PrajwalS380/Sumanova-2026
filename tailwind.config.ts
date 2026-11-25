@@ -1,43 +1,44 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * "Pearl" design system — milky white glass over a soft blue / pink / mint
- * pearl sheen, navy ink, indigo accent, Instrument Serif display type.
+ * "Bento" design system (owner-approved 2026-11-25): soft grey canvas, rounded
+ * white / black / colour tiles, near-black ink, Inter (heavy, tight) display
+ * type, and a faint oversized avatar/icon behind rows (components/ui/Ghost).
  *
  * Token names are kept from earlier iterations so the whole app re-themes from
- * here: `noir.*` = page & surface tones (light), `ink.*` = text (navy),
- * `ember.*` = accents (indigo primary, pink, mint, gold …).
+ * here: `noir.*` = page & surface tones, `ink.*` = text, `ember.*` = accents
+ * (black primary by default, pink, green, violet, blue, orange …).
  */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        noir: { DEFAULT: '#F4F6FD', 950: '#FFFFFF', 900: '#F4F6FD', 800: '#FFFFFF', 700: '#EEF1FA', 600: '#E3E8F6', 500: '#D3DAEE' },
+        noir: { DEFAULT: '#ECECEF', 950: '#FFFFFF', 900: '#ECECEF', 800: '#FFFFFF', 700: '#F1F1F4', 600: '#E6E6EB', 500: '#D6D6DC' },
         ember: {
           flame: 'rgb(var(--accent) / <alpha-value>)',
           amber: 'rgb(var(--accent) / <alpha-value>)',
-          gold: '#C78A0B',
-          rose: '#E5487F',
-          peach: '#FF9EC0',
-          sage: '#11936F',
-          jade: '#0E8C7D',
-          plum: '#8E5BEA',
-          sky: '#2F7FC2',
-          cream: '#1E2A4A',
+          gold: '#FFB020',
+          rose: '#FF5FA2',
+          peach: '#FF9EC8',
+          sage: '#18C48C',
+          jade: '#12A577',
+          plum: '#8C6BFF',
+          sky: '#3D7BFF',
+          cream: '#111111',
         },
-        pearl: { blue: '#C9D8FF', pink: '#F6D3EC', mint: '#C8F2E6', lilac: '#E4DCFF' },
-        ink: { DEFAULT: '#1E2A4A', soft: '#3E4C70', mute: '#5B6A8E', faint: '#8390B2' },
+        pearl: { blue: '#DDE8FF', pink: '#FFD6E8', mint: '#D8F5EA', lilac: '#ECE5FF' },
+        ink: { DEFAULT: '#111111', soft: '#333333', mute: '#6F6F78', faint: '#9A9AA3' },
       },
       fontFamily: {
-        sans: ['"Manrope Variable"', 'system-ui', 'sans-serif'],
-        display: ['"Instrument Serif"', 'Georgia', 'serif'],
+        sans: ['"Inter Variable"', 'system-ui', 'sans-serif'],
+        display: ['"Inter Variable"', 'system-ui', 'sans-serif'],
       },
-      borderRadius: { '4xl': '2rem', '5xl': '2.5rem' },
+      borderRadius: { tile: '26px', '4xl': '2rem', '5xl': '2.5rem' },
       boxShadow: {
-        glass: '0 1px 0 0 rgba(255,255,255,0.9) inset, 0 18px 40px -22px rgb(var(--accent) / 0.35)',
-        glow: '0 12px 30px -12px rgb(var(--accent) / 0.55)',
-        card: '0 1px 0 0 rgba(255,255,255,0.9) inset, 0 12px 30px -20px rgba(30,42,74,0.35)',
+        glass: '0 16px 36px -24px rgba(17,17,17,0.35)',
+        glow: '0 12px 28px -14px rgb(var(--accent) / 0.55)',
+        card: '0 10px 26px -22px rgba(17,17,17,0.35)',
       },
       backgroundImage: {
         'ember-gradient': 'linear-gradient(115deg, rgb(var(--accent-from)) 0%, rgb(var(--accent)) 48%, rgb(var(--accent-to)) 100%)',

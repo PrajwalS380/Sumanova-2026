@@ -166,7 +166,7 @@ export default function ChatThreadScreen() {
   return (
     <div className="fixed inset-0 flex flex-col bg-white" style={{ backgroundImage: theme.wallpaper }}>
       {/* Header */}
-      <header className="z-30 flex items-center gap-2.5 border-b border-[#eef1fa] bg-white px-3.5 pb-3 pt-safe">
+      <header className="z-30 flex items-center gap-2.5 border-b border-[#F1F1F4] bg-white px-3.5 pb-3 pt-safe">
         <button onClick={() => navigate('/chat')} className={CIRCLE} aria-label="Back to chats">
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -190,7 +190,7 @@ export default function ChatThreadScreen() {
                 ) : isGroup ? (
                   <span className="text-ink-mute">{conv.members.length} members</span>
                 ) : (
-                  <span className={cn('font-extrabold', streak ? 'text-[#c2410c]' : online ? 'text-ember-jade' : 'text-ink-mute')}>
+                  <span className={cn('font-extrabold', streak ? 'text-[#C2410C]' : online ? 'text-ember-jade' : 'text-ink-mute')}>
                     {[streak ? `${streak}-day streak` : null, online ? 'online' : lastSeenLabel(lastSeen) || `@${otherProfile?.username ?? ''}`].filter(Boolean).join(' · ')}
                   </span>
                 )}
@@ -371,4 +371,4 @@ function TypingDots() {
 }
 
 
-const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90';
+const CIRCLE = 'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90';

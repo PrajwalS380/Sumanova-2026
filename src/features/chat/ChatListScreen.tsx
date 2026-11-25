@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { BellOff, Clock3, Eye, MessageSquarePlus, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info, X } from 'lucide-react';
 import { TopBar, BarButton } from '@/components/TopBar';
 import { Avatar } from '@/components/Avatar';
+import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
 import { useAuth } from '@/providers/AuthProvider';
 import { useInbox } from '@/providers/InboxProvider';
@@ -28,8 +29,19 @@ export default function ChatListScreen() {
   const [menu, setMenu] = useState<ConversationSummary | null>(null);
   const [newGroup, setNewGroup] = useState(false);
   const [streaks, setStreaks] = useState<Record<string, StreakInfo>>({});
+  const loadStreaks = () => streaksApi.mine().then((list) => setStreaks(Object.fromEntries(list.map((x) => [x.friend_id, x])))).catch(() => undefined);
+  async function restoreStreak(friendId: string) {
+    try {
+      const n = await streaksApi.restore(friendId);
+      haptic(14);
+      toast(`Streak of ${n} restored 🔥`, 'success');
+      void loadStreaks();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
   useEffect(() => {
-    void streaksApi.mine().then((list) => setStreaks(Object.fromEntries(list.map((x) => [x.friend_id, x])))).catch(() => undefined);
+    void loadStreaks();
   }, [conversations.length]);
   const toast = useToast();
   const navigate = useNavigate();
@@ -60,7 +72,7 @@ export default function ChatListScreen() {
   }
 
   return (
-    <div className="min-h-full bg-white pb-6">
+    <div className="min-h-full bg-noir pb-28">
       <TopBar
         title="Chat"
         onSearch={() => setSearching((v) => !v)}
@@ -73,7 +85,7 @@ export default function ChatListScreen() {
       />
       <div className="mx-auto max-w-lg px-4">
         {searching && (
-          <label className="mb-2 flex h-11 items-center gap-2 rounded-full bg-ink/[0.06] px-4">
+          <label className="mb-2 flex h-11 items-center gap-2 rounded-2xl bg-white px-4">
             <Search className="h-4 w-4 text-ink-mute" />
             <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search chats" className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search chats" />
             <button onClick={() => { setQuery(''); setSearching(false); }} aria-label="Close search" className="text-ink-mute"><X className="h-4 w-4" /></button>
@@ -81,7 +93,7 @@ export default function ChatListScreen() {
         )}
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 pt-1" role="tablist" aria-label="Filter chats">
           {([['all', 'All'], ['unread', unreadCount ? `Unread · ${unreadCount}` : 'Unread'], ['groups', 'Groups'], ['streaks', 'Streaks']] as const).map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={chip === id} onClick={() => setChip(id)} className={cn('shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-bold', chip === id ? 'bg-ink text-white' : 'bg-ink/[0.06] text-ink')}>
+            <button key={id} role="tab" aria-selected={chip === id} onClick={() => setChip(id)} className={cn('shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-bold', chip === id ? 'bg-ink text-white' : 'bg-white text-ink')}>
               {label}
             </button>
           ))}
@@ -93,11 +105,11 @@ export default function ChatListScreen() {
           </button>
         )}
 
-        <ul className="mt-2">
+        <ul className="mt-3 overflow-hidden rounded-tile bg-white px-3 py-1">
           {loading && conversations.length === 0
             ? [0, 1, 2, 3].map((i) => <li key={i} className="h-[72px] animate-pulse rounded-3xl bg-ink/[0.04]" />)
             : filtered.rest.map((c, i) => (
-                <ChatRow key={c.id} c={c} me={me} index={i} streak={c.other_user_id ? streaks[c.other_user_id] : undefined} online={c.other_user_id ? online.has(c.other_user_id) : false} onOpen={() => navigate(`/chat/${c.id}`)} onMenu={() => setMenu(c)} />
+                <ChatRow key={c.id} c={c} me={me} index={i} streak={c.other_user_id ? streaks[c.other_user_id] : undefined} online={c.other_user_id ? online.has(c.other_user_id) : false} onOpen={() => navigate(`/chat/${c.id}`)} onMenu={() => setMenu(c)} onRestore={c.other_user_id ? () => void restoreStreak(c.other_user_id!) : undefined} />
               ))}
         </ul>
 
@@ -127,7 +139,7 @@ export default function ChatListScreen() {
   );
 }
 
-const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, onMenu }: { c: ConversationSummary; me: string; index: number; online: boolean; streak?: StreakInfo; onOpen: () => void; onMenu: () => void }) {
+const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, onMenu, onRestore }: { c: ConversationSummary; me: string; index: number; online: boolean; streak?: StreakInfo; onOpen: () => void; onMenu: () => void; onRestore?: () => void }) {
   const press = useLongPress(() => {
     haptic(12);
     onMenu();
@@ -136,12 +148,13 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
   const name = conversationName(c);
   const status = chatStatus(c, me);
   return (
-    <motion.li initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index, 10) * 0.025 }}>
+    <motion.li initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index, 10) * 0.025 }} className="flex items-center gap-2">
       <button
         {...press}
         onClick={() => !press.wasLongPress() && onOpen()}
-        className="flex w-full select-none items-center gap-3 px-1 py-2.5 text-left transition-colors active:bg-ink/[0.06]"
+        className={cn('flex min-w-0 flex-1 select-none items-center gap-3 px-1 py-2.5 text-left transition-colors active:bg-ink/[0.04]', GHOST_HOST)}
       >
+        <Ghost url={c.kind === 'group' ? c.avatar_url : c.other_avatar_url} />
         <span className="relative">
           {c.kind === 'group' && !c.avatar_url ? (
             <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-gradient-to-br from-ember-flame/40 to-ember-jade/40 ring-1 ring-ink/10">
@@ -173,16 +186,21 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, onOpen, on
           </span>
         </span>
       </button>
+      {streak?.restorable && onRestore && (
+        <button onClick={onRestore} className="shrink-0 rounded-xl bg-ember-gold px-3 py-2 text-xs font-extrabold text-ink active:scale-95" aria-label={`Restore your ${streak.best}-day streak with ${name}`}>
+          ↻ Restore
+        </button>
+      )}
     </motion.li>
   );
 });
 
-const TONE_TEXT: Record<ChatStatusTone, string> = { snap: 'font-extrabold text-ember-flame', chat: 'font-extrabold text-ember-jade', sent: 'text-ink-mute', received: 'text-ink-mute', none: 'text-ink-mute' };
+const TONE_TEXT: Record<ChatStatusTone, string> = { snap: 'font-extrabold text-ember-rose', chat: 'font-extrabold text-ember-sky', sent: 'text-ink-mute', received: 'text-ink-mute', none: 'text-ink-mute' };
 
 /** Small square status mark: filled = new for you, outlined = already seen or sent by you. */
 function StatusMark({ tone }: { tone: ChatStatusTone }) {
   if (tone === 'none') return null;
-  const cls = { snap: 'bg-ember-flame border-ember-flame', chat: 'bg-ember-jade border-ember-jade', sent: 'border-ember-flame', received: 'border-ink-faint' }[tone];
+  const cls = { snap: 'bg-ember-rose border-ember-rose', chat: 'bg-ember-sky border-ember-sky', sent: 'border-ember-rose', received: 'border-ink-faint' }[tone];
   return <span aria-hidden className={cn('h-[11px] w-[11px] shrink-0 rounded-[3px] border-2', cls)} />;
 }
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AtSign, Bell, Camera, Check, ChevronLeft, Flame, Heart, MessageCircle, Phone, UserPlus, Users } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
+import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
 import { useNotifications, type AppNotification } from '@/providers/NotificationsProvider';
 import { supabase } from '@/lib/supabase';
 import { shortTime } from '@/lib/chat/time';
@@ -46,7 +47,7 @@ export default function NotificationsScreen() {
   const earlier = items.filter((n) => new Date(n.created_at) < startOfToday);
 
   return (
-    <div className="min-h-full bg-white pb-16">
+    <div className="min-h-full bg-noir pb-16">
       <header className="flex items-center gap-2 px-3.5 pb-1 pt-safe">
         <button onClick={() => navigate(-1)} aria-label="Back" className={CIRCLE}><ChevronLeft className="h-5 w-5" /></button>
         <h1 className="flex-1 text-center text-lg font-extrabold">Notifications</h1>
@@ -54,7 +55,7 @@ export default function NotificationsScreen() {
       </header>
 
       {items.length === 0 ? (
-        <div className="mx-4 mt-6 rounded-3xl bg-[#f4f6fd] p-8 text-center">
+        <div className="mx-4 mt-6 rounded-tile bg-white p-8 text-center">
           <Bell className="mx-auto h-8 w-8 text-ink-mute" />
           <p className="mt-3 font-display text-lg">All caught up</p>
           <p className="mt-1 text-sm text-ink-mute">Friend requests, missed calls, snaps, mentions and streak reminders show up here.</p>
@@ -73,7 +74,7 @@ function Group({ title, list, people, onOpen }: { title: string; list: AppNotifi
   return (
     <section>
       <h2 className="px-4 pb-1 pt-3.5 text-[13px] font-extrabold uppercase tracking-[0.08em] text-ink-mute">{title}</h2>
-      <ul>
+      <ul className="mx-4 overflow-hidden rounded-tile bg-white">
         {list.map((n, i) => {
           const who = n.actor_id ? people[n.actor_id] : undefined;
           const b = BADGE[n.kind] ?? { icon: Bell, bg: 'bg-ink-mute' };
@@ -83,9 +84,10 @@ function Group({ title, list, people, onOpen }: { title: string; list: AppNotifi
           const rest = name && n.title.startsWith(name) ? n.title.slice(name.length) : null;
           return (
             <motion.li key={n.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 10) * 0.02 }}>
-              <button onClick={() => onOpen(n)} className={cn('flex w-full items-center gap-3 px-4 py-2.5 text-left active:bg-ink/[0.05]', !n.read_at && 'bg-[#f4f6ff]')}>
+              <button onClick={() => onOpen(n)} className={cn('flex w-full items-center gap-3 px-4 py-2.5 text-left active:bg-ink/[0.05]', GHOST_HOST, !n.read_at && 'bg-[#F5F5F8]')}>
+                <Ghost url={who?.avatar_url} />
                 <span className="relative shrink-0">
-                  {who ? <Avatar name={who.display_name} url={who.avatar_url} aura={who.aura_color} size={48} /> : <span className="grid h-12 w-12 place-items-center rounded-full bg-[#eef1fa]"><Bell className="h-5 w-5 text-ink-mute" /></span>}
+                  {who ? <Avatar name={who.display_name} url={who.avatar_url} aura={who.aura_color} size={48} /> : <span className="grid h-12 w-12 place-items-center rounded-full bg-[#F1F1F4]"><Bell className="h-5 w-5 text-ink-mute" /></span>}
                   <span className={cn('absolute -bottom-[3px] -right-[3px] grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-white text-white', b.bg)}><I className="h-3 w-3" strokeWidth={2.6} /></span>
                 </span>
                 <span className="min-w-0 flex-1 text-sm leading-[1.35]">
@@ -103,4 +105,4 @@ function Group({ title, list, people, onOpen }: { title: string; list: AppNotifi
   );
 }
 
-const CIRCLE = 'grid h-10 w-10 place-items-center rounded-full bg-[#eef1fa] text-ink active:scale-90';
+const CIRCLE = 'grid h-10 w-10 place-items-center rounded-full bg-[#F1F1F4] text-ink active:scale-90';

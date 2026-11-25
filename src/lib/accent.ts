@@ -1,5 +1,5 @@
 /**
- * Accent colour ("theme") picker. The Pearl surfaces stay the same; only the
+ * Accent colour ("theme") picker. The Bento surfaces stay the same; only the
  * accent — buttons, highlights, active states, gradients — changes. Stored per
  * device and applied before first paint via CSS variables that the Tailwind
  * `ember-flame` / `ember-amber` / `bg-ember-gradient` tokens read.
@@ -15,12 +15,12 @@ export interface Accent {
 }
 
 export const ACCENTS: Accent[] = [
-  { id: 'indigo', label: 'Indigo', main: '#3D4FE0', from: '#6E7BFF', to: '#8E5BEA' },
-  { id: 'rose', label: 'Rose', main: '#D63A72', from: '#FF7BA8', to: '#B44AA8' },
-  { id: 'jade', label: 'Jade', main: '#0E8C6D', from: '#3CCB9E', to: '#2F7FC2' },
-  { id: 'ocean', label: 'Ocean', main: '#1F6FC4', from: '#4FB0FF', to: '#3D4FE0' },
-  { id: 'violet', label: 'Violet', main: '#7A3FD6', from: '#A98BFF', to: '#D24FA0' },
-  { id: 'sunset', label: 'Sunset', main: '#D2541F', from: '#FF9A5A', to: '#E0447A' },
+  { id: 'ink', label: 'Ink', main: '#111111', from: '#111111', to: '#111111' },
+  { id: 'rose', label: 'Pink', main: '#E0408A', from: '#E0408A', to: '#E0408A' },
+  { id: 'ocean', label: 'Blue', main: '#2F6BEA', from: '#2F6BEA', to: '#2F6BEA' },
+  { id: 'jade', label: 'Green', main: '#0E9A6A', from: '#0E9A6A', to: '#0E9A6A' },
+  { id: 'violet', label: 'Violet', main: '#7452F0', from: '#7452F0', to: '#7452F0' },
+  { id: 'sunset', label: 'Orange', main: '#E0700B', from: '#E0700B', to: '#E0700B' },
 ];
 
 const KEY = 'snv-accent';

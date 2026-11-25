@@ -3,48 +3,54 @@ import { Link, useLocation } from 'react-router-dom';
 import { useInbox } from '@/providers/InboxProvider';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
-import { DARK_TABS, TABS, activeTab } from './nav';
+import { TABS, activeTab } from './nav';
 
-/** Five-tab bottom bar: Map · Chat · Camera · Stories · Spotlight. */
+/**
+ * Five-tab bottom bar: Map · Chat · Camera · Stories · Spotlight.
+ * Bento style: a floating black rounded panel; the camera is a white rounded square.
+ */
 export const BottomDock = memo(function BottomDock() {
   const { pathname } = useLocation();
   const active = activeTab(pathname);
-  const dark = DARK_TABS.includes(pathname);
   const unread = useInbox().unreadTotal;
   if (!active) return null;
   return (
-    <nav
-      aria-label="Main"
-      className={cn(
-        'absolute inset-x-0 bottom-0 z-40 flex px-1.5 pb-safe',
-        dark ? 'bg-black/45 text-white' : 'border-t border-ink/[0.07] bg-white/95 text-ink-mute',
-      )}
-    >
-      {TABS.map((t) => {
-        const on = t.id === active;
-        return (
-          <Link
-            key={t.id}
-            to={t.to}
-            replace
-            onClick={() => haptic(8)}
-            aria-current={on ? 'page' : undefined}
-            className={cn('flex flex-1 flex-col items-center gap-0.5 pt-2 text-[11px] font-bold', on ? (dark ? 'text-white' : 'text-ember-flame') : dark ? 'text-white/70' : 'text-ink-mute')}
-          >
-            <span className={cn('relative grid h-[30px] w-12 place-items-center rounded-full transition-colors', on && (dark ? 'bg-white/20' : 'bg-ember-flame/[0.12]'))}>
-              <svg viewBox="0 0 24 24" className="h-[26px] w-[26px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-3.5 pb-safe">
+      <nav aria-label="Main" className="pointer-events-auto grid h-16 grid-cols-5 items-center rounded-[24px] bg-[#111111] shadow-glass">
+        {TABS.map((t) => {
+          const on = t.id === active;
+          if (t.id === 'camera') {
+            return (
+              <Link key={t.id} to={t.to} replace onClick={() => haptic(8)} aria-current={on ? 'page' : undefined} aria-label={t.label} className="grid place-items-center">
+                <span className="grid h-[46px] w-[46px] place-items-center rounded-2xl bg-white">
+                  <span className={cn('h-[18px] w-[18px] rounded-full border-[3px] border-[#111111]', on ? 'bg-ember-rose' : 'bg-white')} />
+                </span>
+              </Link>
+            );
+          }
+          return (
+            <Link
+              key={t.id}
+              to={t.to}
+              replace
+              onClick={() => haptic(8)}
+              aria-current={on ? 'page' : undefined}
+              className={cn('relative flex h-full flex-col items-center justify-center gap-[3px] text-[10.5px] font-bold', on ? 'text-white' : 'text-white/55')}
+            >
+              <svg viewBox="0 0 24 24" className="h-[21px] w-[21px]" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d={t.d} />
               </svg>
+              {t.label}
+              {on && <span aria-hidden className="absolute bottom-[5px] h-1 w-1 rounded-full bg-white" />}
               {t.id === 'chat' && unread > 0 && (
-                <span className="absolute -right-0.5 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-ember-flame px-1 text-[10px] font-extrabold text-white ring-2 ring-white">
+                <span className="absolute left-1/2 top-2 ml-1 grid h-4 min-w-4 place-items-center rounded-full bg-ember-rose px-1 text-[10px] font-extrabold text-white">
                   {unread > 99 ? '99+' : unread}
                 </span>
               )}
-            </span>
-            {t.label}
-          </Link>
-        );
-      })}
-    </nav>
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 });

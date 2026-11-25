@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BookImage, Check, ChevronLeft, Clapperboard, Loader2, Repeat2, Search, Send, Sparkles } from 'lucide-react';
 import { Avatar } from '@/components/Avatar';
+import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
 import { Toggle } from '@/components/ui/Toggle';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
@@ -119,13 +120,13 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-white text-ink">
       <header className="flex items-center gap-2 px-3.5 pb-3 pt-safe">
-        <button onClick={onClose} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-[#eef1fa] active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
+        <button onClick={onClose} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-[#F1F1F4] active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
         <h1 className="flex-1 text-center text-lg font-extrabold">Send to</h1>
         <span className="w-10" aria-hidden />
       </header>
       <div className="flex-1 overflow-y-auto pb-28">
         <div className="px-4">
-          <label className="flex h-11 items-center gap-2.5 rounded-full bg-[#eef1fa] px-3.5">
+          <label className="flex h-11 items-center gap-2.5 rounded-full bg-[#F1F1F4] px-3.5">
             <Search className="h-[18px] w-[18px] text-ink-mute" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search friends" aria-label="Search friends" className="flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:text-ink-mute" />
           </label>
@@ -135,13 +136,13 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
         <Row on={toStory} onClick={() => setToStory((v) => !v)} icon={<Sparkles className="h-[22px] w-[22px]" />} tint="bg-ember-flame/[0.12] text-ember-flame" title="My story" sub="Visible for 24 hours" />
         {toStory && <div className="px-4 pb-2"><AudiencePicker value={audience} onChange={setAudience} /></div>}
         <Row on={toMemories} onClick={() => setToMemories((v) => !v)} icon={<BookImage className="h-[22px] w-[22px]" />} tint="bg-[#d8f5ea] text-ember-jade" title="Memories" sub="Only you can see these" />
-        {prepared.kind === 'video' && <Row on={toSpotlight} onClick={() => setToSpotlight((v) => !v)} icon={<Clapperboard className="h-[22px] w-[22px]" />} tint="bg-[#fff1e6] text-[#c2410c]" title="Spotlight" sub="Public to everyone on SUMANOVA" />}
+        {prepared.kind === 'video' && <Row on={toSpotlight} onClick={() => setToSpotlight((v) => !v)} icon={<Clapperboard className="h-[22px] w-[22px]" />} tint="bg-[#fff1e6] text-[#C2410C]" title="Spotlight" sub="Public to everyone on SUMANOVA" />}
         {toSpotlight && prepared.kind === 'video' && (
           <div className="space-y-2 px-4 pb-2">
-            <input value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} placeholder="Add a caption for Spotlight" className="h-11 w-full rounded-full bg-[#eef1fa] px-4 text-[15px] outline-none" />
+            <input value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 300))} placeholder="Add a caption for Spotlight" className="h-11 w-full rounded-full bg-[#F1F1F4] px-4 text-[15px] outline-none" />
             <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
               {CATEGORIES.map((c) => (
-                <button key={c} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize', category === c ? 'bg-ink text-white' : 'bg-[#eef1fa]')}>{c}</button>
+                <button key={c} onClick={() => setCategory(c)} className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-bold capitalize', category === c ? 'bg-ink text-white' : 'bg-[#F1F1F4]')}>{c}</button>
               ))}
             </div>
           </div>
@@ -154,7 +155,8 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
           <p className="px-4 py-5 text-sm text-ink-mute">Add friends to send snaps.</p>
         ) : (
           list.map((f) => (
-            <button key={f.id} onClick={() => toggle(f.id)} aria-pressed={picked.has(f.id)} className="flex w-full items-center gap-3 px-4 py-2 text-left active:bg-ink/[0.04]">
+            <button key={f.id} onClick={() => toggle(f.id)} aria-pressed={picked.has(f.id)} className={cn('flex w-full items-center gap-3 px-4 py-2 text-left active:bg-ink/[0.04]', GHOST_HOST)}>
+              <Ghost url={f.avatar_url} />
               <Avatar name={f.display_name} url={f.avatar_url} aura={f.aura_color} size={48} />
               <span className="min-w-0 flex-1"><span className="block truncate font-extrabold">{f.display_name}</span><span className="block truncate text-xs text-ink-mute">@{f.username}</span></span>
               <Tick on={picked.has(f.id)} />
@@ -162,7 +164,7 @@ export function SendSheet({ prepared, onClose, onSent }: { prepared: Prepared | 
           ))
         )}
         {picked.size > 0 && (
-          <div className="mx-4 mt-3 overflow-hidden rounded-2xl bg-[#f4f6fd]">
+          <div className="mx-4 mt-3 overflow-hidden rounded-2xl bg-[#ECECEF]">
             <Toggle label="Allow one replay" description="They can replay once within 5 minutes of opening" checked={replay} onChange={setReplay} />
             <p className="flex items-center gap-1.5 px-4 pb-3 text-xs text-ink-mute">
               <Repeat2 className="h-3.5 w-3.5" /> {prepared.kind === 'image' ? (prepared.duration ? `Shows for ${prepared.duration}s` : 'No time limit') : 'Plays once through'} · opens once

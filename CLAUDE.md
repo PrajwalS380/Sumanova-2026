@@ -37,7 +37,16 @@ Android (APK) and iPhone.
 ## Stack & conventions
 React 18 + TS + Vite 5 + Tailwind 3 + Framer Motion + Lucide + Zod, Supabase JS v2, vite-plugin-pwa (web only),
 Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path alias `@/` → `src/`.
-- Design system **"Pearl"** (owner-approved from 5 wireframe options; canvas
+- Design system **"Bento"** (owner-approved 2026-11-25, round 4; canvas https://claude.ai/artifact/YRvWos2boF7mhEDoAcfJqP —
+  Option 3 Bento + Option 10 "ghost" layer, on Snapchat-familiar layouts): soft grey canvas `bg-noir` (#ECECEF), rounded white /
+  black / colour tiles (`rounded-tile` = 26px), near-black ink, Inter (heavy, tight `font-display`), black accent by default
+  (Settings → Theme colour: Ink/Pink/Blue/Green/Violet/Orange, solid), black floating bottom bar with a white rounded-square
+  camera. Every list row / card gets a big faint copy of its avatar or icon behind it: `components/ui/Ghost` + `GHOST_HOST`.
+  Profile: full-body avatar in the person's scene (`components/Scene`, `profiles.profile_scene`) → tap → /avatar/home → studio;
+  picture = avatar face or selfie (/profile/photo; `avatar_face_url` keeps the face, `photo_mode`). Birthdays & zodiac
+  (/birthdays, `friend_birthdays()` = day+month only, `privacy_settings.show_birthday`, `lib/zodiac.ts`), profile code
+  (/profile/code, QR + BarcodeDetector scan), saved accounts (/accounts, `lib/savedAccounts.ts`, tokens only, never passwords),
+  streak Restore pill in the chat list. Earlier design (superseded): Design system **"Pearl"** (owner-approved from 5 wireframe options; canvas
   https://claude.ai/artifact/QeBwqyGdk5sy2xz7PHFneG). Light theme: milky glass over blue/pink/mint pearl sheen, navy
   ink, indigo accent, Instrument Serif display + Manrope. Token names are legacy: `noir.*` = light surfaces,
   `ink.*` = navy text, `ember.*` = accents (`ember-flame` indigo, `ember-cream` = navy active capsule with `text-noir`),

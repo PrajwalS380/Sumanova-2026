@@ -74,7 +74,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           onDoubleClick={() => !m.local && !deleted && p.onQuickReact(m)}
           className={cn(
             'relative select-none touch-manipulation',
-            !isSticker && !isMedia && cn(r, corner, topCorner, 'px-3.5 py-2', mine ? 'text-white' : 'bg-[#eef1fa] text-ink'),
+            !isSticker && !isMedia && cn(r, corner, topCorner, 'px-3.5 py-2', mine ? 'text-white' : 'bg-[#F1F1F4] text-ink'),
             isMedia && cn('overflow-hidden p-1', r, corner, topCorner, mine ? '' : 'bg-ink/[0.06]'),
             deleted && 'bg-transparent italic text-ink-mute ring-1 ring-ink/10',
             m.local === 'failed' && 'opacity-70',
