@@ -24,6 +24,8 @@ import { snapTileState } from '@/features/snaps/SnapTile';
 import { SnapViewer } from '@/features/snaps/SnapViewer';
 import { streaksApi } from '@/lib/social/api';
 import { watchChatScreenshots } from '@/lib/privacy';
+import { callsApi, type CallRow } from '@/lib/calls/api';
+import { supabase } from '@/lib/supabase';
 import { reportChatScreenshot } from '@/lib/chat/extras';
 
 export default function ChatThreadScreen() {
@@ -45,6 +47,19 @@ export default function ChatThreadScreen() {
   const [snapView, setSnapView] = useState<{ id: string; mode: 'open' | 'replay' | 'own' } | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  // Live group call in this chat → "Join" bar.
+  const [liveCall, setLiveCall] = useState<CallRow | null>(null);
+  const isGroupChat = summary?.kind === 'group';
+  useEffect(() => {
+    if (!isGroupChat || !id) return;
+    const load = () => void callsApi.liveIn(id).then(setLiveCall).catch(() => undefined);
+    load();
+    const ch = supabase.channel(`calllive:${id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'calls', filter: `conversation_id=eq.${id}` }, load).subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [id, isGroupChat, calls.state?.call.id]);
+
   // Screenshot alerts (Android 14+). Paused while a snap is open (the snap viewer blocks screenshots itself).
   useEffect(() => {
     if (!id || snapView) return;
@@ -221,12 +236,30 @@ export default function ChatThreadScreen() {
             </button>
           </>
         )}
+        {isGroup && info && (
+          <>
+            <button onClick={() => void calls.startCall(id, 'voice')} className={CIRCLE} aria-label="Group voice call">
+              <Phone className="h-5 w-5" />
+            </button>
+            <button onClick={() => void calls.startCall(id, 'video')} className={CIRCLE} aria-label="Group video call">
+              <Video className="h-5 w-5" />
+            </button>
+          </>
+        )}
         {isGroup && (
           <Link to={`/chat/${id}/info`} className={CIRCLE} aria-label="Chat details">
             <Info className="h-5 w-5" />
           </Link>
         )}
       </header>
+
+      {isGroup && liveCall && calls.state?.call.id !== liveCall.id && (
+        <button onClick={() => void calls.joinCall(liveCall)} className="mx-3 mb-1 flex items-center gap-3 rounded-2xl bg-ember-sage px-4 py-2.5 text-left text-white active:scale-[0.99]">
+          <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" /></span>
+          <span className="flex-1 text-sm font-extrabold">{liveCall.kind === 'video' ? 'Group video call' : 'Group call'} is live</span>
+          <span className="rounded-xl bg-white px-3 py-1.5 text-xs font-extrabold text-ink">Join</span>
+        </button>
+      )}
 
       {/* Messages */}
       <div

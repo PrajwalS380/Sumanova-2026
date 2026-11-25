@@ -83,8 +83,22 @@ Deno.serve(async (req) => {
     }
 
     if (kind === 'call') {
-      const { data: call } = await sb.from('calls').select('id,kind,status,caller_id,started_at').eq('id', id).maybeSingle();
+      const { data: call } = await sb.from('calls').select('id,kind,status,caller_id,started_at,is_group,conversation_id').eq('id', id).maybeSingle();
       if (!call || call.status !== 'ringing' || !fresh(call.started_at, 45)) return Response.json({ skipped: true }, { headers: cors });
+      if (call.is_group) {
+        // One trigger per invited member fires this; only the first claims the call and rings everyone.
+        const { data: claimed } = await sb.from('calls').update({ pushed_at: new Date().toISOString() }).eq('id', id).is('pushed_at', null).select('id');
+        if (!claimed?.length) return Response.json({ skipped: true }, { headers: cors });
+        const [{ data: invited }, { data: caller }, { data: conv }] = await Promise.all([
+          sb.from('call_participants').select('user_id').eq('call_id', id).eq('role', 'callee').is('joined_at', null).is('left_at', null),
+          sb.from('profiles').select('display_name').eq('id', call.caller_id).maybeSingle(),
+          sb.from('conversations').select('title').eq('id', call.conversation_id).maybeSingle(),
+        ]);
+        for (const p of invited ?? []) {
+          await sendToUser(p.user_id, { title: `Group ${call.kind} call · ${conv?.title ?? 'Group'}`, body: `${caller?.display_name ?? 'Someone'} started a call — tap to join`, url: `/chat/${call.conversation_id}`, tag: `call-${id}`, requireInteraction: true }, 45, 'high');
+        }
+        return Response.json({ ok: true }, { headers: cors });
+      }
       const [{ data: callee }, { data: caller }] = await Promise.all([
         sb.from('call_participants').select('user_id').eq('call_id', id).eq('role', 'callee').maybeSingle(),
         sb.from('profiles').select('display_name').eq('id', call.caller_id).maybeSingle(),

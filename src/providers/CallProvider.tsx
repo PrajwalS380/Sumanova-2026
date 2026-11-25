@@ -2,6 +2,7 @@ import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useM
 import { supabase } from '@/lib/supabase';
 import { callsApi, type CallKind, type CallRow } from '@/lib/calls/api';
 import { CallSession, type CallPhase, type Quality } from '@/lib/calls/session';
+import { GroupCallSession, type GroupPeer } from '@/lib/calls/group';
 import { RING_TIMEOUT_MS } from '@/lib/calls/config';
 import { startRingtone, stopRingtone } from '@/lib/calls/ringtone';
 import { chatApi } from '@/lib/chat/api';
@@ -24,6 +25,8 @@ export interface CallState {
   muted: boolean;
   videoOn: boolean;
   connectedAt: number | null;
+  /** Group calls: the group, people in the call and everyone's profile. */
+  group?: { title: string; avatar: string | null; peers: GroupPeer[]; people: Record<string, PublicProfile> };
 }
 
 interface CallApi {
@@ -35,6 +38,8 @@ interface CallApi {
   toggleMute: () => void;
   toggleVideo: () => void;
   switchCamera: () => Promise<void>;
+  /** Join a live group call from its chat. */
+  joinCall: (call: CallRow) => Promise<void>;
 }
 
 const Ctx = createContext<CallApi | null>(null);
@@ -46,6 +51,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const toast = useToast();
   const [state, setState] = useState<CallState | null>(null);
   const sessionRef = useRef<CallSession | null>(null);
+  const groupRef = useRef<GroupCallSession | null>(null);
   const stateRef = useRef<CallState | null>(null);
   stateRef.current = state;
   const ringTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -57,6 +63,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
     clearTimeout(ringTimer.current);
     sessionRef.current?.close();
     sessionRef.current = null;
+    groupRef.current?.close();
+    groupRef.current = null;
     if (message) {
       patch({ phase: 'ended', detail: message });
       setTimeout(() => setState(null), 1600);
@@ -95,6 +103,33 @@ export function CallProvider({ children }: { children: ReactNode }) {
     return s;
   }, [cleanup, me, patch]);
 
+  const groupInfo = useCallback(async (call: CallRow) => {
+    const [{ data: conv }, members] = await Promise.all([
+      supabase.from('conversations').select('title,avatar_url').eq('id', call.conversation_id).maybeSingle(),
+      chatApi.members(call.conversation_id).catch(() => []),
+    ]);
+    const profs = await chatApi.profiles(members.map((m) => m.user_id)).catch(() => []);
+    return { title: (conv?.title as string | null) ?? 'Group', avatar: (conv?.avatar_url as string | null) ?? null, peers: [] as GroupPeer[], people: Object.fromEntries(profs.map((p) => [p.id, p])) };
+  }, []);
+
+  /** Start my side of a group call (after start_call / answer_call). */
+  const runGroup = useCallback(async (call: CallRow) => {
+    const g = new GroupCallSession(call.id, call.kind, me!, {
+      onLocalStream: (local) => patch({ local }),
+      onPeers: (peers) => {
+        setState((st) => {
+          if (!st || !st.group) return st;
+          const anyUp = peers.some((p) => p.state === 'connected');
+          if (anyUp) stopRingtone();
+          return { ...st, group: { ...st.group, peers }, phase: anyUp ? 'connected' : peers.length ? 'connecting' : st.role === 'caller' && !st.connectedAt ? 'ringing' : 'connecting', connectedAt: st.connectedAt ?? (anyUp ? Date.now() : null) };
+        });
+      },
+      onError: (m) => toast(m, 'error'),
+    });
+    groupRef.current = g;
+    await g.start();
+  }, [me, patch, toast]);
+
   // Realtime: incoming calls and status changes of the current call.
   useEffect(() => {
     if (!me) return;
@@ -102,7 +137,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const cur = stateRef.current;
       if (cur && cur.call.id === row.id) {
         patch({ call: row });
-        if (row.status === 'accepted' && cur.role === 'caller') {
+        if (row.status === 'accepted' && cur.role === 'caller' && !row.is_group) {
           stopRingtone();
           clearTimeout(ringTimer.current);
           void sessionRef.current?.onAccepted();
@@ -111,6 +146,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
           const msg = row.status === 'declined' ? 'Call declined' : row.status === 'missed' ? 'No answer' : row.status === 'busy' ? 'They’re on another call' : 'Call ended';
           cleanup(msg);
         }
+        return;
+      }
+      const ringingGroup = row.is_group && (row.status === 'ringing' || row.status === 'accepted') && row.caller_id !== me && !cur;
+      if (ringingGroup) {
+        if (Date.now() - new Date(row.started_at).getTime() > RING_TIMEOUT_MS) return;
+        const mine = (await callsApi.inCall(row.id).catch(() => [])).find((p) => p.user_id === me);
+        if (!mine || mine.joined_at || mine.left_at || stateRef.current) return; // not invited, already in, or declined
+        const group = await groupInfo(row);
+        setState({ call: row, role: 'callee', peer: null, phase: 'incoming', local: null, remote: null, remoteMedia: { audio: true, video: row.kind === 'video' }, quality: 'unknown', muted: false, videoOn: row.kind === 'video', connectedAt: null, group });
+        startRingtone('incoming');
+        ringTimer.current = setTimeout(() => {
+          if (stateRef.current?.phase === 'incoming') {
+            void callsApi.end(row.id, 'timeout').catch(() => undefined);
+            cleanup('Missed group call');
+          }
+        }, RING_TIMEOUT_MS);
         return;
       }
       if (row.status === 'ringing' && row.caller_id !== me) {
@@ -137,7 +188,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [cleanup, me, patch, peerFor]);
+  }, [cleanup, groupInfo, me, patch, peerFor]);
+
+  // Group calls: close links to people whose participant row says they left (their "bye" may be lost).
+  const groupCallId = state?.group ? state.call.id : null;
+  useEffect(() => {
+    if (!groupCallId) return;
+    const ch = supabase
+      .channel(`callp:${groupCallId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'call_participants', filter: `call_id=eq.${groupCallId}` }, (p) => {
+        const row = p.new as { user_id: string; left_at: string | null };
+        if (row.left_at && row.user_id !== me) groupRef.current?.removePeer(row.user_id);
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [groupCallId, me]);
 
   // Leaving the page ends the call cleanly.
   useEffect(() => {
@@ -145,6 +212,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const cur = stateRef.current;
       if (cur && cur.phase !== 'incoming') {
         sessionRef.current?.hangup();
+        groupRef.current?.leave();
         void callsApi.end(cur.call.id, 'hangup');
       }
     };
@@ -160,6 +228,31 @@ export function CallProvider({ children }: { children: ReactNode }) {
         const id = await callsApi.start(conversationId, kind);
         const row = await callsApi.get(id);
         if (!row) throw new Error('Couldn’t start the call');
+        if (row.is_group) {
+          const joining = row.caller_id !== me || row.status === 'accepted';
+          const group = await groupInfo(row);
+          setState({ call: row, role: joining ? 'callee' : 'caller', peer: null, phase: 'preparing', local: null, remote: null, remoteMedia: { audio: true, video: row.kind === 'video' }, quality: 'unknown', muted: false, videoOn: row.kind === 'video', connectedAt: null, group });
+          try {
+            if (joining) await callsApi.answer(row.id);
+            await runGroup(row);
+          } catch (e) {
+            if (!joining) await callsApi.end(id, 'failed').catch(() => undefined);
+            cleanup((e as Error).message);
+            return;
+          }
+          if (!joining) {
+            patch({ phase: 'ringing' });
+            startRingtone('outgoing');
+            ringTimer.current = setTimeout(() => {
+              const st = stateRef.current;
+              if (st?.call.id === id && !st.connectedAt && !(st.group?.peers.length)) {
+                void callsApi.end(id, 'timeout').catch(() => undefined);
+                cleanup('Nobody joined');
+              }
+            }, RING_TIMEOUT_MS);
+          }
+          return;
+        }
         const peer = await peerFor(row);
         if (row.status === 'busy') {
           toast(`${peer?.display_name ?? 'They'} ${peer ? 'is' : 'are'} on another call`, 'info');
@@ -193,7 +286,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       patch({ phase: 'preparing' });
       try {
         await callsApi.answer(cur.call.id);
-        await makeSession(cur.call, 'callee').start();
+        if (cur.call.is_group) await runGroup(cur.call);
+        else await makeSession(cur.call, 'callee').start();
       } catch (e) {
         void callsApi.end(cur.call.id, 'failed').catch(() => undefined);
         cleanup((e as Error).message);
@@ -210,29 +304,44 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const cur = stateRef.current;
       if (!cur) return;
       sessionRef.current?.hangup();
+      groupRef.current?.leave();
       await callsApi.end(cur.call.id, 'hangup').catch(() => undefined);
-      cleanup('Call ended');
+      cleanup(cur.call.is_group ? 'You left the call' : 'Call ended');
     },
     toggleMute: () => {
       const cur = stateRef.current;
       if (!cur) return;
       sessionRef.current?.setMuted(!cur.muted);
+      groupRef.current?.setMuted(!cur.muted);
       patch({ muted: !cur.muted });
     },
     toggleVideo: () => {
       const cur = stateRef.current;
       if (!cur) return;
       void sessionRef.current?.setVideo(!cur.videoOn);
+      groupRef.current?.setVideo(!cur.videoOn);
       patch({ videoOn: !cur.videoOn });
     },
     switchCamera: async () => {
       try {
         await sessionRef.current?.switchCamera();
+        await groupRef.current?.switchCamera();
       } catch {
         toast('Couldn’t switch camera', 'error');
       }
     },
-  }), [cleanup, makeSession, patch, peerFor, state, toast]);
+    joinCall: async (call) => {
+      if (stateRef.current) return toast('You’re already in a call', 'info');
+      const group = await groupInfo(call);
+      setState({ call, role: 'callee', peer: null, phase: 'preparing', local: null, remote: null, remoteMedia: { audio: true, video: call.kind === 'video' }, quality: 'unknown', muted: false, videoOn: call.kind === 'video', connectedAt: null, group });
+      try {
+        await callsApi.answer(call.id);
+        await runGroup(call);
+      } catch (e) {
+        cleanup((e as Error).message);
+      }
+    },
+  }), [cleanup, groupInfo, makeSession, me, patch, peerFor, runGroup, state, toast]);
 
   return (
     <Ctx.Provider value={api}>

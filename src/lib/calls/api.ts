@@ -15,6 +15,7 @@ export interface CallRow {
   answered_at: string | null;
   ended_at: string | null;
   end_reason: string | null;
+  is_group?: boolean;
 }
 
 export interface CallHistoryItem {
@@ -31,6 +32,7 @@ export interface CallHistoryItem {
   other_display_name: string;
   other_avatar_url: string | null;
   other_aura: AuraColor;
+  is_group?: boolean;
 }
 
 function must<T>(r: { data: T | null; error: { message: string } | null }): T {
@@ -43,6 +45,9 @@ export const callsApi = {
   answer: async (id: string) => must(await supabase.rpc('answer_call', { p_call: id })),
   end: async (id: string, reason: 'hangup' | 'timeout' | 'failed' | 'declined' | 'busy' = 'hangup') => must(await supabase.rpc('end_call', { p_call: id, p_reason: reason })),
   get: async (id: string) => must(await supabase.from('calls').select('*').eq('id', id).maybeSingle()) as CallRow | null,
+  /** Live call in a conversation I'm part of (for the group "Join" banner). */
+  liveIn: async (conversationId: string) => (must(await supabase.from('calls').select('*').eq('conversation_id', conversationId).in('status', ['ringing', 'accepted']).order('started_at', { ascending: false }).limit(1)) as CallRow[])[0] ?? null,
+  inCall: async (callId: string) => must(await supabase.from('call_participants').select('user_id,joined_at,left_at').eq('call_id', callId)) as { user_id: string; joined_at: string | null; left_at: string | null }[],
   active: async () => (must(await supabase.from('calls').select('*').in('status', ['ringing', 'accepted']).order('started_at', { ascending: false }).limit(5)) as CallRow[]),
   history: async () => must(await supabase.rpc('list_calls', { p_limit: 100 })) as CallHistoryItem[],
 };
