@@ -124,7 +124,7 @@ class StrandMesh {
   }
 }
 
-class Groomer {
+export class Groomer {
   R: number;
   r: () => number;
   m = new StrandMesh();
@@ -152,7 +152,7 @@ class Groomer {
     }
   }
   /** neck, shoulders, upper back and chest (approximate, head-local) */
-  keepOffBody(p: V, pad: number) {
+  keepOffBody(p: V, pad: number, preferFront = false) {
     const { h } = this;
     const k = h.rx / 0.35;
     // neck: a cylinder under the jaw
@@ -169,7 +169,7 @@ class Groomer {
       const e = ex * ex + ez * ez;
       if (e < 1) {
         // drape over the front or the back (whichever side the strand is on)
-        const s = p.z - cz >= 0 ? 1 : -1;
+        const s = preferFront || p.z - cz >= 0 ? 1 : -1;
         p.z = cz + s * hz * Math.sqrt(Math.max(0, 1 - ex * ex));
       }
     }
@@ -362,7 +362,7 @@ class Groomer {
    * Grow one clump from scalp direction u. Returns the polyline (before texture displacement).
    * `lenR` is the strand length in head radii.
    */
-  grow(u: V, lenR: number, o: { fringe: boolean; layer: number; target?: V; liftK?: number }) {
+  grow(u: V, lenR: number, o: { fringe: boolean; layer: number; target?: V; liftK?: number; front?: boolean }) {
     const { h, p, R } = this;
     const L = lenR * R;
     const root = this.scalp(u, this.cap * 0.4);
@@ -421,8 +421,21 @@ class Groomer {
           }
         }
         // under the jaw, in front of the ears: stop the lock (it would crumple between jaw and neck)
-        if (cur.y < -h.ry * 0.55 && cur.z > -0.05 * h.rz && Math.hypot(cur.x, cur.z) < h.rx * 1.05) { pts.push(cur.clone()); break; }
-                this.keepOffBody(cur, 0.02 * R + o.layer * 0.008 * R);
+        if (cur.y < -h.ry * 0.55 && cur.z > -0.05 * h.rz && Math.hypot(cur.x, cur.z) < h.rx * 1.05) {
+          // front locks of long hair hang just outside the jaw line instead of stopping there
+          if (o.front && cur.y > -h.ry * 1.1) {
+            const rr = Math.hypot(cur.x, cur.z) || 1e-4, f = (h.rx * 1.06) / rr;
+            cur.x *= f;
+            cur.z *= f;
+          } else if (!o.front) { pts.push(cur.clone()); break; }
+        }
+        // front side locks of long hair drape forward over the shoulders onto the chest
+        // (the comb sends hair back; past the cheek these locks are turned forward instead)
+        if (o.front && cur.y < -h.ry * 0.2) {
+          d.z = Math.max(d.z, 0.22);
+          d.normalize();
+        }
+        this.keepOffBody(cur, 0.02 * R + o.layer * 0.008 * R, o.front);
       } else this.keepOff(cur, this.cap + 0.002 * R);
       pts.push(cur.clone());
     }
@@ -547,7 +560,9 @@ class Groomer {
       const tight = cutShort && !topZone;
       // the smooth shell carries the sides; only every third lock is drawn there (combed texture)
       if (tight && r() < 0.66) continue;
-      let pts = this.grow(u, L, { fringe, layer, liftK: tight ? 0.08 : shortCut ? 0.3 : 1 });
+      // about half of the hair in front of the ears falls forward over the shoulders (long styles)
+      const front = L > 1.0 && !fringe && u.z > -0.05 && Math.abs(u.x) > 0.45 && r() < 0.6;
+      let pts = this.grow(u, front ? L * 1.3 : L, { fringe, layer, liftK: tight ? 0.08 : shortCut ? 0.3 : 1, front });
       const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
       if (p.tex !== 'straight') pts = this.texture(this.resample(pts, step), r() * Math.PI * 2);
       const short = L < 0.45;
