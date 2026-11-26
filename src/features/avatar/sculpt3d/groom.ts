@@ -499,7 +499,7 @@ class Groomer {
     // density: finer clumps for short / coily hair, broader for long straight hair
     // long coils / curls: fewer, chunkier clumps keep the mesh light
     // few, broad sculpted locks (a stylised groom), not hundreds of thin strands
-    const N = Math.round((coily ? (longest > 0.8 ? 150 : 260) : curly ? (longest > 0.8 ? 150 : 190) : longest > 1 ? 150 : longest < 0.5 ? 170 : 175) * (this.hatOn ? 0.6 : 1));
+    const N = Math.round((coily ? (longest > 0.8 ? 150 : 260) : curly ? (longest > 0.8 ? 150 : 190) : longest > 1 ? 150 : longest < 0.5 ? 170 : 215) * (this.hatOn ? 0.6 : 1));
     const golden = Math.PI * (3 - Math.sqrt(5));
     const u = v3();
     for (let k = 0; k < N * 2.2; k++) {
@@ -524,6 +524,8 @@ class Groomer {
       if (p.side > 1) L = Math.max(L, Math.min(p.side, p.back) * 0.9);
       // fringe band: the front strands just above the hairline
       const fringe = p.fringe !== 'none' && frontness > 0.35 && u.y < line + 0.32 && Math.abs(u.x) < 0.75;
+      // medium cuts: sides and back fall to the chin / neck (head radii are short on a stylised head)
+      if (longest >= 0.45 && longest <= 1.05 && !coily && !curly) L *= 1 + 0.4 * Math.max(sideness, backness);
       if (fringe) L = p.fringeLen * (p.fringe === 'wispy' ? 0.75 + r() * 0.45 : 0.9 + r() * 0.2);
       if (p.asym) L *= 1 + p.asym * 0.45 * Math.max(-1, Math.min(1, u.x * 2.5));
       L *= 1 - p.layers * 0.45 * r() * smooth(-0.2, 0.6, u.y);
@@ -549,11 +551,13 @@ class Groomer {
       const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
       if (p.tex !== 'straight') pts = this.texture(this.resample(pts, step), r() * Math.PI * 2);
       const short = L < 0.45;
-      const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.11 : 0.085) : curly ? 0.14 : p.fringe === 'wispy' && fringe ? 0.13 : tight ? 0.16 : cutShort ? 0.3 : short ? 0.22 : 0.3) * (0.85 + r() * 0.3);
+      // medium cuts (jaw to shoulder): full, chunky locks — not thin tails
+      const medium = longest >= 0.45 && longest <= 1.05 && !coily && !curly;
+      const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.11 : 0.085) : curly ? 0.14 : p.fringe === 'wispy' && fringe ? 0.13 : tight ? 0.16 : cutShort ? 0.3 : medium && !fringe ? 0.38 : short ? 0.22 : 0.3) * (0.85 + r() * 0.3);
       // quiffs / pompadours: one smooth rolled wave of broad locks (not flame-like spikes)
       const roll = p.flow === 'up' && p.tips < 0.7;
-      const tip = p.fringe === 'straight' && fringe ? 0.4 : roll ? 0.55 : tight ? 0.5 : shortCut ? 0.32 - 0.15 * p.tips : Math.max(0.03, 0.3 - 0.3 * p.tips);
-      this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7 });
+      const tip = p.fringe === 'straight' && fringe ? 0.4 : roll ? 0.55 : tight ? 0.5 : medium && !fringe ? Math.max(0.14, 0.3 - 0.2 * p.tips) : shortCut ? 0.32 - 0.15 * p.tips : Math.max(0.03, 0.3 - 0.3 * p.tips);
+      this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : medium ? 0.55 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7 });
       // detail: finer locks riding on top of the main one and fanning apart toward the tips
       // (piecey, separated ends and layered depth — the sculpted-groom look)
       if (!coily && !tight) this.subLocks(pts, roll ? w0 * 1.2 : w0, { n: curly ? 1 : roll ? 1 : shortCut ? 1 : short ? 2 : 3, flat: curly ? 0.75 : 0.5, spread: shortCut ? 0.3 : short ? 0.55 : 0.8 });
