@@ -52,7 +52,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v15';
+const STORE = 'snv-thumbs-v16';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {

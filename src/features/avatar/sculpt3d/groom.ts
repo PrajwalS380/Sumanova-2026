@@ -242,7 +242,7 @@ class Groomer {
     if (p.fade === 'buzz') return null;
     const afro = p.afro;
     // afro volume tapers down to the hairline (no flat 'brim' over the forehead)
-    const thick = (uy: number, az = 0) => this.cap * (p.braid === 'cornrows' ? 0.2 : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
+    const thick = (uy: number, az = 0) => this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 1.6 : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
     const prim: Prim = {
       t: 'fn', c: [0, h.ry * 0.2, -h.rz * 0.05], ext: [R * (1.3 + afro * 0.9), h.ry * (1.3 + afro * 0.9), h.rz * (1.4 + afro * 0.9)], bone: 0, k: 0,
       f: (x, y, z) => {
@@ -658,8 +658,8 @@ class Groomer {
       const root = this.scalp(u);
       const target = pts.reduce((a, b) => (a.distanceTo(root) < b.distanceTo(root) ? a : b));
       const dist = root.distanceTo(target) / R;
-      const path = this.grow(u, dist * 1.6 + 0.1, { fringe: false, layer: 0, target, liftK: 0.2 });
-      this.emit(path, 0.11 * R * (0.85 + r() * 0.3), { flat: 0.3, tip: 0.6 });
+      const path = this.grow(u, dist * 1.6 + 0.1, { fringe: false, layer: 0.8, target, liftK: 0.2 });
+      this.emit(path, 0.15 * R * (0.85 + r() * 0.3), { flat: 0.32, tip: 0.7 });
     }
     // fringe / face-framing pieces stay loose
     if (p.fringe !== 'none') this.scalpStrands((uu, uy) => uu.z > 0.55 && uy < 0.85);
@@ -667,7 +667,7 @@ class Groomer {
       const n = T.clone().normalize();
       const isBun = p.tie === 'bun' || p.tie === 'lowbun' || p.tie === 'messybun' || p.tie === 'spacebuns';
       if (isBun && p.braid === 'braidbun') continue; // the plait wound into a bun is built in braids()
-      if (isBun) this.bun(T, n, p.tie === 'spacebuns' ? 0.24 : p.tie === 'messybun' ? 0.34 : 0.3);
+      if (isBun) this.bun(T, n, p.tie === 'spacebuns' ? 0.3 : p.tie === 'messybun' ? 0.4 : 0.37);
       else this.tail(T, n, p.tie === 'twinpony' ? 0.6 : 1);
       // the tie: a scrunchie / hair tie wrapping the gathered hair
       if (p.braid !== 'braidbun') this.band.push({ t: 'torus', c: [T.x + n.x * 0.03 * R, T.y + n.y * 0.03 * R, T.z + n.z * 0.03 * R], R: 0.085 * R * (isBun ? 1.4 : 1), r: 0.032 * R, rot: eulerFromAxis(n), bone: 0 });
@@ -677,11 +677,11 @@ class Groomer {
   /** a ponytail: a bundle of clumps from the tie, falling with gravity */
   tail(T: V, n: V, thick: number) {
     const { p, R, r } = this;
-    const K = Math.round(54 * thick);
+    const K = Math.round(64 * thick);
     const side = v3().crossVectors(n, UP).normalize();
     const up = v3().crossVectors(side, n).normalize();
     for (let i = 0; i < K; i++) {
-      const a = r() * Math.PI * 2, rr = Math.sqrt(r()) * 0.075 * R * thick;
+      const a = r() * Math.PI * 2, rr = Math.sqrt(r()) * 0.11 * R * thick;
       const root = T.clone().addScaledVector(n, 0.05 * R).addScaledVector(side, Math.cos(a) * rr).addScaledVector(up, Math.sin(a) * rr);
       const d = n.clone().multiplyScalar(0.8).addScaledVector(UP, 0.35).addScaledVector(side, Math.cos(a) * 0.2).normalize();
       const L = p.tail * R * (0.85 + r() * 0.25);
@@ -699,7 +699,7 @@ class Groomer {
         pts.push(cur.clone());
       }
       const q = p.tex === 'straight' ? pts : this.texture(this.resample(pts, 0.015 * R), r() * 6);
-      this.emit(q, 0.06 * R * (0.85 + r() * 0.3), { flat: p.tex === 'curly' || p.tex === 'coily' ? 0.8 : 0.4, tip: 0.5 - 0.45 * p.tips, rand: r() });
+      this.emit(q, 0.1 * R * (0.85 + r() * 0.3), { flat: p.tex === 'curly' || p.tex === 'coily' ? 0.8 : 0.45, tip: 0.5 - 0.45 * p.tips, rand: r() });
     }
   }
 
@@ -726,7 +726,7 @@ class Groomer {
         pts.push(C.clone().addScaledVector(a1, Math.cos(th) * Math.cos(psi) * rr).addScaledVector(a2, Math.sin(th) * Math.cos(psi) * rr).addScaledVector(n, Math.sin(psi) * rr * 0.75));
       }
       const q = p.tex === 'coily' ? this.texture(this.resample(pts, 0.012 * R), k, 'coily', 1) : pts;
-      this.emit(q, 0.07 * R, { flat: 0.45, tip: 0.6, rand: r() });
+      this.emit(q, 0.1 * R, { flat: 0.5, tip: 0.6, rand: r() });
     }
     // a messy bun has loose loops and a few escaping pieces
     if (messy)
@@ -798,18 +798,18 @@ class Groomer {
     switch (p.braid) {
       case 'single': {
         this.gatherTo([v3(0, -h.ry * 0.45, -h.rz * 0.98)]);
-        this.plait(hang(v3(0, -h.ry * 0.45, -h.rz * 1.02), p.tail, v3(0, -1, -0.3)), 0.085 * R);
+        this.plait(hang(v3(0, -h.ry * 0.45, -h.rz * 1.02), p.tail, v3(0, -1, -0.3)), 0.16 * R);
         break;
       }
       case 'fishtail': {
         this.gatherTo([v3(h.rx * 0.55, -h.ry * 0.5, -h.rz * 0.6)]);
-        this.plait(hang(v3(h.rx * 0.62, -h.ry * 0.55, -h.rz * 0.55), p.tail, v3(0.25, -1, 0.35)), 0.09 * R, { fishtail: true });
+        this.plait(hang(v3(h.rx * 0.62, -h.ry * 0.55, -h.rz * 0.55), p.tail, v3(0.25, -1, 0.35)), 0.16 * R, { fishtail: true });
         break;
       }
       case 'double': {
         const ends = [-1, 1].map((s) => v3(s * h.rx * 0.88, -h.ry * 0.45, -h.rz * 0.35));
         this.gatherTo(ends);
-        for (const e of ends) this.plait(hang(e, p.tail, v3(Math.sign(e.x) * 0.1, -1, 0.45)), 0.075 * R);
+        for (const e of ends) this.plait(hang(e, p.tail, v3(Math.sign(e.x) * 0.1, -1, 0.45)), 0.14 * R);
         break;
       }
       case 'french':
@@ -868,7 +868,7 @@ class Groomer {
         target = targets[Math.min(targets.length - 1, i + 2)];
       }
       const path = this.grow(u, (root.distanceTo(target) / R) * 1.6 + 0.1, { fringe: false, layer: 0, target, liftK: 0.2 });
-      this.emit(path, 0.11 * R * (0.85 + r() * 0.3), { flat: 0.3, tip: 0.6 });
+      this.emit(path, 0.15 * R * (0.85 + r() * 0.3), { flat: 0.32, tip: 0.7 });
     }
   }
 
