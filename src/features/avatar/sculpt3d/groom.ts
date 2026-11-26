@@ -414,7 +414,9 @@ class Groomer {
             d.normalize();
           }
         }
-        this.keepOffBody(cur, 0.02 * R + o.layer * 0.008 * R);
+        // under the jaw, in front of the ears: stop the lock (it would crumple between jaw and neck)
+        if (cur.y < -h.ry * 0.55 && cur.z > -0.05 * h.rz && Math.hypot(cur.x, cur.z) < h.rx * 1.05) { pts.push(cur.clone()); break; }
+                this.keepOffBody(cur, 0.02 * R + o.layer * 0.008 * R);
       } else this.keepOff(cur, this.cap + 0.002 * R);
       pts.push(cur.clone());
     }
@@ -473,7 +475,8 @@ class Groomer {
       wAt: (t) => w0 * (1.15 - 0.15 * smooth(0, 0.35, t)) * (1 - (1 - tipK) * Math.pow(smooth(0.25, 1, t), 1.3)),
       flat,
       radial: o.radial ?? 4,
-      out: (q, out) => out.copy(q).normalize(),
+      // below the head centre locks face outward horizontally (no twisting under the jaw)
+      out: (q, out) => out.set(q.x, q.y > 0 ? q.y : q.y * 0.15, q.z).normalize(),
       shadeAt: (t, q) => Math.min(1, (o.shade ?? 1) * (0.62 + 0.38 * smooth(this.cap, this.cap + 0.05 * R, this.sd(q)) * (0.85 + 0.15 * t))),
       rand: o.rand ?? this.r(),
       tStart: o.tStart,
