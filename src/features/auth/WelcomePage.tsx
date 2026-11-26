@@ -10,7 +10,7 @@ export default function WelcomePage() {
   if (!params.get('fresh') && savedAccounts.list().length > 0) return <Navigate to="/accounts" replace />;
   const figs = [
     { src: '/welcome/meera.webp', h: 210 },
-    { src: '/welcome/kofi.webp', h: 240 },
+    { src: '/welcome/nia.webp', h: 240 },
     { src: '/welcome/zoe.webp', h: 210 },
   ];
   return (

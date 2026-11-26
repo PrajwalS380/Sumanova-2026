@@ -101,8 +101,14 @@ export async function showThumbs(slot: Slot, frame: ThumbFrame, ids: number[], c
 export async function presetImages() {
   const { PRESETS } = await import('@/features/avatar/look/presets');
   const out: string[] = [];
-  for (let i = 0; i < PRESETS.length; i++) {
-    const url = await renderThumb(`preset:${i}`, PRESETS[i].look, 'full', false, 640);
+  // ?ids=1,2&poses=waving,peace → just those characters in those poses (welcome page art)
+  const q = new URLSearchParams(location.search);
+  const ids = q.get('ids') ? q.get('ids')!.split(',').map(Number) : PRESETS.map((_, i) => i);
+  const poses = q.get('poses')?.split(',') ?? [];
+  for (let k = 0; k < ids.length; k++) {
+    const i = ids[k];
+    const look = poses[k] ? { ...PRESETS[i].look, pose: poses[k] as never } : PRESETS[i].look;
+    const url = await renderThumb(`preset:${i}:${poses[k] ?? ''}`, look, 'full', false, 640);
     const blob = await (await fetch(url)).blob();
     out.push(await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); }));
   }

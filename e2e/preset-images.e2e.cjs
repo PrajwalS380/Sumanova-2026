@@ -9,7 +9,7 @@ const fs = require('fs');
   const out = process.argv[2];
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const p = await b.newPage();
-  await p.goto('http://localhost:5199/?presetImages=1');
+  await p.goto('http://localhost:5199/?presetImages=1' + (process.argv[3] ? '&' + process.argv[3] : ''));
   await p.waitForFunction(() => document.title === 'done', null, { timeout: 600000 });
   const list = await p.evaluate(() => window.__presets);
   list.forEach((d, i) => fs.writeFileSync(`${out}/${i}.raw`, Buffer.from(d.split(',')[1], 'base64')));

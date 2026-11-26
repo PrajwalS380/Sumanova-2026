@@ -49,7 +49,8 @@ async function stub(page) {
   });
 }
 
-(async () => {
+module.exports = { BASE, REF, session, stub };
+if (require.main === module) (async () => {
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const results = [];
   for (const [label, vp] of [['phone', { width: 360, height: 740 }], ['desktop', { width: 1280, height: 860 }]]) {
