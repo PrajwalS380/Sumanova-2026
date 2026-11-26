@@ -11,7 +11,7 @@ import { DEFAULT_LOOK, type Look } from '../look/config';
  * a time on a warm clay mannequin, and results are cached as image URLs, so
  * scrolling a 100-item grid never creates 100 GL contexts.
  */
-export type ThumbFrame = 'head' | 'face' | 'upper' | 'lower' | 'feet' | 'full' | 'sticker' | 'seated' | 'bag' | 'dress';
+export type ThumbFrame = 'head' | 'face' | 'upper' | 'lower' | 'feet' | 'full' | 'fullroomy' | 'sticker' | 'seated' | 'bag' | 'dress';
 
 const SIZE = 192;
 const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
@@ -25,6 +25,8 @@ const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number,
   /** Shoulders to shins, so prints on dresses read clearly. */
   dress: { pos: [0, 1.12, 3.5], target: [0, 1.06, 0], fov: 30 },
   full: { pos: [0, 1.26, 4.8], target: [0, 1.2, 0], fov: 30 },
+  // room above the head for big hair and raised arms (welcome / starter art)
+  fullroomy: { pos: [0, 1.34, 5.7], target: [0, 1.3, 0], fov: 30 },
   /** Knees up, with head-room for raised arms (chat stickers). */
   sticker: { pos: [0, 1.5, 3.9], target: [0, 1.45, 0], fov: 30 },
   seated: { pos: [0, 1.05, 3.6], target: [0, 1.0, 0], fov: 30 },

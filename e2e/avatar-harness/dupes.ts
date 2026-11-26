@@ -108,7 +108,7 @@ export async function presetImages() {
   for (let k = 0; k < ids.length; k++) {
     const i = ids[k];
     const look = poses[k] ? { ...PRESETS[i].look, pose: poses[k] as never } : PRESETS[i].look;
-    const url = await renderThumb(`preset:${i}:${poses[k] ?? ''}`, look, 'full', false, 640);
+    const url = await renderThumb(`preset:${i}:${poses[k] ?? ''}`, look, 'fullroomy', false, 640);
     const blob = await (await fetch(url)).blob();
     out.push(await new Promise<string>((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result as string); fr.readAsDataURL(blob); }));
   }
