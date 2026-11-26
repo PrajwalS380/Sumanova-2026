@@ -22,7 +22,7 @@ export type Job =
   | { k: 'head'; h: HeadShape; nose: NoseP | null; ears: EarP };
 
 /** Bump when any sculpt builder changes its output (invalidates the on-device cache). */
-export const SCULPT_VERSION = 44;
+export const SCULPT_VERSION = 46;
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 export function jobKey(j: Job): string {

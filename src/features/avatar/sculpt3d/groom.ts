@@ -566,6 +566,8 @@ export class Groomer {
       // about half of the hair in front of the ears falls forward over the shoulders (long styles)
       const front = L > 1.0 && !fringe && u.z > -0.05 && Math.abs(u.x) > 0.45 && r() < 0.6;
       let pts = this.grow(u, front ? L * 1.3 : L, { fringe, layer, liftK: tight ? 0.08 : shortCut ? 0.3 : 1, front });
+      // roots by the hairline rise out of the scalp layer (no stepped edge)
+      if (!fringe) this.bury(pts, u);
       const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
       if (p.tex !== 'straight') pts = this.texture(this.resample(pts, step), r() * Math.PI * 2);
       const short = L < 0.45;
@@ -653,6 +655,30 @@ export class Groomer {
       const dir = u.clone().add(v3((r() - 0.5) * 0.6, (r() - 0.5) * 0.6, (r() - 0.5) * 0.6)).normalize();
       for (let i = 0; i < 6; i++) pts.push(root.clone().addScaledVector(dir, (L * i) / 5));
       this.emit(this.texture(this.resample(pts, 0.012 * R), r() * 6, 'coily', 1), 0.045 * R, { flat: 1, tip: 0.8, radial: 4, shade: 1.1 });
+    }
+    // defined coil clusters: bigger springy tufts over the surface, catching light on their tops
+    const M = 150;
+    for (let k = 0; k < M; k++) {
+      const y = 1 - (k / (M - 1)) * 2;
+      const rad = Math.sqrt(1 - y * y);
+      u.set(Math.cos(golden * k * 1.7) * rad, y, Math.sin(golden * k * 1.7) * rad);
+      const az = Math.atan2(u.x, u.z);
+      if (u.y < this.lineAt(az) + 0.08) continue;
+      const thick = p.afro * R * (0.5 + 0.35 * Math.max(0, u.y)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, u.y);
+      const onHead = this.scalp(u, this.cap + thick);
+      const sph = v3(0, h.ry * 0.18, -h.rz * 0.08).addScaledVector(u, R * (1.05 + p.afro * 0.62) - 0.04 * R);
+      const root = (u.y > this.lineAt(az) + 0.3 && sph.length() > onHead.length() ? sph : onHead).addScaledVector(u, -0.02 * R);
+      // a short, wide spiral lying along the surface
+      const t1 = v3().crossVectors(u, UP);
+      if (t1.lengthSq() < 1e-4) t1.set(1, 0, 0);
+      t1.normalize().applyAxisAngle(u, r() * Math.PI * 2);
+      const pts: V[] = [];
+      for (let i = 0; i <= 26; i++) {
+        const t = i / 26, th = t * Math.PI * 4.5;
+        const t2 = v3().crossVectors(u, t1);
+        pts.push(root.clone().addScaledVector(t1, (t - 0.5) * 0.09 * R + Math.cos(th) * 0.032 * R).addScaledVector(t2, Math.sin(th) * 0.032 * R).addScaledVector(u, (Math.sin(th) * 0.5 + 0.5) * 0.03 * R));
+      }
+      this.emit(pts, 0.026 * R, { flat: 1, tip: 0.7, radial: 5, shade: 1.15 });
     }
   }
 

@@ -34,12 +34,13 @@ float hNoise(vec2 p) {
   return mix(mix(hHash(i), hHash(i + vec2(1.0, 0.0)), f.x), mix(hHash(i + vec2(0.0, 1.0)), hHash(i + vec2(1.0, 1.0)), f.x), f.y);
 }
 float hiBand = 1.0;
+float streakBand = 1.0;
 vec3 hairBase(float t, float rnd, vec3 pos) {
   vec3 c = mix(uRoot, uTip, smoothstep(0.3, 1.0, t));
   if (uPaint > 0.5 && uPaint < 1.5) c = mix(uRoot, uTip, smoothstep(-0.02, -0.12, pos.y));            // two-tone: under-layer
   else if (uPaint > 1.5 && uPaint < 2.5) c = mix(uRoot, uTip, smoothstep(0.15, 0.85, t));             // ombré
   else if (uPaint > 2.5 && uPaint < 3.5) c = mix(c, uHi, step(rnd, 0.55) * hiBand * 0.7); // highlights: fine ribbons
-  else if (uPaint > 3.5 && uPaint < 4.5) c = mix(c, uHi, step(rnd, 0.14) * (0.55 + 0.45 * hiBand));                             // streaks
+  else if (uPaint > 3.5 && uPaint < 4.5) c = mix(c, uHi, step(rnd, 0.3) * streakBand * 0.95); // streaks: bold but fine ribbons, root to tip                             // streaks
   else if (uPaint > 4.5 && uPaint < 5.5) c = mix(uRoot, uTip, step(0.0, pos.x));                       // split dye
   else if (uPaint > 5.5) c = mix(c, uHi, step(rnd, 0.45) * hiBand * 0.6);                                      // lowlights
   return c * (0.9 + 0.2 * rnd);
@@ -75,6 +76,8 @@ vHairT = normalize(normalMatrix * hairT);`,
   // highlight ribbons: 1–2 narrow stripes along a lock, not the whole lock
   // one or two thin, soft-edged ribbons per lock, fading in from the root
   hiBand = smoothstep(0.7, 0.95, sin(vHUv.x * 6.2832 * 2.0 + hR * 9.0) * 0.5 + 0.5) * smoothstep(0.05, 0.35, hT);
+  // colour streaks: one narrow, crisp ribbon down the middle of a lock
+  streakBand = smoothstep(0.88, 0.96, sin(vHUv.x * 6.2832 + hR * 5.0) * 0.5 + 0.5) * smoothstep(0.04, 0.2, hT);
   vec3 hc = hairBase(hT, hR, vHairPos);
   // fine strands across the clump, varying slowly along it
   float st = hNoise(vec2(vHUv.x * 9.0 + hR * 57.0, hT * 3.0 + hR * 11.0)) * 0.6 + hNoise(vec2(vHUv.x * 23.0 + hR * 13.0, hT * 7.0)) * 0.4;
@@ -136,7 +139,7 @@ if (uBaked < 0.5) {
   useEffect(() => {
     const u = mat.userData.uniforms as { uRoot: { value: THREE.Color }; uTip: { value: THREE.Color }; uHi: { value: THREE.Color }; uPaint: { value: number }; uGloss: { value: number } };
     u.uRoot.value.set(root);
-    u.uTip.value.set(tip ?? (paint === 'none' ? root : shift(root, 0.35)));
+    u.uTip.value.set(tip ?? (paint === 'ombre' || paint === 'twotone' || paint === 'split' ? shift(root, 0.35) : root));
     u.uHi.value.set(hi ?? (paint === 'lowlights' ? shift(root, -0.4) : shift(root, 0.55)));
     u.uPaint.value = PAINT[paint];
     const c = new THREE.Color(root);
