@@ -39,6 +39,9 @@ export const PARENT: number[] = (() => {
   return p;
 })();
 
+/** Rest-pose arm abduction (radians): the skin is sculpted with the arms this far from the sides. */
+export const REST_ARM = 0.17;
+
 /** Head centre in body space (the face/hair rig hangs off it) and its scale. */
 export const HEAD_Y = 2.05;
 export const HEAD_SCALE = 0.75;
@@ -69,7 +72,7 @@ export function joints(bp: BodyP): Joints {
   const F = bp.fem ?? 0;
   const w = bp.width, sh = bp.shoulders, hp = bp.hips;
   const sx = (0.224 - 0.024 * F) * sh * w + 0.012;
-  const hx = (0.088 + 0.008 * F) * hp * w;
+  const hx = (0.104 + 0.006 * F) * hp * w;
   const handS = 1.16 - 0.12 * F, footS = 1.06 - 0.1 * F;
   const pos: V3[] = new Array(BONE_COUNT);
   pos[B.pelvis] = [0, 1.05, 0];
@@ -79,8 +82,11 @@ export function joints(bp: BodyP): Joints {
   for (const [side, s] of [[-1, 0], [1, 1]] as const) {
     const ua = s ? B.upperArmR : B.upperArmL;
     pos[ua] = [side * sx, 1.612, -0.008];
-    pos[ua + 1] = [side * (sx + 0.008), 1.33, -0.016];
-    pos[ua + 2] = [side * (sx + 0.012), 1.07, 0.0];
+    // relaxed A-pose: the arms are sculpted angled away from the body (REST_ARM), so the arm
+    // and the hip never touch in the source mesh — no skin webbing when the arm moves
+    const ux = Math.sin(REST_ARM), uy = Math.cos(REST_ARM);
+    pos[ua + 1] = [side * (sx + 0.008 + 0.282 * ux), 1.612 - 0.282 * uy, -0.016];
+    pos[ua + 2] = [side * (sx + 0.012 + 0.542 * ux), 1.612 - 0.542 * uy, 0.0];
     const th = s ? B.thighR : B.thighL;
     pos[th] = [side * hx, 0.985, 0];
     pos[th + 1] = [side * (hx - 0.004), 0.56, 0.008];
@@ -106,7 +112,7 @@ export function joints(bp: BodyP): Joints {
       upperArm: 0.066 * k * mF,
       foreArm: 0.058 * k * mF,
       wrist: 0.04 * Math.min(w, 1.06) * (1 - 0.1 * F),
-      thigh: (0.112 + 0.012 * F) * Math.min(w * hp, 1.22),
+      thigh: (0.104 + 0.012 * F) * Math.min(w * hp, 1.22),
       knee: 0.072 * k * (1 - 0.06 * F),
       calf: 0.084 * k * (1 - 0.06 * F),
       ankle: 0.046 * k * (1 - 0.08 * F),
@@ -170,23 +176,23 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
     // The trunk, lofted from the hips to the neck. Width, front depth and back depth follow
     // their own curves: wide hips → waist → ribcage → chest → sloping shoulders, with the chest
     // forward, the upper back rounded, the lower back curving in and the seat behind.
-    const lo = want('pelvis') ? 0.88 : 1.12, hi = want('torso') ? 1.75 : 1.16;
+    const lo = want('pelvis') ? 0.9 : 1.12, hi = want('torso') ? 1.75 : 1.16;
     const W = w;
     const f = loft2(
       lo,
       hi,
       [
-        [0.88, (0.158 + 0.016 * F) * hp * W], [0.96, (0.178 + 0.018 * F) * hp * W], [1.05, (0.17 + 0.016 * F) * hp * W],
+        [0.9, 0.06 * hp * W], [0.94, (0.13 + 0.012 * F) * hp * W], [0.99, (0.176 + 0.018 * F) * hp * W], [1.05, (0.17 + 0.016 * F) * hp * W],
         [1.14, (0.15 - 0.006 * F + bl * 0.02) * W], [1.21, (0.146 - 0.018 * F + bl * 0.03) * W], [1.3, (0.155 - 0.012 * F + bl * 0.02) * W],
         [1.42, (0.162 - 0.014 * F) * sh * W], [1.52, (0.172 - 0.02 * F) * sh * W], [1.6, (0.182 - 0.026 * F) * sh * W],
         [1.66, (0.15 - 0.018 * F) * sh], [1.71, 0.1 - 0.008 * F], [1.75, 0.078 - 0.008 * F],
       ],
       [
-        [0.88, 0.078], [0.98, 0.09], [1.08, 0.094 + bl * 0.05], [1.16, 0.09 + bl * 0.07], [1.24, 0.088 + bl * 0.06],
+        [0.9, 0.04], [0.94, 0.07], [0.99, 0.09], [1.08, 0.094 + bl * 0.05], [1.16, 0.09 + bl * 0.07], [1.24, 0.088 + bl * 0.06],
         [1.33, 0.096 + bl * 0.02], [1.43, 0.112 + 0.006 * F], [1.52, 0.108], [1.6, 0.088], [1.67, 0.072], [1.75, 0.064],
       ],
       [
-        [0.88, 0.112 + 0.012 * F], [0.97, 0.124 + 0.016 * F], [1.05, 0.11 + 0.01 * F], [1.13, 0.088], [1.2, 0.084],
+        [0.9, 0.05], [0.94, 0.1 + 0.01 * F], [0.99, 0.124 + 0.016 * F], [1.05, 0.11 + 0.01 * F], [1.13, 0.088], [1.2, 0.084],
         [1.3, 0.094], [1.42, 0.108], [1.52, 0.114], [1.6, 0.104], [1.67, 0.08], [1.75, 0.066],
       ],
     );
@@ -249,11 +255,11 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
     const th = s ? B.thighR : B.thighL;
     const H = pos[th], K = pos[th + 1], A = pos[th + 2];
     if (want('thigh')) {
-      P.push({ t: 'cone', a: add(H, [side * -0.006, -0.02, 0]), b: K, ra: r.thigh + I, rb: r.knee + 0.004 + I, bone: th, k: 0.08, tag: tagBase + 7 + s });
+      P.push({ t: 'cone', a: add(H, [0, 0.0, 0]), b: K, ra: r.thigh + I, rb: r.knee + 0.004 + I, bone: th, k: 0.06, tag: tagBase + 7 + s });
       // quads (front, outer sweep) and hamstrings (back); inner thigh fullness
       P.push({ t: 'ellipsoid', c: add(lerp(H, K, 0.45), [side * 0.008, 0, 0.022]), r: [r.thigh * 0.86 + I, 0.19 + I, r.thigh * 0.78 + I], bone: th, k: 0.06, tag: tagBase + 7 + s });
       P.push({ t: 'ellipsoid', c: add(lerp(H, K, 0.38), [0, 0, -0.024]), r: [r.thigh * 0.82 + I, 0.2 + I, r.thigh * 0.74 + I], bone: th, k: 0.05, tag: tagBase + 7 + s });
-      P.push({ t: 'ellipsoid', c: add(lerp(H, K, 0.3), [side * -0.03, 0, 0]), r: [r.thigh * 0.7 + 0.01 * F + I, 0.16 + I, r.thigh * 0.8 + I], bone: th, k: 0.05, tag: tagBase + 7 + s });
+      P.push({ t: 'ellipsoid', c: add(lerp(H, K, 0.3), [side * -0.01, 0, 0]), r: [r.thigh * 0.7 + 0.01 * F + I, 0.16 + I, r.thigh * 0.8 + I], bone: th, k: 0.05, tag: tagBase + 7 + s });
     }
     if (want('shin')) {
       // knee: joint mass + kneecap in front
@@ -276,10 +282,13 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
   return P;
 }
 
+/** Legs melt into the hips and seat, but stay separate from each other below the crotch. */
+export const legBlend = (y: number) => (y > 1.0 ? 0.07 : y > 0.9 ? 0.006 + 0.064 * ((y - 0.9) / 0.1) : 0.006);
+
 /** Half-width of the hips (widest point) — arms hanging by the sides must clear it. */
 export const hipHalfWidth = (bp: BodyP) => (0.178 + 0.018 * (bp.fem ?? 0)) * bp.hips * bp.width;
 /** Extra arm abduction (radians) so the hands hang clear of wide hips. */
-export const hipArmClearance = (bp: BodyP) => Math.max(0, (hipHalfWidth(bp) - 0.18) / 0.55);
+export const hipArmClearance = (bp: BodyP) => Math.max(0, (hipHalfWidth(bp) - 0.17) / 0.5);
 
 /** Arms melt into the shoulder but stay free of the ribs and hips below the armpit. */
 export const armBlend = (y: number) => (y > 1.52 ? 0.075 : y > 1.42 ? 0.006 + 0.069 * ((y - 1.42) / 0.1) : 0.006);
@@ -287,12 +296,18 @@ export const armBlend = (y: number) => (y > 1.52 ? 0.075 : y > 1.42 ? 0.006 + 0.
 /** The base skin: trunk + legs as one part, each arm its own part. Feet & hands are separate. */
 export function bodyParts(J: Joints): Part[] {
   const all = bodyPrims(J, 0, ['pelvis', 'torso', 'neck', 'thigh', 'shin']);
-  const trunk = all.filter((p) => p.bone !== B.upperArmL && p.bone !== B.upperArmR);
+  const legBones = (side: number) => (side < 0 ? [B.thighL, B.shinL] : [B.thighR, B.shinR]) as number[];
+  const isLeg = (p: { bone?: number }) => legBones(-1).includes(p.bone as number) || legBones(1).includes(p.bone as number);
+  const trunk = all.filter((p) => p.bone !== B.upperArmL && p.bone !== B.upperArmR && !isLeg(p));
+  const leg = (side: number) => all.filter((p) => legBones(side).includes(p.bone as number));
   const arm = (side: number) => bodyPrims(J, 0, ['torso', 'upperArm', 'foreArm']).filter((p) => (side < 0 ? [B.upperArmL, B.foreArmL] : [B.upperArmR, B.foreArmR]).includes(p.bone as never));
   return [
     { prims: trunk },
     { prims: arm(-1), kAt: (_x, y) => armBlend(y) },
     { prims: arm(1), kAt: (_x, y) => armBlend(y) },
+    // each leg is its own part: it melts into the hip, but the two legs never web together
+    { prims: leg(-1), kAt: (_x, y) => legBlend(y) },
+    { prims: leg(1), kAt: (_x, y) => legBlend(y) },
   ];
 }
 

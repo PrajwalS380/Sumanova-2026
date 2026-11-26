@@ -3,7 +3,7 @@ import { createPortal, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Look, Pose } from '../look/config';
 import type { BodyP } from '../look/face';
-import { B, HEAD_SCALE, HEAD_Y } from '../sculpt3d/anatomy';
+import { B, HEAD_SCALE, HEAD_Y, REST_ARM } from '../sculpt3d/anatomy';
 import { applyGesture, createRig, jointsFor, type Gesture } from '../sculpt3d/rig';
 import { useSculpt } from '../sculpt3d/async';
 import { SkinMat, nailTone } from './Face';
@@ -38,7 +38,7 @@ interface PoseSpec {
 }
 
 function poseSpec(pose: Pose): PoseSpec {
-  const v: PoseSpec = { armL: [0.1, -0.05], armR: [-0.1, -0.05], foreL: [0.04, -0.2], foreR: [-0.04, -0.2], legL: 0, legR: 0, knee: 0, gL: 'relaxed', gR: 'relaxed' };
+  const v: PoseSpec = { armL: [0.19, -0.04], armR: [-0.19, -0.04], foreL: [0.07, -0.24], foreR: [-0.07, -0.24], legL: 0, legR: 0, knee: 0, gL: 'relaxed', gR: 'relaxed' };
   switch (pose) {
     case 'waving':
       return { ...v, armR: [-2.45, 0.1], foreR: [-0.5, 0], gR: 'wave', twistR: -0.3 };
@@ -87,8 +87,8 @@ export function SculptBody({ look, body, pose, animate, head, clothes, skirt = 0
     const swing = pose === 'walking' ? s(4, 0.45) : pose === 'dancing' ? s(5, 0.55) : 0;
     const breathe = s(1.5, 0.015);
     const uaL = bones[B.upperArmL], uaR = bones[B.upperArmR];
-    uaL.rotation.set(spec.armL[1] + (pose === 'walking' ? swing : 0), spec.rollL ?? 0, -(spec.armL[0] + (pose === 'celebrating' ? s(6, 0.12) : pose === 'dancing' ? 0.9 + s(5, 0.4) : breathe)));
-    uaR.rotation.set(spec.armR[1] + (pose === 'walking' ? -swing : 0), spec.rollR ?? 0, -(spec.armR[0] + (pose === 'waving' ? s(6, 0.2) : pose === 'celebrating' ? s(6, -0.12, 1) : pose === 'dancing' ? -0.9 + s(5, 0.4, Math.PI) : -breathe)));
+    uaL.rotation.set(spec.armL[1] + (pose === 'walking' ? swing : 0), spec.rollL ?? 0, -(spec.armL[0] - REST_ARM + (pose === 'celebrating' ? s(6, 0.12) : pose === 'dancing' ? 0.9 + s(5, 0.4) : breathe)));
+    uaR.rotation.set(spec.armR[1] + (pose === 'walking' ? -swing : 0), spec.rollR ?? 0, -(spec.armR[0] + REST_ARM + (pose === 'waving' ? s(6, 0.2) : pose === 'celebrating' ? s(6, -0.12, 1) : pose === 'dancing' ? -0.9 + s(5, 0.4, Math.PI) : -breathe)));
     bones[B.foreArmL].rotation.set(spec.foreL[1], spec.twistL ?? 0, -spec.foreL[0]);
     bones[B.foreArmR].rotation.set(spec.foreR[1], spec.twistR ?? 0, -(spec.foreR[0] + (pose === 'waving' ? s(6, 0.3, 1) : 0)));
     bones[B.handL].rotation.set(...(spec.handL ?? [0, 0, 0]));

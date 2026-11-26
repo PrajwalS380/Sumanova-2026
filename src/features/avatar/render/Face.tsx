@@ -436,7 +436,7 @@ function Blush({ h, ex, ey, strength, color }: { h: HeadShape; ex: number; ey: n
 /* ---------------------------------------------------------------- Mouth */
 
 function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShape; p: MouthP; y: number; lip: string; skin: string; e: Expression; lipPierce: PiercingP | null; tonguePierce: PiercingP | null }) {
-  const w = 0.09 * p.width; // generous, friendly mouth
+  const w = 0.105 * p.width; // generous, friendly mouth
   const parts = useMemo(() => {
     const open = e === 'laughing' || e === 'surprised' || e === 'tongue' || (e === 'happy' && p.corner >= 0);
     if (open) {
