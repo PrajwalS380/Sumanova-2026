@@ -31,6 +31,8 @@ Android (APK) and iPhone.
   push and publishes a GitHub pre-release `build-N`. Signing via repo secrets `ANDROID_KEYSTORE_BASE64`,
   `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (=sumanova), `ANDROID_KEY_PASSWORD` (owner adds them; key file was
   delivered privately, never commit it).
+- Owner (2026-11-26): after every update, give BOTH download links from the latest `build-N` release —
+  Android `SUMANOVA.apk` and iPhone `SUMANOVA-unsigned.ipa` (check the release lists both assets).
 - iPhone at ₹0: Safari "Add to Home Screen" web app, or sideload unsigned IPA (SideStore, 7-day). App Store needs
   $99/yr — not approved.
 
