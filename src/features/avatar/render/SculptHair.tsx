@@ -5,6 +5,37 @@ import type { HairP } from '../look/hair';
 import { useSculpt } from '../sculpt3d/async';
 
 /**
+ * Strand look, on the GPU: fine strands that run from the crown outwards (darker / lighter
+ * fibres across the azimuth, a little variation along the length) and a glossy highlight band
+ * that slides along the strands like real hair (Kajiya–Kay style, tangent = the strand
+ * direction projected on the surface).
+ */
+const HAIR_GLSL = `
+float hHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float hNoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hHash(i), hHash(i + vec2(1.0, 0.0)), f.x), mix(hHash(i + vec2(0.0, 1.0)), hHash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float hairStrands(vec3 p) {
+  float az = atan(p.x, p.z);
+  float along = length(p.xz) * 3.0 + p.y * 2.5;
+  float n = hNoise(vec2(az * 38.0, along)) * 0.6 + hNoise(vec2(az * 110.0, along * 2.3)) * 0.4;
+  return 0.84 + 0.26 * n;
+}
+vec3 hairSheen(vec3 n, vec3 viewPos, vec3 p) {
+  vec3 V = -viewPos;
+  vec3 up = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+  vec3 T = normalize(up - n * dot(n, up) + 1e-4);
+  vec3 L = normalize(vec3(0.35, 0.75, 0.55));
+  vec3 H = normalize(L + V);
+  float th = dot(T, H) + (hNoise(vec2(atan(p.x, p.z) * 60.0, 0.0)) - 0.5) * 0.25 - 0.12;
+  float spec = pow(max(0.0, sqrt(max(0.0, 1.0 - th * th))), 70.0);
+  return vec3(spec * 0.32 * max(0.0, dot(n, L) * 0.6 + 0.4));
+}
+`;
+
+/**
  * Hair material: the mesh carries (shade, root→tip) per vertex; the user's root / tip colours
  * are mixed on the GPU, so recolouring never rebuilds the sculpted mesh.
  */
@@ -15,7 +46,12 @@ function useHairMaterial(root: string, tip: string | null) {
     m.userData.uniforms = uniforms;
     m.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, uniforms);
-      sh.fragmentShader = 'uniform vec3 uRoot;\nuniform vec3 uTip;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )\n  diffuseColor.rgb *= mix(uRoot, uTip, vColor.g) * vColor.r;\n#endif');
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vHairPos;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvHairPos = position;');
+      sh.fragmentShader = ('uniform vec3 uRoot;\nuniform vec3 uTip;\nvarying vec3 vHairPos;\n' + HAIR_GLSL + sh.fragmentShader)
+        .replace('#include <color_fragment>', '#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )\n  diffuseColor.rgb *= mix(uRoot, uTip, vColor.g) * vColor.r * hairStrands(vHairPos);\n#endif')
+        .replace('#include <opaque_fragment>', 'outgoingLight += hairSheen(normal, normalize(vViewPosition), vHairPos) * mix(vec3(1.0, 0.95, 0.88), diffuseColor.rgb * 2.2 + 0.08, 0.5);\n#include <opaque_fragment>');
     };
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
