@@ -17,3 +17,4 @@ test-results/
 *.mobileprovision
 keystore.b64
 e2e/lens-harness/*.jpg
+tools/hair-bake/guides/

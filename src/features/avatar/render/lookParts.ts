@@ -4,6 +4,7 @@ import { headFromParams } from '../sculptV2';
 import { sculpt } from '../sculpt3d/async';
 import type { Job } from '../sculpt3d/jobs';
 import { tuneHair } from '../look/hair';
+import { bakedHairId, loadBakedHair } from './bakedHair';
 
 export const BASE_TEE: Wear = { cut: 'Tank', pattern: 'solid', c1: '#e9e2d6', c2: '#e9e2d6', c3: '#e9e2d6' };
 export const BASE_SHORTS: Wear = { cut: 'Shorts', pattern: 'solid', c1: '#4a433d', c2: '#4a433d', c3: '#4a433d' };
@@ -58,5 +59,6 @@ export function lookJobs(look: Look, only?: 'head', faceless = false): Job[] {
 
 /** Resolve once every piece of a look is sculpted (before thumbnails / captures). */
 export function prepareLook(look: Look, only?: 'head', faceless = false): Promise<void> {
-  return Promise.all(lookJobs(look, only, faceless).map((j) => sculpt(j).catch(() => undefined))).then(() => undefined);
+  const baked = bakedHairId(look.pick.hair, look.hair, !!outfit(look).hat);
+  return Promise.all([...lookJobs(look, only, faceless).map((j) => sculpt(j).catch(() => undefined)), baked != null ? loadBakedHair(baked) : null]).then(() => undefined);
 }

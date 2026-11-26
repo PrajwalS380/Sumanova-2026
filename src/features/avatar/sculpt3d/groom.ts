@@ -32,6 +32,14 @@ export interface GroomOut {
 }
 
 const cache = new GeoCache<GroomOut>(16);
+
+/** Lock guides + scalp layer of a style (input of the offline Blender bake, tools/hair-bake). */
+export function groomGuides(h: HeadShape, p: HairP, seed: number) {
+  const g = new Groomer(h, p, seed, false);
+  g.m.guides = [];
+  const out = g.build();
+  return { guides: g.m.guides, base: out.base, fade: out.fade, band: out.band };
+}
 export function groomHair(h: HeadShape, p: HairP, seed: number, hatOn: boolean): GroomOut {
   return cache.get(`${JSON.stringify(h)}|${JSON.stringify(p)}|${seed}|${hatOn}`, () => new Groomer(h, p, seed, hatOn).build());
 }
@@ -41,7 +49,12 @@ const v3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const UP = v3(0, 1, 0);
 
 /** Ribbon / tube geometry accumulated for all clumps (one draw call). */
+/** A lock's guide (for the offline Blender bake): centre-line, width and thickness along it. */
+export interface LockGuide { pts: number[]; w: number[]; flat: number; rand: number; t0: number; t1: number }
+
 class StrandMesh {
+  /** when set, every lock's guide is recorded too (offline baking) */
+  guides: LockGuide[] | null = null;
   pos: number[] = [];
   nor: number[] = [];
   tan: number[] = [];
@@ -57,6 +70,7 @@ class StrandMesh {
   add(pts: V[], o: { wAt: (t: number) => number; flat: number; radial: number; out: (p: V, o: V) => void; shadeAt: (t: number, p: V) => number; rand: number; tStart?: number; tEnd?: number }) {
     const n = pts.length;
     if (n < 2) return;
+    if (this.guides) this.guides.push({ pts: pts.flatMap((q) => [q.x, q.y, q.z]), w: pts.map((_, i) => o.wAt(i / (n - 1))), flat: o.flat, rand: o.rand, t0: o.tStart ?? 0, t1: o.tEnd ?? 1 });
     const base = this.count;
     const T = v3(), N = v3(), B = v3(), off = v3(), nn = v3();
     const R = o.radial;
