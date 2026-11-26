@@ -218,7 +218,7 @@ function Eyes({ f, ex, ey, er }: { f: FaceProps; ex: number; ey: number; er: num
                 </mesh>
                 {!closed && (
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <torusGeometry args={[er * 1.075, 0.0075 + (f.lashes?.liner ?? 0.2) * 0.005, 8, 32, Math.PI]} />
+                    <torusGeometry args={[er * 1.075, 0.0105 + (f.lashes?.liner ?? 0.2) * 0.005, 8, 32, Math.PI]} />
                     <meshStandardMaterial color={liner} roughness={0.6} />
                   </mesh>
                 )}

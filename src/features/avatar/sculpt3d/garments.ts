@@ -277,7 +277,7 @@ function buildBottom(J: Joints, cut: string): GarmentGeo {
   // waist + seat: fitted (a top worn over it must stay outside)
   const hips = bodyPrims(J, 0.006, ['pelvis']);
   const W = J.bp.width, hp = J.bp.hips;
-  const f = loft(0.9, waist + 0.01, [[0.9, 0.152 * hp * W + 0.008], [1.02, 0.172 * hp * W + 0.008], [waist + 0.01, 0.158 * W + J.bp.belly * 0.02 + 0.006]], [[0.9, 0.102], [1.02, 0.116], [waist + 0.01, 0.106 + J.bp.belly * 0.05]], [[0.9, -0.012], [1.02, -0.012], [waist, 0.002 + J.bp.belly * 0.02]]);
+  const f = loft(0.9, waist + 0.01, [[0.9, 0.07 * hp * W + 0.008], [0.95, 0.14 * hp * W + 0.008], [1.02, 0.18 * hp * W + 0.008], [waist + 0.01, 0.158 * W + J.bp.belly * 0.02 + 0.006]], [[0.9, 0.06], [0.95, 0.1], [1.02, 0.116], [waist + 0.01, 0.106 + J.bp.belly * 0.05]], [[0.9, -0.012], [1.02, -0.012], [waist, 0.002 + J.bp.belly * 0.02]]);
   hips.push({ t: 'fn', f, c: [0, 1.02, 0], ext: [0.26, 0.13, 0.2], bone: B.pelvis, k: 0.04, tag: 13 });
   parts.push({ prims: hips, clips: [plane([0, waist, 0.02], [0, 1, 0.12], 0.006)] });
   // legs
@@ -295,7 +295,8 @@ function buildBottom(J: Joints, cut: string): GarmentGeo {
     parts.push({
       prims: legs,
       clips: [plane([0, sp.end, 0], [0, -1, 0], 0.008)],
-      k: 0.04,
+      // melts into the seat, but the two trouser legs stay apart below the crotch
+      kAt: (_x, y) => (y > 1.0 ? 0.04 : y > 0.9 ? 0.006 + 0.034 * ((y - 0.9) / 0.1) : 0.006),
       // fabric gathers: soft rings at the knee, stacking folds above the shoe
       disp: (_x, y) => -0.0028 * Math.sin(y * 80) * Math.exp(-(((y - 0.56) / 0.06) ** 2)) - bunch * 0.0045 * Math.sin(y * 95) * Math.max(0, Math.min(1, (0.3 - y) / 0.15)),
     });
