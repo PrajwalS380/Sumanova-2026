@@ -12,7 +12,7 @@ export interface BrowP { thick: number; arch: number; archPos: number; len: numb
 export interface NoseP { tipW: number; tipS: number; bridge: number; bridgeW: number; nostril: number; up: number; len: number }
 export interface MouthP { width: number; upper: number; lower: number; bow: number; corner: number }
 export interface EarP { size: number; out: number; point: number; lobe: number; width: number }
-export interface BodyP { width: number; height: number; belly: number; shoulders: number; hips: number }
+export interface BodyP { width: number; height: number; belly: number; shoulders: number; hips: number; /** 0 masculine … 1 feminine proportions */ fem?: number }
 export interface BeardP {
   stubble: number; // 0..1 opacity of stubble shell
   beard: number; // 0 none, else thickness
@@ -185,10 +185,12 @@ export const BODIES = build<BodyP>('body', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((f
   n: 10,
   make: (i) => ({
     width: [0.86, 0.92, 1, 1.06, 1.04, 1.14, 1.1, 0.9, 0.9, 1.18][f] * step(i % 5, 5, 0.97, 1.03),
-    height: [1, 1, 1, 1.02, 0.98, 1.02, 0.98, 1.07, 0.92, 1.03][f] + (i >= 5 ? 0.02 : -0.01),
+    height: [1, 1, 1, 1.02, 0.98, 1.02, 0.98, 1.07, 0.92, 1.03][f] + (i >= 5 ? -0.035 : 0.01),
     belly: [0, 0, 0.15, 0, 0.25, 0.25, 0.6, 0, 0.1, 0.2][f] + (i % 5) * 0.04,
     shoulders: [0.92, 0.96, 1, 1.12, 0.96, 1.12, 1, 0.94, 0.92, 1.18][f],
     hips: [0.94, 0.96, 1, 1, 1.2, 1.05, 1.12, 0.94, 0.96, 1.05][f] + (i >= 5 ? 0.04 : 0),
+    // each build comes in masculine (1–5) and feminine (6–10) proportions
+    fem: i >= 5 ? 1 : 0,
   }),
 })));
 

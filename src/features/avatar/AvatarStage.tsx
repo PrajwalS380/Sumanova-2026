@@ -87,7 +87,7 @@ function Capturer({ apiRef }: { apiRef: React.MutableRefObject<AvatarStageHandle
   return null;
 }
 
-export const AvatarStage = forwardRef<AvatarStageHandle, { configs: Look[]; poses?: (Pose | undefined)[]; interactive?: boolean; className?: string; framing?: Framing; /** turn the figure (radians) — inspection views */ turn?: number; /** explicit camera — inspection close-ups */ cam?: { pos: [number, number, number]; target: [number, number, number] } }>(function AvatarStage({ configs, poses = [], interactive = true, className, framing = 'full', turn = 0, cam }, ref) {
+export const AvatarStage = forwardRef<AvatarStageHandle, { configs: Look[]; poses?: (Pose | undefined)[]; interactive?: boolean; className?: string; framing?: Framing; /** turn the figure (radians) — inspection views */ turn?: number; /** explicit camera — inspection close-ups */ cam?: { pos: [number, number, number]; target: [number, number, number] }; /** anatomy review: no clothes */ bare?: boolean }>(function AvatarStage({ configs, poses = [], interactive = true, className, framing = 'full', turn = 0, cam, bare = false }, ref) {
   const apiRef = useRef<AvatarStageHandle['capture'] | null>(null);
   const controls = useRef<Controls | null>(null);
   useImperativeHandle(ref, () => ({ capture: (f) => apiRef.current!(f) }), []);
@@ -111,7 +111,7 @@ export const AvatarStage = forwardRef<AvatarStageHandle, { configs: Look[]; pose
       <Suspense fallback={null}>
         {configs.map((c, i) => (
           <group key={i} position={[duo ? (i === 0 ? -0.55 : 0.55) : 0, 0, 0]} rotation={[0, duo ? (i === 0 ? 0.35 : -0.35) : turn, 0]}>
-            <Figure look={c} poseOverride={poses[i]} />
+            <Figure look={c} poseOverride={poses[i]} bare={bare} />
           </group>
         ))}
       </Suspense>

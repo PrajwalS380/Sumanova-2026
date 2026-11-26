@@ -4,7 +4,7 @@ import type * as THREE from 'three';
 import { BODIES, HEADS, NOSES, EARS } from '../look/face';
 import { HAIRSTYLES } from '../look/hair';
 import { headFromParams } from '../sculptV2';
-import { bodyGeometry, handsGeometry } from './rig';
+import { bodyGeometry, feetGeometry, handsGeometry } from './rig';
 import { bottomGeometry, dressGeometry, shoeGeometry, topGeometry } from './garments';
 import { hairGeometry } from './hair';
 import { headGeometry } from './head';
@@ -31,6 +31,7 @@ describe('sculpted meshes are watertight (no see-through holes)', () => {
   const cases: [string, () => THREE.BufferGeometry][] = [
     ['body', () => bodyGeometry(bp)],
     ['hands', () => handsGeometry(bp)],
+    ['bare feet with toes', () => feetGeometry(bp)],
     ['tee', () => topGeometry(bp, 'Tee', 0).main!],
     ['puffer over sweatshirt', () => topGeometry(bp, 'Puffer', 1, 'Sweatshirt').main!],
     ['trench', () => topGeometry(bp, 'Trench', 1, 'Tee').main!],

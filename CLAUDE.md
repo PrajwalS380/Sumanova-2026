@@ -94,7 +94,16 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   (thumbnails, captures). Poses incl. pointing/peace/crossed/pockets. Starter pictures: `e2e/preset-images.e2e.cjs`.
   Harness views: `&turns=0,1.57`, `&cam=x,y,z,tx,ty,tz`, `&poses=a,b`. Head: `sculpt3d/head.ts` sculpts skull + nose (bridge,
   tip, alae, carved nostrils) + ears (shell, rim, bowl, lobe) as one mesh (job `head`); eyes/brows/mouth/expressions are still
-  the `render/Face.tsx` rig. `sculpt3d/watertight.test.ts` guards against see-through holes (mesher `lipschitz` margin). Old primitive `Hair.tsx` / garment parts of `Clothes.tsx` are no longer used by Figure.
+  the `render/Face.tsx` rig (head.ts adds only faint cheek/chin fullness — strong landmarks clash with the floating
+  cartoon features; smooth-union `k` bulges ≈ k/4, so keep landmark prims inset). Base body v2 (2026-11-26): every body
+  comes masculine (ids x1–x5) or feminine (x6–x10) via `BodyP.fem`; trunk = `loft2` (separate front/back depth: chest,
+  upper back, lumbar, seat), pecs / soft chest, shoulder blades, collarbones, neck muscles, biceps/triceps, elbow,
+  flattened wrist, quads/hamstrings, kneecap, two-headed calf. Muscle detail fades under clothing (`inf`). Hands = 3
+  phalanges + pads + knuckles + nails (job `hands` → main + trim nails, glossy `SkinMat nail`); bare feet = own fine
+  mesh with 5 toes, ankle bones (job `feet`, only when no socks/shoes). Hand/foot meshes join the body through a
+  "sleeve" that follows the limb's own taper a hair outside it (a flaring sleeve shows a light seam). Wide hips push
+  hanging arms out (`hipArmClearance`). Bare review: harness `&bare=1` (`&hair=1` keeps hair), `&frame=head|feet`.
+  `sculpt3d/watertight.test.ts` guards against see-through holes (mesher `lipschitz` margin). Old primitive `Hair.tsx` / garment parts of `Clothes.tsx` are no longer used by Figure.
   Wardrobe uniqueness (owner, 2026-11-25: "no duplicates"): in `look/fashion.ts` every cut's 10 items have different, bold
   patterns and rotating trim colours (the colour rail only replaces c1, so plain-colour-only variants collapse into copies).
   Duplicate checker: harness `?dupes=<slot>&frame=<thumb frame>&color=6f7680` renders every item like the studio grid and

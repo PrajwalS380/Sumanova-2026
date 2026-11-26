@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { BodyP } from '../look/face';
 import type { HairP } from '../look/hair';
 import type { HeadShape } from '../sculpt';
-import { bodyGeometry, handsGeometry } from './rig';
+import { bodyGeometry, feetGeometry, handsGeometry, nailsGeometry } from './rig';
 import { bottomGeometry, dressGeometry, shoeGeometry, sockGeometry, topGeometry, type GarmentGeo, type Tone } from './garments';
 import { hairGeometry } from './hair';
 import { headGeometry } from './head';
@@ -12,6 +12,7 @@ import type { EarP, NoseP } from '../look/face';
 export type Job =
   | { k: 'body'; bp: BodyP }
   | { k: 'hands'; bp: BodyP }
+  | { k: 'feet'; bp: BodyP }
   | { k: 'top'; bp: BodyP; cut: string; layer: 0 | 1; under?: string }
   | { k: 'bottom'; bp: BodyP; cut: string }
   | { k: 'dress'; bp: BodyP; cut: string }
@@ -21,14 +22,15 @@ export type Job =
   | { k: 'head'; h: HeadShape; nose: NoseP | null; ears: EarP };
 
 /** Bump when any sculpt builder changes its output (invalidates the on-device cache). */
-export const SCULPT_VERSION = 5;
+export const SCULPT_VERSION = 6;
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 export function jobKey(j: Job): string {
-  const bp = 'bp' in j ? `${r3(j.bp.width)},${r3(j.bp.height)},${r3(j.bp.belly)},${r3(j.bp.shoulders)},${r3(j.bp.hips)}` : '';
+  const bp = 'bp' in j ? `${r3(j.bp.width)},${r3(j.bp.height)},${r3(j.bp.belly)},${r3(j.bp.shoulders)},${r3(j.bp.hips)},${j.bp.fem ?? 0}` : '';
   switch (j.k) {
     case 'body':
     case 'hands':
+    case 'feet':
       return `${j.k}|${bp}`;
     case 'top':
       return `top|${bp}|${j.cut}|${j.layer}|${j.under ?? ''}`;
@@ -51,7 +53,8 @@ export function runJob(j: Job): Result {
   switch (j.k) {
     case 'body': return [{ geo: bodyGeometry(j.bp), role: 'main' }];
     case 'head': return [{ geo: headGeometry(j.h, j.nose, j.ears), role: 'main' }];
-    case 'hands': return [{ geo: handsGeometry(j.bp), role: 'main' }];
+    case 'hands': return [{ geo: handsGeometry(j.bp), role: 'main' }, { geo: nailsGeometry(j.bp), role: 'trim' }];
+    case 'feet': return [{ geo: feetGeometry(j.bp), role: 'main' }];
     case 'top': return fromGarment(topGeometry(j.bp, j.cut, j.layer, j.under));
     case 'bottom': return fromGarment(bottomGeometry(j.bp, j.cut));
     case 'dress': return fromGarment(dressGeometry(j.bp, j.cut));

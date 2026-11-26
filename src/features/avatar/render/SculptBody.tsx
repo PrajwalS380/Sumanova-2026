@@ -6,7 +6,7 @@ import type { BodyP } from '../look/face';
 import { B, HEAD_SCALE, HEAD_Y } from '../sculpt3d/anatomy';
 import { applyGesture, createRig, jointsFor, type Gesture } from '../sculpt3d/rig';
 import { useSculpt } from '../sculpt3d/async';
-import { SkinMat } from './Face';
+import { SkinMat, nailTone } from './Face';
 
 const I4 = new THREE.Matrix4();
 
@@ -65,11 +65,14 @@ function poseSpec(pose: Pose): PoseSpec {
  * The sculpted body: one continuous skin mesh + finely sculpted hands, posed by a skeleton.
  * `head` hangs off the head bone; `children` (clothes) receive the skeleton.
  */
-export function SculptBody({ look, body, pose, animate, head, clothes, skirt = 0 }: { look: Look; body: BodyP; pose: Pose; animate: boolean; head: ReactNode; clothes?: (skeleton: THREE.Skeleton, bones: THREE.Bone[]) => ReactNode; /** extra arm spread so hands clear a wide skirt (radians) */ skirt?: number }) {
+export function SculptBody({ look, body, pose, animate, head, clothes, skirt = 0, feet = true }: { /** bare feet visible (no socks / shoes) */ feet?: boolean; look: Look; body: BodyP; pose: Pose; animate: boolean; head: ReactNode; clothes?: (skeleton: THREE.Skeleton, bones: THREE.Bone[]) => ReactNode; /** extra arm spread so hands clear a wide skirt (radians) */ skirt?: number }) {
   const J = jointsFor(body);
   const rig = useMemo(() => createRig(J), [J]);
   const skinGeo = useSculpt({ k: 'body', bp: body })?.[0]?.geo ?? null;
-  const handGeo = useSculpt({ k: 'hands', bp: body })?.[0]?.geo ?? null;
+  const handRes = useSculpt({ k: 'hands', bp: body });
+  const handGeo = handRes?.[0]?.geo ?? null;
+  const nailGeo = handRes?.find((p) => p.role === 'trim')?.geo ?? null;
+  const footGeo = useSculpt(feet ? { k: 'feet', bp: body } : null)?.[0]?.geo ?? null;
   const spec = useMemo(() => {
     const sp = poseSpec(pose);
     // arms that hang by the sides open out just enough to clear a skirt / long coat
@@ -126,6 +129,16 @@ export function SculptBody({ look, body, pose, animate, head, clothes, skirt = 0
       )}
       {handGeo && (
         <Skinned geometry={handGeo} skeleton={rig.skeleton}>
+          <SkinMat color={look.skin} />
+        </Skinned>
+      )}
+      {nailGeo && (
+        <Skinned geometry={nailGeo} skeleton={rig.skeleton}>
+          <SkinMat color={nailTone(look.skin)} nail />
+        </Skinned>
+      )}
+      {feet && footGeo && (
+        <Skinned geometry={footGeo} skeleton={rig.skeleton}>
           <SkinMat color={look.skin} />
         </Skinned>
       )}

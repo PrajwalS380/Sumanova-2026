@@ -152,6 +152,16 @@ function primDist(q: CPrim, x: number, y: number, z: number): number {
 }
 
 /**
+ * Like `loft`, but the front and back of each slice have their own depth (chest vs upper back,
+ * belly vs lumbar curve, seat) — a torso seen from the side is not symmetric.
+ */
+export function loft2(y0: number, y1: number, wKeys: [number, number][], fKeys: [number, number][], bKeys: [number, number][]) {
+  const front = loft(y0, y1, wKeys, fKeys);
+  const back = loft(y0, y1, wKeys, bKeys);
+  return (x: number, y: number, z: number) => (z >= 0 ? front(x, y, z) : back(x, y, z));
+}
+
+/**
  * A "lofted" volume: horizontal elliptical slices whose half-width, half-depth and z-offset
  * follow smooth profiles along y — how a sculptor blocks in a torso or a skirt.
  * Profiles are [y, value] keys (ascending y), interpolated with smoothstep.

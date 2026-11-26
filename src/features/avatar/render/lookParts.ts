@@ -15,7 +15,12 @@ export function wear(look: Look, slot: 'top' | 'outer' | 'bottom' | 'dress' | 's
 }
 
 /** What the figure wears (with the underwear defaults when a slot is empty). */
-export function outfit(look: Look) {
+/** `bare`: the base mannequin for anatomy review — no clothes, no underwear defaults. */
+export function outfit(look: Look, bare = false) {
+  if (bare) return { dress: null, outer: null, top: null, bottom: null, shoes: null, socks: null, bag: null, hat: null, glasses: null } as ReturnType<typeof outfitOf>;
+  return outfitOf(look);
+}
+function outfitOf(look: Look) {
   const dress = wear(look, 'dress');
   const outer = wear(look, 'outer');
   const top = dress ? null : wear(look, 'top') ?? (outer ? null : BASE_TEE);
@@ -40,6 +45,7 @@ export function lookJobs(look: Look, only?: 'head', faceless = false): Job[] {
   if (only === 'head') return jobs;
   const bp = variant(look, 'body')!.p;
   jobs.push({ k: 'body', bp }, { k: 'hands', bp });
+  if (!o.shoes && !o.socks) jobs.push({ k: 'feet', bp });
   if (o.top) jobs.push({ k: 'top', bp, cut: o.top.cut, layer: 0 });
   if (o.outer) jobs.push({ k: 'top', bp, cut: o.outer.cut, layer: 1, under: o.top?.cut });
   if (o.bottom) jobs.push({ k: 'bottom', bp, cut: o.bottom.cut });

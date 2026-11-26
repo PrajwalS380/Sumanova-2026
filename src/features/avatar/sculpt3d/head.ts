@@ -29,6 +29,17 @@ function build(h: HeadShape, nose: NoseP | null, ears: EarP): THREE.BufferGeomet
   };
   const parts: Part[] = [{ prims: [skull] }];
 
+  // ------------------------------------------------------------ facial structure
+  // Soft fullness under the skin: the apples of the cheeks and a chin pad. They sit just under
+  // the skull surface, so only their smooth blend shows (a few mm) — the cartoon features
+  // (eyes, brows, mouth) still sit exactly on the face, and hair / hats / glasses still fit.
+  const ex = 0.127 * (h.rx / 0.35), ey = -0.025;
+  const at = (x: number, y: number, inset: number): V3 => [x, y, surfaceZ(h, x, y) - inset];
+  const soft: Prim[] = [];
+  for (const s of [-1, 1]) soft.push({ t: 'ellipsoid', c: at(s * (ex + 0.012), ey - 0.1, 0.042), r: [0.06, 0.045, 0.04], rot: [0, s * 0.5, 0], bone: 0, k: 0.02 });
+  soft.push({ t: 'ellipsoid', c: at(0, -h.ry * h.chinLow * 0.86, 0.034), r: [0.05, 0.032, 0.032], bone: 0, k: 0.02 });
+  parts.push({ prims: soft, k: 0.028 });
+
   // ------------------------------------------------------------ nose (same placement as before)
   if (nose) {
     const p = nose;

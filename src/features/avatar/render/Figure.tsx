@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { createPortal } from '@react-three/fiber';
 import { headFromParams } from '../sculptV2';
 import { variant, type Look, type Pose } from '../look/config';
-import { B } from '../sculpt3d/anatomy';
+import { B, hipArmClearance } from '../sculpt3d/anatomy';
 import { Face } from './Face';
 import { Glasses, Hat, HeadExtra } from './Accessories';
 import { Bag } from './Clothes';
@@ -27,11 +27,11 @@ export function eyeMetrics(look: Look, hx: { rx: number }) {
  * The avatar: a sculpted, skinned body (one continuous skin, real hands), sculpted clothes and
  * hair, and the expressive face. Pieces appear as soon as they're sculpted (off the UI thread).
  */
-export const Figure = memo(function Figure({ look, animate = true, poseOverride, mirror = false, only, faceless = false }: { look: Look; animate?: boolean; poseOverride?: Pose; mirror?: boolean; only?: 'head'; faceless?: boolean }) {
+export const Figure = memo(function Figure({ look, animate = true, poseOverride, mirror = false, only, faceless = false, bare = false }: { look: Look; animate?: boolean; poseOverride?: Pose; mirror?: boolean; only?: 'head'; faceless?: boolean; /** anatomy review: no clothes */ bare?: boolean }) {
   const pose = poseOverride ?? look.pose;
   const body = variant(look, 'body')!.p;
   const h = useMemo(() => headFromParams(variant(look, 'head')!.p, look.tune.face), [look]);
-  const o = outfit(look);
+  const o = outfit(look, bare);
   const em = eyeMetrics(look, h);
 
   const headInner = (
@@ -78,7 +78,8 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
         pose={pose}
         animate={animate}
         head={headInner}
-        skirt={skirtClearance(o.dress?.cut ?? null, o.outer?.cut ?? null)}
+        feet={!o.shoes && !o.socks}
+        skirt={Math.max(skirtClearance(o.dress?.cut ?? null, o.outer?.cut ?? null), hipArmClearance(body))}
         clothes={(sk, bones) => (
           <>
             <SculptClothes body={body} top={o.top} outer={o.outer} bottom={o.bottom} dress={o.dress} socks={o.socks} shoes={o.shoes} skeleton={sk} />

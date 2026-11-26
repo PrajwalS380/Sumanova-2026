@@ -9,9 +9,13 @@ import type { HearingP, PiercingP } from '../look/extras';
 import { taperTube, arc } from '../look/tube';
 import { Jewelry } from './Jewelry';
 
-export function SkinMat({ color }: { color: string }) {
-  return <meshPhysicalMaterial color={color} roughness={0.5} sheen={0.6} sheenRoughness={0.55} sheenColor={mix(color, '#ffd9c9', 0.6)} />;
+export function SkinMat({ color, nail = false }: { color: string; /** glossier, for fingernails */ nail?: boolean }) {
+  if (nail) return <meshPhysicalMaterial color={color} roughness={0.28} clearcoat={0.6} clearcoatRoughness={0.3} />;
+  // soft subsurface feel: a warm sheen at grazing angles, a touch of clearcoat for a healthy skin glow
+  return <meshPhysicalMaterial color={color} roughness={0.52} sheen={0.7} sheenRoughness={0.5} sheenColor={mix(color, '#ffb8a0', 0.55)} clearcoat={0.08} clearcoatRoughness={0.6} />;
 }
+/** Fingernail tone: the skin lifted toward a pale pink. */
+export const nailTone = (skin: string) => mix(skin, '#f3cfc6', 0.35);
 function HairMat({ color, opacity = 1 }: { color: string; opacity?: number }) {
   return <meshPhysicalMaterial color={color} roughness={0.5} sheen={0.8} sheenRoughness={0.35} sheenColor={mix(color, '#ffffff', 0.3)} transparent={opacity < 1} opacity={opacity} depthWrite={opacity >= 1} />;
 }

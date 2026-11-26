@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { BodyP } from '../look/face';
-import { BONE_COUNT, PARENT, B, bodyParts, handParts, joints, fingerBone, type Joints } from './anatomy';
+import { BONE_COUNT, PARENT, B, bodyParts, footParts, handParts, joints, fingerBone, nailPrims, type Joints } from './anatomy';
 import { Field } from './sdf';
 import { GeoCache, meshField } from './mesh';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -31,7 +31,7 @@ export function createRig(J: Joints) {
   return { group, bones, skeleton };
 }
 
-const bodyKey = (bp: BodyP) => `${bp.width.toFixed(3)}|${bp.height.toFixed(3)}|${bp.belly.toFixed(3)}|${bp.shoulders.toFixed(3)}|${bp.hips.toFixed(3)}`;
+const bodyKey = (bp: BodyP) => `${bp.width.toFixed(3)}|${bp.height.toFixed(3)}|${bp.belly.toFixed(3)}|${bp.shoulders.toFixed(3)}|${bp.hips.toFixed(3)}|${bp.fem ?? 0}`;
 const jointCache = new GeoCache<Joints>(32);
 export const jointsFor = (bp: BodyP) => jointCache.get(bodyKey(bp), () => joints(bp));
 
@@ -52,6 +52,26 @@ export function handsGeometry(bp: BodyP): THREE.BufferGeometry {
     const J = jointsFor(bp);
     // each hand on its own small grid (one grid spanning both would be mostly empty space)
     const one = (side: -1 | 1) => meshField(new Field(handParts(J, side), 0.015, 0.04), { cell: 0.0034, skin: 0.008, pad: 0.004 });
+    return mergeGeometries([one(-1), one(1)]);
+  });
+}
+
+const nailGeo = new GeoCache<THREE.BufferGeometry>(12);
+/** Fingernails for both hands (a lighter, glossier skin tone in the renderer). */
+export function nailsGeometry(bp: BodyP): THREE.BufferGeometry {
+  return nailGeo.get(bodyKey(bp), () => {
+    const J = jointsFor(bp);
+    const one = (side: -1 | 1) => meshField(new Field([{ prims: nailPrims(J, side) }], 0.004, 0.01), { cell: 0.0018, skin: 0.003, pad: 0.002 });
+    return mergeGeometries([one(-1), one(1)]);
+  });
+}
+
+const feetGeo = new GeoCache<THREE.BufferGeometry>(12);
+/** Both bare feet (heel, arch, ball, five toes), finely meshed. Hidden under socks / shoes. */
+export function feetGeometry(bp: BodyP): THREE.BufferGeometry {
+  return feetGeo.get(bodyKey(bp), () => {
+    const J = jointsFor(bp);
+    const one = (side: -1 | 1) => meshField(new Field(footParts(J, side), 0.02, 0.04), { cell: 0.004, skin: 0.01, pad: 0.004 });
     return mergeGeometries([one(-1), one(1)]);
   });
 }
