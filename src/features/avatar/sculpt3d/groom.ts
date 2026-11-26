@@ -245,7 +245,8 @@ export class Groomer {
     // short barbered cuts: the sides and back are a full, smooth sculpted mass (a few locks on top of it)
     const cutShort = Math.max(p.top, p.side, p.back) < 0.75 && p.tex !== 'coily' && p.tex !== 'curly' && p.afro === 0 && p.loc === 'none' && p.braid === 'none' && p.tie === 'none';
     const shell = (uy: number, az: number) => (cutShort ? 0.035 * R * smooth(this.lineAt(az), this.lineAt(az) + 0.25, uy) * (1 - smooth(0.35, 0.7, uy)) : 0);
-    const thick = (uy: number, az = 0) => shell(uy, az) + this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 1.6 : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
+    // tied-back hair: a fuller layer that thins out smoothly to the hairline (no ledge at the nape)
+    const thick = (uy: number, az = 0) => shell(uy, az) + this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 0.6 + 1.6 * smooth(this.lineAt(az), this.lineAt(az) + 0.3, uy) : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
     const prim: Prim = {
       t: 'fn', c: [0, h.ry * 0.2, -h.rz * 0.05], ext: [R * (1.3 + afro * 0.9), h.ry * (1.3 + afro * 0.9), h.rz * (1.4 + afro * 0.9)], bone: 0, k: 0,
       f: (x, y, z) => {
@@ -266,7 +267,7 @@ export class Groomer {
       },
     };
     const f = new Field([{ prims: [prim] }], 0.02 * R, 0.06 * R);
-    const geo = meshField(f, { cell: (afro > 0 ? 0.01 : 0.008) * (R / 0.35), lipschitz: afro > 0 ? 2 : 1.4, color: () => [afro > 0 ? 0.8 : cutShort ? 0.74 : 0.62, afro > 0 ? 0.5 : 0, 0.5] });
+    const geo = meshField(f, { cell: (afro > 0 ? 0.01 : 0.008) * (R / 0.35), lipschitz: afro > 0 ? 2 : 1.4, color: () => [afro > 0 ? 0.8 : cutShort || p.tie !== 'none' || p.braid !== 'none' ? 0.74 : 0.62, afro > 0 ? 0.5 : 0, 0.5] });
     // the scalp layer is shaded like hair combed back and down (the material needs a direction)
     const P = geo.getAttribute('position');
     const tan = new Float32Array(P.count * 3);
@@ -436,7 +437,7 @@ export class Groomer {
           d.normalize();
         }
         this.keepOffBody(cur, 0.02 * R + o.layer * 0.008 * R, o.front);
-      } else this.keepOff(cur, this.cap + 0.002 * R);
+      } else this.keepOff(cur, this.cap * (this.p.braid === 'cornrows' ? 1 : 2.1) + 0.002 * R); // on top of the (thicker) tied-back layer
       pts.push(cur.clone());
     }
     return pts;
@@ -714,7 +715,7 @@ export class Groomer {
     const halfup = p.tie === 'halfup';
     if (halfup) this.scalpStrands((u) => u.y < 0.35);
     // scalp: every root combed straight to the nearest tie point (sleek, tight to the head)
-    const N = 380;
+    const N = 190;
     const golden = Math.PI * (3 - Math.sqrt(5));
     const u = v3();
     for (let k = 0; k < N * 2.2; k++) {
@@ -728,7 +729,9 @@ export class Groomer {
       const target = pts.reduce((a, b) => (a.distanceTo(root) < b.distanceTo(root) ? a : b));
       const dist = root.distanceTo(target) / R;
       const path = this.grow(u, dist * 1.6 + 0.1, { fringe: false, layer: 0.8, target, liftK: 0.2 });
-      this.emit(path, 0.15 * R * (0.85 + r() * 0.3), { flat: 0.32, tip: 0.7 });
+      // the lock emerges from inside the scalp layer (no stepped edge along the hairline / nape)
+      this.bury(path, u);
+      this.emit(path, 0.21 * R * (0.85 + r() * 0.3), { flat: 0.22, tip: 0.75 });
     }
     // fringe / face-framing pieces stay loose
     if (p.fringe !== 'none') this.scalpStrands((uu, uy) => uu.z > 0.55 && uy < 0.85);
@@ -746,11 +749,11 @@ export class Groomer {
   /** a ponytail: a bundle of clumps from the tie, falling with gravity */
   tail(T: V, n: V, thick: number) {
     const { p, R, r } = this;
-    const K = Math.round(64 * thick);
+    const K = Math.round(80 * thick);
     const side = v3().crossVectors(n, UP).normalize();
     const up = v3().crossVectors(side, n).normalize();
     for (let i = 0; i < K; i++) {
-      const a = r() * Math.PI * 2, rr = Math.sqrt(r()) * 0.11 * R * thick;
+      const a = r() * Math.PI * 2, rr = Math.sqrt(r()) * 0.15 * R * thick;
       const root = T.clone().addScaledVector(n, 0.05 * R).addScaledVector(side, Math.cos(a) * rr).addScaledVector(up, Math.sin(a) * rr);
       const d = n.clone().multiplyScalar(0.8).addScaledVector(UP, 0.35).addScaledVector(side, Math.cos(a) * 0.2).normalize();
       const L = p.tail * R * (0.85 + r() * 0.25);
@@ -768,7 +771,7 @@ export class Groomer {
         pts.push(cur.clone());
       }
       const q = p.tex === 'straight' ? pts : this.texture(this.resample(pts, 0.015 * R), r() * 6);
-      this.emit(q, 0.1 * R * (0.85 + r() * 0.3), { flat: p.tex === 'curly' || p.tex === 'coily' ? 0.8 : 0.45, tip: 0.5 - 0.45 * p.tips, rand: r() });
+      this.emit(q, 0.15 * R * (0.85 + r() * 0.3), { flat: p.tex === 'curly' || p.tex === 'coily' ? 0.8 : 0.5, tip: 0.5 - 0.45 * p.tips, rand: r() });
     }
   }
 
@@ -867,18 +870,18 @@ export class Groomer {
     switch (p.braid) {
       case 'single': {
         this.gatherTo([v3(0, -h.ry * 0.45, -h.rz * 0.98)]);
-        this.plait(hang(v3(0, -h.ry * 0.45, -h.rz * 1.02), p.tail, v3(0, -1, -0.3)), 0.16 * R);
+        this.plait(hang(v3(0, -h.ry * 0.45, -h.rz * 1.02), p.tail, v3(0, -1, -0.3)), 0.2 * R);
         break;
       }
       case 'fishtail': {
         this.gatherTo([v3(h.rx * 0.55, -h.ry * 0.5, -h.rz * 0.6)]);
-        this.plait(hang(v3(h.rx * 0.62, -h.ry * 0.55, -h.rz * 0.55), p.tail, v3(0.25, -1, 0.35)), 0.16 * R, { fishtail: true });
+        this.plait(hang(v3(h.rx * 0.62, -h.ry * 0.55, -h.rz * 0.55), p.tail, v3(0.25, -1, 0.35)), 0.2 * R, { fishtail: true });
         break;
       }
       case 'double': {
         const ends = [-1, 1].map((s) => v3(s * h.rx * 0.88, -h.ry * 0.45, -h.rz * 0.35));
         this.gatherTo(ends);
-        for (const e of ends) this.plait(hang(e, p.tail, v3(Math.sign(e.x) * 0.1, -1, 0.45)), 0.14 * R);
+        for (const e of ends) this.plait(hang(e, p.tail, v3(Math.sign(e.x) * 0.1, -1, 0.45)), 0.17 * R);
         break;
       }
       case 'french':
@@ -912,10 +915,22 @@ export class Groomer {
     }
   }
 
+  /** sink the first part of a gathered lock under the scalp layer, rising out of it gradually */
+  bury(path: V[], u: V) {
+    const { R } = this;
+    const near = smooth(0.32, 0, u.y - this.lineAt(Math.atan2(u.x, u.z))); // only close to the hairline
+    if (near <= 0) return;
+    for (let i = 0; i < Math.min(4, path.length); i++) {
+      const k = (1 - i / 4) * near;
+      const L = path[i].length() || 1;
+      path[i].multiplyScalar((L - 0.05 * R * k) / L);
+    }
+  }
+
   /** comb the whole scalp toward the nearest of these points (hair feeding into plaits) */
   gatherTo(targets: V[], along = false) {
     const { R, r } = this;
-    const N = 360;
+    const N = 180;
     const golden = Math.PI * (3 - Math.sqrt(5));
     const u = v3();
     for (let k = 0; k < N * 2.2; k++) {
@@ -937,7 +952,9 @@ export class Groomer {
         target = targets[Math.min(targets.length - 1, i + 2)];
       }
       const path = this.grow(u, (root.distanceTo(target) / R) * 1.6 + 0.1, { fringe: false, layer: 0, target, liftK: 0.2 });
-      this.emit(path, 0.15 * R * (0.85 + r() * 0.3), { flat: 0.32, tip: 0.7 });
+      // the lock emerges from inside the scalp layer (no stepped edge along the hairline / nape)
+      this.bury(path, u);
+      this.emit(path, 0.21 * R * (0.85 + r() * 0.3), { flat: 0.22, tip: 0.75 });
     }
   }
 
