@@ -242,11 +242,13 @@ export class Groomer {
     if (p.fade === 'buzz') return null;
     const afro = p.afro;
     // afro volume tapers down to the hairline (no flat 'brim' over the forehead)
+    // curls, coils and locs: a fuller, darker layer under them so gaps read as hair, not scalp
+    const textured = (p.tex === 'curly' || p.tex === 'coily' || p.loc !== 'none') && afro === 0;
     // short barbered cuts: the sides and back are a full, smooth sculpted mass (a few locks on top of it)
     const cutShort = Math.max(p.top, p.side, p.back) < 0.75 && p.tex !== 'coily' && p.tex !== 'curly' && p.afro === 0 && p.loc === 'none' && p.braid === 'none' && p.tie === 'none';
     const shell = (uy: number, az: number) => (cutShort ? 0.035 * R * smooth(this.lineAt(az), this.lineAt(az) + 0.25, uy) * (1 - smooth(0.35, 0.7, uy)) : 0);
     // tied-back hair: a fuller layer that thins out smoothly to the hairline (no ledge at the nape)
-    const thick = (uy: number, az = 0) => shell(uy, az) + this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 0.6 + 1.6 * smooth(this.lineAt(az), this.lineAt(az) + 0.3, uy) : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
+    const thick = (uy: number, az = 0) => shell(uy, az) + this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 0.6 + 1.6 * smooth(this.lineAt(az), this.lineAt(az) + 0.3, uy) : textured ? 1 + 1.2 * smooth(this.lineAt(az), this.lineAt(az) + 0.25, uy) : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
     const prim: Prim = {
       t: 'fn', c: [0, h.ry * 0.2, -h.rz * 0.05], ext: [R * (1.3 + afro * 0.9), h.ry * (1.3 + afro * 0.9), h.rz * (1.4 + afro * 0.9)], bone: 0, k: 0,
       f: (x, y, z) => {
@@ -267,7 +269,7 @@ export class Groomer {
       },
     };
     const f = new Field([{ prims: [prim] }], 0.02 * R, 0.06 * R);
-    const geo = meshField(f, { cell: (afro > 0 ? 0.01 : 0.008) * (R / 0.35), lipschitz: afro > 0 ? 2 : 1.4, color: () => [afro > 0 ? 0.8 : cutShort || p.tie !== 'none' || p.braid !== 'none' ? 0.74 : 0.62, afro > 0 ? 0.5 : 0, 0.5] });
+    const geo = meshField(f, { cell: (afro > 0 ? 0.01 : 0.008) * (R / 0.35), lipschitz: afro > 0 ? 2 : 1.4, color: () => [afro > 0 ? 0.8 : textured ? 0.5 : cutShort || p.tie !== 'none' || p.braid !== 'none' ? 0.74 : 0.62, afro > 0 ? 0.5 : 0, 0.5] });
     // the scalp layer is shaded like hair combed back and down (the material needs a direction)
     const P = geo.getAttribute('position');
     const tan = new Float32Array(P.count * 3);
@@ -583,6 +585,18 @@ export class Groomer {
         this.emit(fp, 0.006 * R, { flat: 1, tip: 0.3, radial: 3, shade: 1.05 });
       }
     }
+    // curls / coils: a row of small baby curls along the front hairline (no smooth band there)
+    if ((coily || curly) && !only && !this.hatOn) {
+      for (let az = -1.15; az <= 1.15; az += coily ? 0.07 : 0.09) {
+        const uy = this.lineAt(az) + 0.035 + r() * 0.03;
+        const rad = Math.sqrt(Math.max(0, 1 - uy * uy));
+        u.set(Math.sin(az) * rad, uy, Math.cos(az) * rad);
+        if (this.faded(u.y, az)) continue;
+        let pts = this.grow(u, 0.16 + r() * 0.08, { fringe: false, layer: 0.9, liftK: 0.6 });
+        pts = this.texture(this.resample(pts, 0.01 * R), r() * 6, coily ? 'coily' : 'curly', 1);
+        this.emit(pts, R * (coily ? 0.045 : 0.06) * p.clump, { flat: 0.95, tip: 0.5, radial: 5 });
+      }
+    }
     void h;
   }
 
@@ -645,7 +659,7 @@ export class Groomer {
   /** locs, wavy locs, butterfly locs and rope twists (round, hanging ropes) */
   locs() {
     const { p, R, r } = this;
-    const N = p.top < 0.5 ? 120 : 90;
+    const N = p.top < 0.5 ? 190 : 160;
     const golden = Math.PI * (3 - Math.sqrt(5));
     const u = v3();
     for (let k = 0; k < N * 2.2; k++) {
@@ -657,7 +671,7 @@ export class Groomer {
       const a = Math.abs(az) / Math.PI;
       const L = (p.top * (1 - a) + p.back * a) * (0.9 + r() * 0.2) * (u.y > 0.5 ? 1 : 0.95);
       let pts = this.resample(this.grow(u, Math.max(p.side * smooth(0.7, 0.2, u.y), L), { fringe: false, layer: smooth(0, 1, u.y), liftK: 1.4 }), 0.02 * R);
-      const w = 0.05 * R * (0.9 + r() * 0.2);
+      const w = 0.058 * R * (0.9 + r() * 0.2);
       if (p.loc === 'twists') {
         // two strands twisted round each other
         for (const ph of [0, Math.PI]) {
