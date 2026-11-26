@@ -529,13 +529,19 @@ class Groomer {
       L *= this.fadeBlend(u.y, az);
       if (L < 0.05) continue;
       const layer = smooth(line, 1, u.y); // crown strands lie on top
-      let pts = this.grow(u, L, { fringe, layer });
+      // combed short cuts lie flat on the head (lift only for quiffs / spikes / messy styles)
+      const standUp = p.flow === 'up' || p.flow === 'out' || p.flow === 'hawk' || p.flow === 'messy';
+      const shortCut = L < 0.75 && !standUp && !coily && !curly;
+      let pts = this.grow(u, L, { fringe, layer, liftK: shortCut ? 0.3 : 1 });
       const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
       if (p.tex !== 'straight') pts = this.texture(this.resample(pts, step), r() * Math.PI * 2);
       const short = L < 0.45;
       const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.11 : 0.085) : curly ? 0.14 : p.fringe === 'wispy' && fringe ? 0.13 : short ? 0.22 : 0.3) * (0.85 + r() * 0.3);
-      const tip = p.fringe === 'straight' && fringe ? 0.4 : Math.max(0.03, 0.3 - 0.3 * p.tips);
+      const tip = p.fringe === 'straight' && fringe ? 0.4 : shortCut ? 0.32 - 0.15 * p.tips : Math.max(0.03, 0.3 - 0.3 * p.tips);
       this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7 });
+      // detail: finer locks riding on top of the main one and fanning apart toward the tips
+      // (piecey, separated ends and layered depth — the sculpted-groom look)
+      if (!coily) this.subLocks(pts, w0, { n: curly ? 1 : shortCut ? 1 : short ? 2 : 3, flat: curly ? 0.75 : 0.5, spread: shortCut ? 0.3 : short ? 0.55 : 0.8 });
       // fly-aways: a few fine single strands lifting off the surface
       if (!coily && u.z < 0.3 && r() < 0.035 + p.messy * 0.05 && L > 0.2) {
         const fp = this.texture(this.resample(this.grow(u, L * (1 + r() * 0.15), { fringe, layer: layer + 0.6, liftK: 1.5 }), 0.03 * R), r() * 6, 'textured', 1);
@@ -543,6 +549,35 @@ class Groomer {
       }
     }
     void h;
+  }
+
+  /**
+   * Finer locks following a main lock: each starts part-way along it, sits a little above it,
+   * drifts sideways (more toward the tip, so the ends fan apart) and ends in a sharp point.
+   */
+  subLocks(pts: V[], w0: number, o: { n: number; flat: number; spread: number }) {
+    const { r } = this;
+    if (pts.length < 4) return;
+    const T = v3(), N = v3(), B = v3();
+    for (let k = 0; k < o.n; k++) {
+      const side = (k % 2 ? 1 : -1) * (0.35 + r() * 0.45);
+      const start = Math.floor((pts.length - 1) * (0.05 + r() * 0.3));
+      const endT = 0.72 + r() * 0.36; // some end before, some run past the main tip
+      const out: V[] = [];
+      const n = pts.length;
+      for (let i = start; i < n; i++) {
+        const t = (i - start) / Math.max(1, n - 1 - start);
+        if (t > endT) break;
+        const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+        T.subVectors(b, a).normalize();
+        N.copy(pts[i]).normalize().addScaledVector(T, -N.dot(T)).normalize();
+        B.crossVectors(T, N).normalize();
+        const fan = side * w0 * (0.45 + o.spread * t * t);
+        out.push(pts[i].clone().addScaledVector(B, fan).addScaledVector(N, w0 * (0.12 + 0.1 * Math.sin(Math.PI * t))));
+      }
+      if (out.length < 3) continue;
+      this.emit(out, w0 * (0.32 + r() * 0.14), { flat: o.flat, tip: 0.02, radial: 5, shade: 1.06, tStart: (start / (n - 1)), tEnd: Math.min(1, start / (n - 1) + endT * (1 - start / (n - 1))) });
+    }
   }
 
   /** big round afro: a sculpted volume covered in small coils */
