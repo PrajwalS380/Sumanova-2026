@@ -1,7 +1,7 @@
 import type { AvatarConfig as V1 } from '../config';
 import { SKIN, HAIR, EYES, BROWS as BROW_COLS, LIPS, CLOTH } from './palettes';
 import { HEADS, EYE_SHAPES, LASHES, BROWS, NOSES, MOUTHS, EARS, BODIES, BEARDS } from './face';
-import { HAIRSTYLES } from './hair';
+import { HAIRSTYLES, hairId } from './hair';
 import { TOPS, OUTERWEAR, BOTTOMS, DRESSES, SHOES, SOCKS, BAGS, HATS, GLASSES } from './fashion';
 import { EAR_PIERCINGS, NOSE_PIERCINGS, BROW_PIERCINGS, LIP_PIERCINGS, TONGUE_PIERCINGS, HEARING, HEAD_EXTRAS } from './extras';
 import type { Variant } from './face';
@@ -94,13 +94,13 @@ function fromV1(c: Partial<V1> | null | undefined): Look {
     const idx = list.findIndex((v) => v.family.toLowerCase().startsWith(name.toLowerCase()));
     return idx < 0 ? 0 : idx + i;
   };
-  const hairMap: Record<string, [string, number] | null> = {
-    bald: null, buzz: ['Buzz', 2], short: ['Crew', 3], quiff: ['Quiff', 2], curly: ['Curly', 2], wavy: ['Long wavy', 0], long: ['Long straight', 2],
-    bun: ['Tied', 2], ponytail: ['Tied', 0], afro: ['Afro', 2], braids: ['Braided', 0],
+  const hairMap: Record<string, string | null> = {
+    bald: null, buzz: 'Buzz cut', short: 'Crew cut', quiff: 'Short quiff', curly: 'Short curly', wavy: 'Long wavy', long: 'Long straight',
+    bun: 'High bun', ponytail: 'High ponytail', afro: 'Natural afro', braids: 'Single braid',
   };
   const beardMap: Record<string, [string, number] | null> = { none: null, stubble: ['Stubble', 3], moustache: ['Moustache', 0], goatee: ['Goatee', 2], short: ['Short beard', 6], full: ['Full beard', 6] };
   const topMap: Record<string, string> = { tshirt: 'Tee', shirt: 'Shirt', hoodie: 'Sweatshirt', jacket: 'Tee', kurta: 'Long sleeve', saree: 'Tee', blazer: 'Shirt' };
-  const hm: [string, number] | null = c.hair ? hairMap[c.hair.style] : ['Crew', 3];
+  const hm: string | null = c.hair ? (c.hair.style in hairMap ? hairMap[c.hair.style] : 'Crew cut') : 'Crew cut';
   const bm = c.facialHair ? beardMap[c.facialHair.style] : null;
   const o = c.outfit;
   const look = structuredClone(DEFAULT_LOOK);
@@ -111,7 +111,7 @@ function fromV1(c: Partial<V1> | null | undefined): Look {
   look.pick.brows = fam(BROWS, { soft: 'Soft', straight: 'Straight', arched: 'High', bold: 'Flat' }[c.eyes?.brow ?? 'soft'] ?? 'Soft', 2);
   look.pick.mouth = fam(MOUTHS, { full: 'Full', thin: 'Thin', heart: 'Heart' }[c.mouth?.shape ?? 'full'] ?? 'Balanced', 2);
   look.pick.body = fam(BODIES, { slim: 'Slim', average: 'Average', athletic: 'Athletic', broad: 'Broad' }[c.body?.build ?? 'average'] ?? 'Average', 2);
-  look.pick.hair = hm ? fam(HAIRSTYLES, hm[0], hm[1]) : null;
+  look.pick.hair = hm ? hairId(hm) : null;
   look.pick.beard = bm ? fam(BEARDS, bm[0], bm[1]) : null;
   look.pick.lashes = c.eyes?.lashes ? 2 : null;
   if (o) {

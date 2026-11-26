@@ -4,7 +4,7 @@ import type { HairP } from '../look/hair';
 import type { HeadShape } from '../sculpt';
 import { bodyGeometry, feetGeometry, handsGeometry, nailsGeometry } from './rig';
 import { bottomGeometry, dressGeometry, shoeGeometry, sockGeometry, topGeometry, type GarmentGeo, type Tone } from './garments';
-import { hairGeometry } from './hair';
+import { groomHair } from './groom';
 import { headGeometry } from './head';
 import type { EarP, NoseP } from '../look/face';
 
@@ -22,7 +22,7 @@ export type Job =
   | { k: 'head'; h: HeadShape; nose: NoseP | null; ears: EarP };
 
 /** Bump when any sculpt builder changes its output (invalidates the on-device cache). */
-export const SCULPT_VERSION = 10;
+export const SCULPT_VERSION = 19;
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 export function jobKey(j: Job): string {
@@ -44,7 +44,7 @@ export function jobKey(j: Job): string {
 }
 
 /** Result: named geometries (main, trims…, fade, band) with an optional tone per piece. */
-export interface Piece { geo: THREE.BufferGeometry; tone?: Tone; role: 'main' | 'trim' | 'fade' | 'band' }
+export interface Piece { geo: THREE.BufferGeometry; tone?: Tone; role: 'main' | 'trim' | 'fade' | 'band' | 'base' }
 export type Result = Piece[];
 
 const fromGarment = (g: GarmentGeo): Result => [...(g.main ? [{ geo: g.main, role: 'main' as const }] : []), ...g.trims.map((t) => ({ geo: t.geo, tone: t.tone, role: 'trim' as const }))];
@@ -61,9 +61,10 @@ export function runJob(j: Job): Result {
     case 'socks': return fromGarment(sockGeometry(j.bp, j.cut));
     case 'shoes': return fromGarment(shoeGeometry(j.bp, j.cut));
     case 'hair': {
-      const o = hairGeometry(j.h, j.p, j.seed, j.hatOn);
+      const o = groomHair(j.h, j.p, j.seed, j.hatOn);
       const out: Result = [];
-      if (o.geo) out.push({ geo: o.geo, role: 'main' });
+      if (o.strands) out.push({ geo: o.strands, role: 'main' });
+      if (o.base) out.push({ geo: o.base, role: 'base' });
       if (o.fade) out.push({ geo: o.fade, role: 'fade' });
       if (o.band) out.push({ geo: o.band, role: 'band' });
       return out;
@@ -73,7 +74,7 @@ export function runJob(j: Job): Result {
 
 // ---------------------------------------------------------------------------- (de)serialise
 
-const ATTRS: [string, number, 'f' | 'u16'][] = [['position', 3, 'f'], ['normal', 3, 'f'], ['uv', 2, 'f'], ['color', 3, 'f'], ['skinIndex', 4, 'u16'], ['skinWeight', 4, 'f']];
+const ATTRS: [string, number, 'f' | 'u16'][] = [['position', 3, 'f'], ['normal', 3, 'f'], ['uv', 2, 'f'], ['color', 3, 'f'], ['skinIndex', 4, 'u16'], ['skinWeight', 4, 'f'], ['hairT', 3, 'f']];
 
 /** Pack a result into one ArrayBuffer (header JSON + raw arrays) — for postMessage and Cache Storage. */
 export function pack(res: Result): ArrayBuffer {

@@ -1,3 +1,4 @@
+import { hairId } from '../look/hair';
 import { normalizeLook, SLOTS, type ColorKey, type Look, type Slot } from '../look/config';
 import { BROWS as BROW_COLS, EYES, HAIR, LIPS, SKIN } from '../look/palettes';
 import { PRESETS } from '../look/presets';
@@ -12,16 +13,16 @@ function id(slot: Slot, family: string, n = 0): number | null {
   return fam.length ? fam[Math.min(n, fam.length - 1)].id : null;
 }
 
-type HairPick = [string, number] | null;
+type HairPick = string | null;
 /** Hairstyle options that fit what we saw (length + volume). */
 function hairOptions(t: FaceTraits): HairPick[] {
-  const big: HairPick[] = [['Afro', 2], ['Curly', 4], ['Locs', 2]];
+  const big: HairPick[] = ['Natural afro', 'Loose curls', 'Medium locs'];
   const byLen: Record<FaceTraits['hairLength'], HairPick[]> = {
     // 'none' usually means very short / cropped hair in a photo — lead with buzz cuts, keep a shaved option.
-    none: [['Buzz', 2], ['Buzz', 0], ['Crew', 1], null, ['Textured crop', 2], ['Side part', 1]],
-    short: [['Crew', 3], ['Textured crop', 2], ['Quiff', 2], ['Side part', 2], ['Undercut', 2], ['Buzz', 2]],
-    medium: [['Curtains', 2], ['Bob', 1], ['Shag', 2], ['Lob', 2], ['Side part', 4], ['Curly', 3]],
-    long: [['Long straight', 1], ['Long wavy', 3], ['Tied', 3], ['Braided', 2], ['Lob', 4], ['Shag', 3]],
+    none: ['Buzz cut', 'Buzz with line-up', 'Crew cut', null, 'Textured crop', 'Classic short'],
+    short: ['Crew cut', 'Textured crop', 'Short quiff', 'Side-parted short', 'Undercut', 'Mid fade'],
+    medium: ['Curtains', 'Shoulder bob', 'Shag', 'Medium layered', 'Side-swept', 'Loose curls'],
+    long: ['Middle-parted long', 'Long wavy', 'High ponytail', 'Single braid', 'Long layered', 'Butterfly cut'],
   };
   const list = byLen[t.hairLength];
   return t.hairVolume && t.hairLength !== 'none' ? [...big.slice(0, 2), ...list].slice(0, 6) : list;
@@ -56,7 +57,7 @@ export function looksFromTraits(t: FaceTraits): { name: string; look: Look }[] {
 
   return hairOptions(t).map((h, i) => {
     const l = structuredClone(base);
-    l.pick.hair = h ? id('hair', h[0], h[1]) : null;
+    l.pick.hair = h ? hairId(h) : null;
     // Alternate subtle lashes so the set offers both looks; everything stays editable.
     l.pick.lashes = i % 2 === 1 ? id('lashes', 'Natural', 2) : null;
     const src = PRESETS[OUTFIT_FROM[i % OUTFIT_FROM.length]]?.look ?? PRESETS[0].look;

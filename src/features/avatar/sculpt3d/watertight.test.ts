@@ -2,11 +2,11 @@
 import { describe, expect, it } from 'vitest';
 import type * as THREE from 'three';
 import { BODIES, HEADS, NOSES, EARS } from '../look/face';
-import { HAIRSTYLES } from '../look/hair';
+import { HAIRSTYLES, hairId } from '../look/hair';
 import { headFromParams } from '../sculptV2';
 import { bodyGeometry, feetGeometry, handsGeometry } from './rig';
 import { bottomGeometry, dressGeometry, shoeGeometry, topGeometry } from './garments';
-import { hairGeometry } from './hair';
+import { groomHair } from './groom';
 import { headGeometry } from './head';
 
 /** Every edge of a closed surface is shared by exactly two triangles; a hole leaves boundary edges. */
@@ -39,8 +39,9 @@ describe('sculpted meshes are watertight (no see-through holes)', () => {
     ['saree', () => dressGeometry(bp, 'Saree').main!],
     ['tiered dress', () => dressGeometry(bp, 'Tiered').main!],
     ['combat boots', () => shoeGeometry(bp, 'Combat boot').main!],
-    ['long wavy hair', () => hairGeometry(h, HAIRSTYLES[80].p, 80, false).geo!],
-    ['curly hair', () => hairGeometry(h, HAIRSTYLES[45].p, 45, false).geo!],
+    // the scalp layer under the strands must be closed (no scalp showing through)
+    ['scalp layer: long wavy', () => groomHair(h, HAIRSTYLES[hairId('Long wavy')].p, 1, false).base!],
+    ['scalp layer: rounded afro', () => groomHair(h, HAIRSTYLES[hairId('Rounded afro')].p, 1, false).base!],
     ['head with nose + ears', () => headGeometry(h, NOSES[0].p, EARS[0].p)],
   ];
   for (const [name, make] of cases) it(name, () => expect(holes(make())).toBe(0));

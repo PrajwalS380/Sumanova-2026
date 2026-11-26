@@ -169,7 +169,8 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
   const P: Prim[] = [];
   const I = inf;
   // muscle detail fades out on clothing (it shouldn't show through a puffer)
-  const detail = Math.max(0, 1 - inf / 0.006);
+  // clothing keeps the body's forms (so it never shows skin through), softened as it loosens
+  const detail = Math.max(0, 1 - inf / 0.02);
   // tags: 1 torso, 2 neck, 3 upper arm L, 4 upper arm R, 5 forearm L, 6 forearm R, 7 thigh L, 8 thigh R, 9 shin L, 10 shin R, 11 foot L, 12 foot R, 13 pelvis
 
   if (want('torso') || want('pelvis')) {

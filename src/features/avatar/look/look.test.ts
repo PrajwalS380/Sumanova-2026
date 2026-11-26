@@ -5,12 +5,16 @@ import { SKIN } from './palettes';
 
 describe('avatar v2 catalogue', () => {
   it('every face, hair and wardrobe category has 100 variants with unique ids', () => {
-    const exactly100: Slot[] = ['head', 'eyes', 'lashes', 'brows', 'nose', 'mouth', 'ears', 'body', 'hair', 'beard', 'earL', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce', 'headExtra', 'top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat', 'glasses'];
+    const exactly100: Slot[] = ['head', 'eyes', 'lashes', 'brows', 'nose', 'mouth', 'ears', 'body', 'beard', 'earL', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce', 'headExtra', 'top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat', 'glasses'];
     for (const s of exactly100) {
       const list = SLOTS[s] as readonly { id: number; name: string }[];
       expect(list.length, s).toBe(100);
       list.forEach((v, i) => expect(v.id, `${s}[${i}]`).toBe(i));
     }
+    // hair: at least 100 distinct, named styles (stable ids)
+    expect(SLOTS.hair.length).toBeGreaterThanOrEqual(100);
+    SLOTS.hair.forEach((v, i) => expect(v.id).toBe(i));
+    expect(new Set(SLOTS.hair.map((v) => v.name)).size).toBe(SLOTS.hair.length);
     expect(SKIN).toHaveLength(100);
     expect(new Set(SKIN).size).toBeGreaterThan(95);
   });
@@ -54,7 +58,7 @@ describe('avatar v2 catalogue', () => {
     const old = { ...DEFAULT_AVATAR, hair: { style: 'afro' as const, color: '#141010' }, facialHair: { style: 'full' as const, color: '#141010' }, accessories: { ...DEFAULT_AVATAR.accessories, glasses: 'round' as const } };
     const n = normalizeLook(old);
     expect(n.v).toBe(2);
-    expect(SLOTS.hair[n.pick.hair!].family).toBe('Afro');
+    expect(SLOTS.hair[n.pick.hair!].name).toBe('Natural afro');
     expect(SLOTS.beard[n.pick.beard!].family).toBe('Full beard');
     expect(SLOTS.glasses[n.pick.glasses!].family).toBe('Round');
     expect(n.color.hair).toBe('#141010');
