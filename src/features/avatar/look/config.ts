@@ -1,7 +1,7 @@
 import type { AvatarConfig as V1 } from '../config';
 import { SKIN, HAIR, EYES, BROWS as BROW_COLS, LIPS, CLOTH } from './palettes';
 import { HEADS, EYE_SHAPES, LASHES, BROWS, NOSES, MOUTHS, EARS, BODIES, BEARDS } from './face';
-import { HAIRSTYLES, hairId } from './hair';
+import { HAIRSTYLES, hairId, normalizeHairTune, type HairTune } from './hair';
 import { TOPS, OUTERWEAR, BOTTOMS, DRESSES, SHOES, SOCKS, BAGS, HATS, GLASSES } from './fashion';
 import { EAR_PIERCINGS, NOSE_PIERCINGS, BROW_PIERCINGS, LIP_PIERCINGS, TONGUE_PIERCINGS, HEARING, HEAD_EXTRAS } from './extras';
 import type { Variant } from './face';
@@ -22,7 +22,7 @@ export type Slot = keyof typeof SLOTS;
 export type SlotParams<S extends Slot> = (typeof SLOTS)[S][number]['p'];
 
 /** Colour keys a user can change. */
-export const COLOR_KEYS = ['hair', 'hairTip', 'eyes', 'brows', 'beard', 'lips', 'shadow', 'blush', 'liner', 'top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat'] as const;
+export const COLOR_KEYS = ['hair', 'hairTip', 'hairHi', 'eyes', 'brows', 'beard', 'lips', 'shadow', 'blush', 'liner', 'top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat'] as const;
 export type ColorKey = (typeof COLOR_KEYS)[number];
 
 export interface Look {
@@ -31,6 +31,8 @@ export interface Look {
   pick: Partial<Record<Slot, number | null>>;
   color: Partial<Record<ColorKey, string | null>>;
   tune: { eyeSize: number; eyeGap: number; face: number }; // -1 … 1
+  /** per-avatar hair adjustments on top of the chosen style */
+  hair?: HairTune;
   expression: Expression;
   pose: Pose;
 }
@@ -82,6 +84,7 @@ export function normalizeLook(raw: unknown): Look {
     pick,
     color,
     tune: { eyeSize: num(t.eyeSize), eyeGap: num(t.eyeGap), face: num(t.face) },
+    hair: normalizeHairTune(r.hair),
     expression: EXPRESSIONS.includes(r.expression as Expression) ? (r.expression as Expression) : 'happy',
     pose: POSES.includes(r.pose as Pose) ? (r.pose as Pose) : 'standing',
   };

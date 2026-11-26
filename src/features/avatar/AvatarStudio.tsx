@@ -17,6 +17,8 @@ import { isHidden } from './look/hidden';
 import { prepareLook } from './render/lookParts';
 import { CATEGORIES, EXPRESSIONS, POSES, type Category, type Mode } from './editor/categories';
 import { mannequin, useThumb } from './editor/thumbs';
+import { HairControls, HairSearch, useFavs } from './editor/HairControls';
+import type { HairTune } from './look/hair';
 
 const FACE_SLOTS: Slot[] = ['head', 'eyes', 'lashes', 'brows', 'nose', 'mouth', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce'];
 
@@ -218,7 +220,7 @@ export default function AvatarStudio() {
                   gl={gl}
                 />
               ) : (
-                <CategoryPanel cat={cat} look={look} onPick={pick} onColor={setColor} onTune={(k, v) => commit((l) => ({ ...l, tune: { ...l.tune, [k]: v } }))} onSpecial={(k, v) => commit((l) => ({ ...l, [k]: v }))} />
+                <CategoryPanel cat={cat} look={look} onPick={pick} onColor={setColor} onTune={(k, v) => commit((l) => ({ ...l, tune: { ...l.tune, [k]: v } }))} onSpecial={(k, v) => commit((l) => ({ ...l, [k]: v }))} onHair={(t) => commit((l) => ({ ...l, hair: Object.keys(t).length ? t : undefined }))} />
               )}
             </motion.div>
           </AnimatePresence>
@@ -232,7 +234,7 @@ const STUDIO_BTN = 'grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-wh
 
 /* ------------------------------------------------------------------ panels */
 
-function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial }: { cat: Category; look: Look; onPick: (s: Slot, id: number | null) => void; onColor: (k: ColorKey | 'skin', v: string | null) => void; onTune: (k: 'eyeSize' | 'eyeGap' | 'face', v: number) => void; onSpecial: (k: 'expression' | 'pose', v: string) => void }) {
+function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial, onHair }: { cat: Category; look: Look; onPick: (s: Slot, id: number | null) => void; onColor: (k: ColorKey | 'skin', v: string | null) => void; onTune: (k: 'eyeSize' | 'eyeGap' | 'face', v: number) => void; onSpecial: (k: 'expression' | 'pose', v: string) => void; onHair: (t: HairTune) => void }) {
   if (cat.special) {
     const list = cat.special === 'expression' ? EXPRESSIONS : POSES;
     const cur = cat.special === 'expression' ? look.expression : look.pose;
@@ -250,6 +252,7 @@ function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial }: { cat:
   return (
     <div className="space-y-4">
       {cat.sliders?.map((s) => <TuneSlider key={s.key} label={s.label} value={look.tune[s.key]} onChange={(v) => onTune(s.key, v)} />)}
+      {cat.id === 'hair' && <HairControls look={look} onHair={onHair} onHi={(c) => onColor('hairHi', c)} />}
       {cat.swatches && <SwatchGrid palette={cat.swatches.palette} value={cat.swatches.key === 'skin' ? look.skin : look.color[cat.swatches.key] ?? null} allowNone={cat.swatches.allowNone} onPick={(c) => onColor(cat.swatches!.key, c)} />}
       {cat.slot && <VariantGrid cat={cat} slot={cat.slot} look={look} onPick={(id) => onPick(cat.slot!, id)} />}
     </div>
@@ -263,14 +266,20 @@ function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; l
   const list = useMemo(() => all.filter((v) => !isHidden(slot, v.id) || v.id === current), [all, slot, current]);
   const families = useMemo(() => Array.from(new Set(list.map((v) => v.family))), [list]);
   const [fam, setFam] = useState<string | null>(null);
-  const shown = fam ? list.filter((v) => v.family === fam) : list;
+  const [q, setQ] = useState('');
+  const favs = useFavs();
+  const isHair = slot === 'hair';
+  const query = q.trim().toLowerCase();
+  const shown = list.filter((v) => (fam === '♥' ? favs.includes(v.id) : !fam || v.family === fam) && (!query || v.name.toLowerCase().includes(query) || v.family.toLowerCase().includes(query)));
   const color = cat.color ? look.color[cat.color.key] ?? null : null;
   const tip = slot === 'hair' ? look.color.hairTip ?? null : null;
   return (
     <div>
+      {isHair && <HairSearch value={q} onChange={setQ} />}
       {families.length > 1 && (
         <div className="no-scrollbar -mx-3 mb-3 flex gap-1.5 overflow-x-auto px-3">
           <FamilyChip on={!fam} onClick={() => setFam(null)}>All {list.length}</FamilyChip>
+          {isHair && <FamilyChip on={fam === '♥'} onClick={() => setFam('♥')}>♥ Favourites {favs.length}</FamilyChip>}
           {families.map((f) => (
             <FamilyChip key={f} on={fam === f} onClick={() => setFam(f)}>{f}</FamilyChip>
           ))}
@@ -335,6 +344,7 @@ const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, ti
     <button ref={ref} onClick={onClick} aria-pressed={active} aria-label={name} title={name} className={cn('relative aspect-square overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_32%,#ffffff,#e3e8f6)] ring-1 transition-all active:scale-95', active ? 'ring-2 ring-ember-amber' : 'ring-ink/[0.06]')}>
       {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} /> : <span className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)] bg-[length:200%_100%]" />}
       {active && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-ember-amber text-noir"><Check className="h-3.5 w-3.5" /></span>}
+      {slot === 'hair' && <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-white/95 to-white/0 px-1 pb-1 pt-3 text-center text-[9.5px] font-bold leading-tight text-ink">{name}</span>}
     </button>
   );
 });

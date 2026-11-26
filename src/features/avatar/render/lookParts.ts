@@ -3,6 +3,7 @@ import type { Wear } from '../look/fashion';
 import { headFromParams } from '../sculptV2';
 import { sculpt } from '../sculpt3d/async';
 import type { Job } from '../sculpt3d/jobs';
+import { tuneHair } from '../look/hair';
 
 export const BASE_TEE: Wear = { cut: 'Tank', pattern: 'solid', c1: '#e9e2d6', c2: '#e9e2d6', c3: '#e9e2d6' };
 export const BASE_SHORTS: Wear = { cut: 'Shorts', pattern: 'solid', c1: '#4a433d', c2: '#4a433d', c3: '#4a433d' };
@@ -40,7 +41,7 @@ export function lookJobs(look: Look, only?: 'head', faceless = false): Job[] {
   const h = headFromParams(variant(look, 'head')!.p, look.tune.face);
   jobs.push(headJob(look, h, faceless));
   if (look.pick.hair != null) {
-    jobs.push({ k: 'hair', h, p: variant(look, 'hair')!.p, seed: look.pick.hair, hatOn: !!o.hat });
+    jobs.push({ k: 'hair', h, p: tuneHair(variant(look, 'hair')!.p, look.hair), seed: look.pick.hair, hatOn: !!o.hat });
   }
   if (only === 'head') return jobs;
   const bp = variant(look, 'body')!.p;

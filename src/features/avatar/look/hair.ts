@@ -262,3 +262,20 @@ export function tuneHair(p: HairP, t: HairTune | null | undefined): HairP {
   if (c.paint && t.paint) q.paint = t.paint;
   return q;
 }
+
+const TEXES: HairTex[] = ['straight', 'wavy', 'curly', 'coily', 'textured'];
+const PARTS: PartT[] = ['none', 'left', 'right', 'middle', 'zigzag'];
+const FRINGES: FringeT[] = ['none', 'straight', 'curtain', 'side', 'wispy', 'textured'];
+const PAINTS: PaintT[] = ['none', 'twotone', 'ombre', 'highlights', 'streaks', 'split', 'lowlights'];
+export const HAIR_OPTIONS = { tex: TEXES, part: PARTS, fringe: FRINGES, paint: PAINTS };
+
+/** Validate stored hair adjustments (unknown values are dropped). */
+export function normalizeHairTune(raw: unknown): HairTune | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const num = (v: unknown, lo: number, hi: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : undefined);
+  const pick = <T extends string>(v: unknown, list: T[]) => (list.includes(v as T) ? (v as T) : undefined);
+  const t: HairTune = { length: num(r.length, -1, 1), volume: num(r.volume, -1, 1), tex: pick(r.tex, TEXES), part: pick(r.part, PARTS), fringe: pick(r.fringe, FRINGES), paint: pick(r.paint, PAINTS), gloss: num(r.gloss, 0, 1) };
+  for (const k of Object.keys(t) as (keyof HairTune)[]) if (t[k] === undefined) delete t[k];
+  return Object.keys(t).length ? t : undefined;
+}

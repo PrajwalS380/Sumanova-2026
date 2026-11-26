@@ -103,6 +103,16 @@ Capacitor plugins (status-bar, splash, haptics, share, filesystem, app). Path al
   mesh with 5 toes, ankle bones (job `feet`, only when no socks/shoes). Hand/foot meshes join the body through a
   "sleeve" that follows the limb's own taper a hair outside it (a flaring sleeve shows a light seam). Wide hips push
   hanging arms out (`hipArmClearance`). Bare review: harness `&bare=1` (`&hair=1` keeps hair), `&frame=head|feet`.
+  HAIR (2026-11-26, owner refs = Snapchat avatar hair grids): `look/hair.ts` = 110 named groom recipes in 6 categories
+  (cat, region lengths, vol, tex straight/wavy/curly/coily/textured, flow, part, fringe, fade, tie, braid, loc, afro, paint)
+  + `HairTune` per avatar (`look.hair`: length, volume, tex, part, fringe, paint, gloss; `hairControls()` decides which
+  apply; `tuneHair()`), colour keys hair / hairTip / hairHi. `sculpt3d/groom.ts` GROWS hair: roots inside an anatomical
+  hairline (table in `lineAt`), comb field, lift layering, gravity, face (rotate to ±0.82 rad) / neck / shoulder avoidance,
+  textures, then STYLISED SCULPTED LOCKS (few, broad, thick ribbons, full at the root, pointed tips — the Bitmoji-like look;
+  hundreds of thin strands read stringy/scaly), scalp cap under them, stubble fades (density gradient), ties/buns/plaits
+  (3-strand), cornrows, locs/twists, afros (wobble volume + coils). `render/SculptHair.tsx` material: paint modes,
+  groove shading by uv.x faded in toward tips, 2-lobe Kajiya-Kay along `hairT`, spring sway (uSway). Editor:
+  `editor/HairControls.tsx` (controls, favourites in localStorage, search). Legacy `Hair.tsx` / `sculpt3d/hair.ts` deleted.
   `sculpt3d/watertight.test.ts` guards against see-through holes (mesher `lipschitz` margin). Old primitive `Hair.tsx` / garment parts of `Clothes.tsx` are no longer used by Figure.
   Wardrobe uniqueness (owner, 2026-11-25: "no duplicates"): in `look/fashion.ts` every cut's 10 items have different, bold
   patterns and rotating trim colours (the colour rail only replaces c1, so plain-colour-only variants collapse into copies).

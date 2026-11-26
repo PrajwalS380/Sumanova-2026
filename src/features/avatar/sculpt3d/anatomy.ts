@@ -211,15 +211,15 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
       if (detail > 0) {
         if (F < 0.5) {
           // pectorals: a broad, flat plane with a soft lower edge
-          P.push({ t: 'ellipsoid', c: [s * 0.072 * sh * w, 1.47, 0.07], r: [0.07 * sh, 0.052, 0.04], rot: [0, s * 0.25, s * -0.15], bone: B.chest, k: 0.045 * detail, tag: tagBase + 1 });
+          P.push({ t: 'ellipsoid', c: [s * 0.072 * sh * w, 1.47, 0.07], r: [0.07 * sh + I, 0.052 + I, 0.04 + I], rot: [0, s * 0.25, s * -0.15], bone: B.chest, k: 0.045 * detail, tag: tagBase + 1 });
         } else {
           // feminine chest: a gentle, neutral volume (mannequin-like)
-          P.push({ t: 'ellipsoid', c: [s * 0.066 * w, 1.43, 0.07], r: [0.062, 0.058, 0.052], rot: [0.2, s * 0.25, 0], bone: B.chest, k: 0.05 * detail, tag: tagBase + 1 });
+          P.push({ t: 'ellipsoid', c: [s * 0.066 * w, 1.43, 0.07], r: [0.062 + I, 0.058 + I, 0.052 + I], rot: [0.2, s * 0.25, 0], bone: B.chest, k: 0.05 * detail, tag: tagBase + 1 });
         }
         // shoulder blades
-        P.push({ t: 'ellipsoid', c: [s * 0.084 * sh * w, 1.5, -0.094], r: [0.056, 0.07, 0.022], rot: [0, s * -0.35, s * 0.15], bone: B.chest, k: 0.05 * detail, tag: tagBase + 1 });
+        P.push({ t: 'ellipsoid', c: [s * 0.084 * sh * w, 1.5, -0.094], r: [0.056 + I, 0.07 + I, 0.022 + I], rot: [0, s * -0.35, s * 0.15], bone: B.chest, k: 0.05 * detail, tag: tagBase + 1 });
         // collarbones
-        P.push({ t: 'cone', a: [s * 0.03, 1.69, 0.045], b: [s * (J.sx - 0.03), 1.655, 0.02], ra: 0.011, rb: 0.012, bone: B.chest, k: 0.03 * detail, tag: tagBase + 1 });
+        P.push({ t: 'cone', a: [s * 0.03, 1.69, 0.045], b: [s * (J.sx - 0.03), 1.655, 0.02], ra: 0.011 + I, rb: 0.012 + I, bone: B.chest, k: 0.03 * detail, tag: tagBase + 1 });
       }
       // shoulder cap (deltoid) — rounds the shoulder into the arm (no "ball joint")
       P.push({ t: 'ellipsoid', c: [s * (J.sx - 0.006), 1.588, -0.008], r: [0.058 * Math.min(w, 1.14) * (1 - 0.1 * F) + I, 0.07 + I, 0.062 + I], rot: [0, 0, s * 0.5], bone: s < 0 ? B.upperArmL : B.upperArmR, k: 0.06, tag: tagBase + (s < 0 ? 3 : 4) });
@@ -229,9 +229,9 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
     P.push({ t: 'cone', a: [0, 1.6, -0.016], b: [0, 1.93, 0.0], ra: r.neck + 0.012 + I, rb: r.neck - 0.006 + I, bone: B.neck, k: 0.07, tag: tagBase + 2 });
     if (detail > 0) {
       // the two neck muscles running from behind the ears down to the collarbone notch
-      for (const s of [-1, 1]) P.push({ t: 'cone', a: [s * 0.05, 1.9, -0.012], b: [s * 0.016, 1.68, 0.052], ra: 0.016, rb: 0.012, bone: B.neck, k: 0.03 * detail, tag: tagBase + 2 });
+      for (const s of [-1, 1]) P.push({ t: 'cone', a: [s * 0.05, 1.9, -0.012], b: [s * 0.016, 1.68, 0.052], ra: 0.016 + I, rb: 0.012 + I, bone: B.neck, k: 0.03 * detail, tag: tagBase + 2 });
       // nape / trapezius rise behind
-      P.push({ t: 'ellipsoid', c: [0, 1.7, -0.055], r: [0.09, 0.06, 0.04], bone: B.chest, k: 0.05 * detail, tag: tagBase + 2 });
+      P.push({ t: 'ellipsoid', c: [0, 1.7, -0.055], r: [0.09 + I, 0.06 + I, 0.04 + I], bone: B.chest, k: 0.05 * detail, tag: tagBase + 2 });
     }
   }
   for (const [side, s] of [[-1, 0], [1, 1]] as const) {
@@ -247,7 +247,7 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
     if (want('foreArm')) {
       // elbow: a soft joint with the point of the elbow behind
       P.push({ t: 'sphere', c: add(E, [0, 0, -0.006]), r: r.upperArm * 0.76 + I, bone: ua + 1, k: 0.035, tag: tagBase + 5 + s });
-      if (detail > 0) P.push({ t: 'ellipsoid', c: add(E, [0, 0.004, -0.04]), r: [0.018, 0.022, 0.014], bone: ua + 1, k: 0.02 * detail, tag: tagBase + 5 + s });
+      if (detail > 0) P.push({ t: 'ellipsoid', c: add(E, [0, 0.004, -0.04]), r: [0.018 + I, 0.022 + I, 0.014 + I], bone: ua + 1, k: 0.02 * detail, tag: tagBase + 5 + s });
       // forearm: full near the elbow (outer muscle bulge), slimming into a flattened wrist
       P.push({ t: 'cone', a: E, b: add(Wr, [0, 0.03, 0]), ra: r.foreArm + I, rb: r.wrist * 0.82 + I, bone: ua + 1, k: 0.04, tag: tagBase + 5 + s });
       P.push({ t: 'ellipsoid', c: add(lerp(E, Wr, 0.28), [side * 0.008, 0, 0.004]), r: [r.foreArm * 0.96 + I, 0.09 + I, r.foreArm * 1.04 + I], bone: ua + 1, k: 0.04, tag: tagBase + 5 + s });
@@ -265,7 +265,7 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
     if (want('shin')) {
       // knee: joint mass + kneecap in front
       P.push({ t: 'sphere', c: add(K, [0, 0, 0.006]), r: r.knee + I, bone: th + 1, k: 0.04, tag: tagBase + 9 + s });
-      if (detail > 0) P.push({ t: 'ellipsoid', c: add(K, [0, 0.01, 0.05]), r: [0.034, 0.04, 0.022], bone: th + 1, k: 0.03 * detail, tag: tagBase + 9 + s });
+      if (detail > 0) P.push({ t: 'ellipsoid', c: add(K, [0, 0.01, 0.05]), r: [0.034 + I, 0.04 + I, 0.022 + I], bone: th + 1, k: 0.03 * detail, tag: tagBase + 9 + s });
       // shin to ankle; the calf has an inner (lower, fuller) and outer head
       P.push({ t: 'cone', a: K, b: add(A, [0, inf ? 0.02 : 0.05, 0]), ra: r.knee * 0.92 + I, rb: r.ankle * (inf ? 1 : 0.86) + I, bone: th + 1, k: 0.04, tag: tagBase + 9 + s });
       P.push({ t: 'ellipsoid', c: add(lerp(K, A, 0.3), [side * -0.014, 0, -0.022]), r: [r.calf * 0.74 + I, 0.12 + I, r.calf * 0.86 + I], bone: th + 1, k: 0.05, tag: tagBase + 9 + s });

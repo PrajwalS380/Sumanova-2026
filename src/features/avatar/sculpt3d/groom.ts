@@ -121,7 +121,7 @@ class Groomer {
   constructor(public h: HeadShape, public p: HairP, public seed: number, public hatOn: boolean) {
     this.R = h.rx;
     this.r = rng(hashStr('groom') + seed * 7919);
-    this.cap = 0.02 * this.R;
+    this.cap = 0.045 * this.R;
     this.browY = 0.075 * (h.ry / 0.39);
   }
 
@@ -354,7 +354,7 @@ class Groomer {
     const pts: V[] = [root.clone()];
     const cur = root.clone();
     // volume: strands rise off the head as they go — crown layers sit over the lower ones
-    const lift = (0.02 + p.vol * 0.06) * R * (o.liftK ?? 1);
+    const lift = (0.05 + p.vol * 0.1) * R * (o.liftK ?? 1);
     const hug = (s: number) => this.cap + 0.004 * R + lift * Math.min(1, s / (0.5 * R)) + o.layer * 0.012 * R;
     const longHair = L > 0.9 * R;
     const fringeStop = this.browY + (p.fringe === 'curtain' || p.fringe === 'side' ? -0.02 : 0.015) * (R / 0.35);
@@ -455,7 +455,8 @@ class Groomer {
     const flat = o.flat ?? 0.34;
     const tipK = o.tip ?? 0.2; // width left at the tip (0 = pointed)
     this.m.add(pts, {
-      wAt: (t) => w0 * (0.75 + 0.25 * smooth(0, 0.1, t)) * (1 - (1 - tipK) * Math.pow(t, 1.5)),
+      // a sculpted lock: full through the body, swelling a little, tapering to a point
+      wAt: (t) => w0 * (1.15 - 0.15 * smooth(0, 0.35, t)) * (1 - (1 - tipK) * Math.pow(smooth(0.25, 1, t), 1.3)),
       flat,
       radial: o.radial ?? 4,
       out: (q, out) => out.copy(q).normalize(),
@@ -474,7 +475,8 @@ class Groomer {
     const longest = Math.max(p.top, p.side, p.back);
     // density: finer clumps for short / coily hair, broader for long straight hair
     // long coils / curls: fewer, chunkier clumps keep the mesh light
-    const N = Math.round((coily ? (longest > 0.8 ? 240 : 520) : curly ? (longest > 0.8 ? 320 : 420) : longest > 1 ? 400 : 500) * (this.hatOn ? 0.6 : 1));
+    // few, broad sculpted locks (a stylised groom), not hundreds of thin strands
+    const N = Math.round((coily ? (longest > 0.8 ? 150 : 260) : curly ? (longest > 0.8 ? 150 : 190) : longest > 1 ? 150 : longest < 0.5 ? 170 : 175) * (this.hatOn ? 0.6 : 1));
     const golden = Math.PI * (3 - Math.sqrt(5));
     const u = v3();
     for (let k = 0; k < N * 2.2; k++) {
@@ -504,17 +506,19 @@ class Groomer {
       L *= 1 - p.layers * 0.45 * r() * smooth(-0.2, 0.6, u.y);
       L *= 0.93 + r() * 0.14;
       if (this.hatOn) L = Math.min(L, Math.max(p.side, 0.2));
+      // short cuts: locks overlap like feathers (longer than they are wide), sweeping one way
+      if (L < 0.5 && !fringe) L = L * 1.5 + 0.1;
       // graduated into a fade: strands shorten toward the shaved line
       L *= this.fadeBlend(u.y, az);
       if (L < 0.05) continue;
       const layer = smooth(line, 1, u.y); // crown strands lie on top
       let pts = this.grow(u, L, { fringe, layer });
-      const step = coily ? 0.011 * R : curly ? 0.018 * R : 0.04 * R;
+      const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
       if (p.tex !== 'straight') pts = this.texture(this.resample(pts, step), r() * Math.PI * 2);
       const short = L < 0.45;
-      const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.07 : 0.05) : curly ? 0.075 : p.fringe === 'wispy' && fringe ? 0.07 : short ? 0.12 : 0.16) * (0.85 + r() * 0.3);
-      const tip = p.fringe === 'straight' && fringe ? 0.45 : 0.5 - 0.48 * p.tips;
-      this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.7 : 0.24 + p.tips * 0.14, tip, radial: 4 });
+      const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.11 : 0.085) : curly ? 0.14 : p.fringe === 'wispy' && fringe ? 0.13 : short ? 0.22 : 0.3) * (0.85 + r() * 0.3);
+      const tip = p.fringe === 'straight' && fringe ? 0.4 : Math.max(0.03, 0.3 - 0.3 * p.tips);
+      this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7 });
       // fly-aways: a few fine single strands lifting off the surface
       if (!coily && u.z < 0.3 && r() < 0.035 + p.messy * 0.05 && L > 0.2) {
         const fp = this.texture(this.resample(this.grow(u, L * (1 + r() * 0.15), { fringe, layer: layer + 0.6, liftK: 1.5 }), 0.03 * R), r() * 6, 'textured', 1);

@@ -68,8 +68,10 @@ vHairT = normalize(normalMatrix * hairT);`,
   // fine strands across the clump, varying slowly along it
   float st = hNoise(vec2(vHUv.x * 9.0 + hR * 57.0, hT * 3.0 + hR * 11.0)) * 0.6 + hNoise(vec2(vHUv.x * 23.0 + hR * 13.0, hT * 7.0)) * 0.4;
   // clump separation: the top of each ribbon catches light, its edges and underside fall into shadow
-  float side = 0.62 + 0.38 * clamp(sin(vHUv.x * 6.2832) * 0.8 + 0.4, 0.0, 1.0);
-  diffuseColor.rgb = hc * vColor.r * side * (0.74 + 0.36 * st);
+  // sculpted locks: the crown of each lock catches light, deep grooves between locks
+  // (roots melt into one smooth mass; the locks separate toward their tips)
+  float side = mix(1.0, 0.5 + 0.5 * smoothstep(-0.35, 0.75, sin(vHUv.x * 6.2832)), mix(0.35, 1.0, smoothstep(0.1, 0.6, vColor.g)));
+  diffuseColor.rgb = hc * vColor.r * side * (0.9 + 0.14 * st);
 #endif`,
         )
         .replace(
