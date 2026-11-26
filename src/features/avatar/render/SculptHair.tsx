@@ -38,8 +38,8 @@ vec3 hairBase(float t, float rnd, vec3 pos) {
   vec3 c = mix(uRoot, uTip, smoothstep(0.3, 1.0, t));
   if (uPaint > 0.5 && uPaint < 1.5) c = mix(uRoot, uTip, smoothstep(-0.02, -0.12, pos.y));            // two-tone: under-layer
   else if (uPaint > 1.5 && uPaint < 2.5) c = mix(uRoot, uTip, smoothstep(0.15, 0.85, t));             // ombré
-  else if (uPaint > 2.5 && uPaint < 3.5) c = mix(c, uHi, step(rnd, 0.45) * hiBand * 0.75 * smoothstep(0.0, 0.25, t)); // highlights: fine ribbons
-  else if (uPaint > 3.5 && uPaint < 4.5) c = mix(c, uHi, step(rnd, 0.12));                             // streaks
+  else if (uPaint > 2.5 && uPaint < 3.5) c = mix(c, uHi, step(rnd, 0.55) * hiBand * 0.7); // highlights: fine ribbons
+  else if (uPaint > 3.5 && uPaint < 4.5) c = mix(c, uHi, step(rnd, 0.14) * (0.55 + 0.45 * hiBand));                             // streaks
   else if (uPaint > 4.5 && uPaint < 5.5) c = mix(uRoot, uTip, step(0.0, pos.x));                       // split dye
   else if (uPaint > 5.5) c = mix(c, uHi, step(rnd, 0.45) * hiBand * 0.6);                                      // lowlights
   return c * (0.9 + 0.2 * rnd);
@@ -73,7 +73,8 @@ vHairT = normalize(normalMatrix * hairT);`,
 #ifdef USE_COLOR
   float hT = vColor.g, hR = vColor.b;
   // highlight ribbons: 1–2 narrow stripes along a lock, not the whole lock
-  hiBand = smoothstep(0.55, 0.8, sin(vHUv.x * 6.2832 * 2.0 + hR * 9.0) * 0.5 + 0.5);
+  // one or two thin, soft-edged ribbons per lock, fading in from the root
+  hiBand = smoothstep(0.7, 0.95, sin(vHUv.x * 6.2832 * 2.0 + hR * 9.0) * 0.5 + 0.5) * smoothstep(0.05, 0.35, hT);
   vec3 hc = hairBase(hT, hR, vHairPos);
   // fine strands across the clump, varying slowly along it
   float st = hNoise(vec2(vHUv.x * 9.0 + hR * 57.0, hT * 3.0 + hR * 11.0)) * 0.6 + hNoise(vec2(vHUv.x * 23.0 + hR * 13.0, hT * 7.0)) * 0.4;
