@@ -19,8 +19,8 @@ export const nailTone = (skin: string) => mix(skin, '#f3cfc6', 0.35);
 function HairMat({ color, opacity = 1 }: { color: string; opacity?: number }) {
   return <meshPhysicalMaterial color={color} roughness={0.5} sheen={0.8} sheenRoughness={0.35} sheenColor={mix(color, '#ffffff', 0.3)} transparent={opacity < 1} opacity={opacity} depthWrite={opacity >= 1} />;
 }
-function Flat({ color, rough = 0.6 }: { color: string; rough?: number }) {
-  return <meshStandardMaterial color={color} roughness={rough} />;
+function Flat({ color, rough = 0.6, layer = 0 }: { color: string; rough?: number; /** >0 wins depth ties against thin layers below it (no z-fighting) */ layer?: number }) {
+  return <meshStandardMaterial color={color} roughness={rough} polygonOffset={layer > 0} polygonOffsetFactor={-3 * layer} polygonOffsetUnits={-60 * layer} />;
 }
 
 export interface FaceProps {
@@ -74,7 +74,7 @@ function Features({ f, ex, ey, er, noseY, mouthY, lipColor, sculpted }: { f: Fac
       <Eyes f={f} ex={ex} ey={ey} er={er} />
       <Brows h={h} p={f.brows} color={f.colors.brows} ex={ex} ey={ey} er={er} e={e} pierce={f.piercings.brow} />
       <Nose h={h} p={f.nose} skin={skin} y={noseY} pierce={f.piercings.nose} sculpted={sculpted} />
-      <Blush h={h} ex={ex} ey={ey} color={f.colors.blush ?? '#ff7d7d'} strength={f.colors.blush ? 0.55 : e === 'blushing' ? 0.6 : e === 'laughing' || e === 'happy' ? 0.28 : 0.18} />
+      <Blush h={h} ex={ex} ey={ey} color={f.colors.blush ?? '#ff7d7d'} strength={f.colors.blush ? 0.4 : e === 'blushing' ? 0.5 : e === 'laughing' || e === 'happy' ? 0.12 : 0.08} />
       <Mouth h={h} p={f.mouth} y={mouthY} lip={lipColor} skin={skin} e={e} lipPierce={f.piercings.lip} tonguePierce={f.piercings.tongue} />
       {e === 'crying' && <Tears h={h} ex={ex} ey={ey} er={er} />}
       {f.beard && <Beard h={h} p={f.beard} color={f.colors.beard} mouthY={mouthY} />}
@@ -440,21 +440,28 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
   const parts = useMemo(() => {
     const open = e === 'laughing' || e === 'surprised' || e === 'tongue' || (e === 'happy' && p.corner >= 0);
     if (open) {
-      const ww = e === 'surprised' ? w * 0.45 : w * (e === 'laughing' || e === 'tongue' ? 1.12 : 1.02);
+      const ww = e === 'surprised' ? w * 0.45 : w * (e === 'laughing' || e === 'tongue' ? 1.18 : 1.1);
       const top = e === 'surprised' ? 0.03 : 0.012;
-      const depth = e === 'surprised' ? 0.035 : e === 'laughing' || e === 'tongue' ? 0.075 : 0.05;
-      const mk = (sx: number, sy: number) => {
-        const s = new THREE.Shape();
-        if (e === 'surprised') return s.absellipse(0, 0, ww * sx, depth * sy, 0, Math.PI * 2, false, 0);
-        s.moveTo(-ww * sx, 0);
-        s.quadraticCurveTo(0, -top * sy, ww * sx, 0);
-        s.quadraticCurveTo(0, -depth * 2 * sy, -ww * sx, 0);
-        return s;
+      const depth = e === 'surprised' ? 0.035 : e === 'laughing' || e === 'tongue' ? 0.085 : 0.066;
+      // Outlines are sampled into explicit points (no repeated start/end point): a path that
+      // closes on its own start point makes the triangulator drop half of the fill.
+      const lens = (x0: number, y0: number, cTop: number, cBot: number, n = 24) => {
+        const pts: THREE.Vector2[] = [];
+        for (let i = 0; i <= n; i++) {
+          const t = i / n, x = x0 * (2 * t - 1);
+          pts.push(new THREE.Vector2(x, y0 + 2 * t * (1 - t) * cTop));
+        }
+        for (let i = n - 1; i >= 1; i--) {
+          const t = i / n, x = x0 * (2 * t - 1);
+          pts.push(new THREE.Vector2(x, y0 + 2 * t * (1 - t) * cBot));
+        }
+        return new THREE.Shape(pts);
       };
-      const teeth = new THREE.Shape();
-      teeth.moveTo(-ww * 0.86, -0.004);
-      teeth.quadraticCurveTo(0, -top - 0.003, ww * 0.86, -0.004);
-      teeth.quadraticCurveTo(0, -top - 0.026, -ww * 0.86, -0.004);
+      const mk = (sx: number, sy: number) => {
+        if (e === 'surprised') return new THREE.Shape().absellipse(0, 0, ww * sx, depth * sy, 0, Math.PI * 2, false, 0);
+        return lens(ww * sx, 0, -top * sy, -depth * 2 * sy);
+      };
+      const teeth = lens(ww * 0.86, -0.004, -top - 0.003, -top - 0.036);
       return {
         open: true,
         lips: surfaceShape(h, mk(1.12 + p.upper * 0.04, 1.14 + p.lower * 0.06), 0, y + 0.004, 0.003),
@@ -505,9 +512,9 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
 
   return (
     <group>
-      {'lips' in parts && parts.lips && <mesh geometry={parts.lips}><meshPhysicalMaterial color={lip} roughness={0.35} clearcoat={0.5} /></mesh>}
-      {'inner' in parts && parts.inner && <mesh geometry={parts.inner}><Flat color="#4a1418" rough={0.8} /></mesh>}
-      {'teeth' in parts && parts.teeth && <mesh geometry={parts.teeth}><Flat color="#fbf6ef" rough={0.25} /></mesh>}
+      {'lips' in parts && parts.lips && <mesh geometry={parts.lips}><meshPhysicalMaterial color={lip} roughness={0.35} clearcoat={0.5} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-30} /></mesh>}
+      {'inner' in parts && parts.inner && <mesh geometry={parts.inner} renderOrder={1}><Flat color="#4a1418" rough={0.8} layer={1.5} /></mesh>}
+      {'teeth' in parts && parts.teeth && <mesh geometry={parts.teeth} renderOrder={2}><Flat color="#fbf6ef" rough={0.25} layer={2} /></mesh>}
       {'upper' in parts && parts.upper && <mesh geometry={parts.upper}><meshPhysicalMaterial color={mix(lip, skin, 0.12)} roughness={0.38} clearcoat={0.5} /></mesh>}
       {'lower' in parts && parts.lower && <mesh geometry={parts.lower}><meshPhysicalMaterial color={lip} roughness={0.3} clearcoat={0.7} /></mesh>}
       {'line' in parts && parts.line && <mesh geometry={parts.line}><Flat color={mix(lip, '#2a0a0a', 0.45)} /></mesh>}
@@ -554,7 +561,7 @@ function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string
         const front = smooth(-0.35, -0.1, uz);
         const below = smooth(my + 0.03 + p.cheekLine * 0.35, my - 0.03 + p.cheekLine * 0.15, uy) * (1 - 0.6 * smooth(0.45, 0.2, Math.abs(ux)) * smooth(my + 0.12, my + 0.22, uy));
         const side = smooth(1.12, 1.4, Math.abs(az)) * smooth(1.9, 1.65, Math.abs(az)) * smooth(0.02, -0.1, uy) * p.sides; // sideburns stay by the ears
-        const mouthHole = 1 - smooth(0.24, 0.17, Math.abs(ux)) * smooth(0.075, 0.035, Math.abs(uy - my + 0.005));
+        const mouthHole = smooth(0.8, 1.05, (ux / 0.36) ** 2 + ((uy - my + 0.07) / 0.13) ** 2); // an oval hugging the full open grin
         const chinGap = p.chinOnly < 0 ? 1 - smooth(0.3, 0.15, Math.abs(ux)) : 1; // mutton chops leave the chin bare
         m = Math.max(front * below, side) * mouthHole * chinGap;
       }

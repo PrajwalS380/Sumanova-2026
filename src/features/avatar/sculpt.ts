@@ -53,6 +53,26 @@ export function deform(h: HeadShape, ux: number, uy: number, uz: number, out: TH
   return out.set(ux * h.rx * kx * mult, uy * h.ry * ky * mult, uz * h.rz * kz * mult);
 }
 
+/**
+ * Approximate signed distance to the deformed head surface — the same surface `deform` and
+ * `surfaceZ` describe (fixed-point on the direction), so features placed with `surfaceZ`
+ * (eyes, mouth, beard) sit exactly on the sculpted skull instead of under it.
+ */
+export function skullDist(h: HeadShape, x: number, y: number, z: number) {
+  const r = Math.sqrt(x * x + y * y + z * z) || 1e-6;
+  let ux = x / r, uy = y / r, uz = z / r, L = 1, sx = h.rx, sy = h.ry, sz = h.rz;
+  for (let i = 0; i < 4; i++) {
+    sx = h.rx * kxAt(h, uy, uz);
+    sy = h.ry * (y < 0 ? h.chinLow : 1);
+    sz = h.rz * (uy < 0 ? 1 - 0.1 * uy * uy : 1) * (uz < 0 ? 1.07 : 1);
+    const qx = x / sx, qy = y / sy, qz = z / sz;
+    L = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-6;
+    ux = qx / L; uy = qy / L; uz = qz / L;
+  }
+  const R = Math.sqrt((ux * sx) ** 2 + (uy * sy) ** 2 + (uz * sz) ** 2);
+  return (L - 1) * R;
+}
+
 /** Front-facing surface depth at head-local (x, y). */
 export function surfaceZ(h: HeadShape, x: number, y: number) {
   const uy = y / (h.ry * (y < 0 ? h.chinLow : 1));
@@ -105,7 +125,9 @@ export function surfaceTube(h: HeadShape, pts: [number, number][], radius: numbe
 
 /** A flat 2D shape bent to sit on the face surface. */
 export function surfaceShape(h: HeadShape, shape: THREE.Shape, cx: number, cy: number, lift = 0.004) {
-  const g = new THREE.ShapeGeometry(shape, 24);
+  // The triangulated shape has long triangles spanning the whole outline; laid on a curved face
+  // their middles would sink under the skin. Split them until every edge is short.
+  const g = subdivideFlat(new THREE.ShapeGeometry(shape, 24), 0.008);
   const p = g.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i) + cx, y = p.getY(i) + cy;
@@ -113,6 +135,34 @@ export function surfaceShape(h: HeadShape, shape: THREE.Shape, cx: number, cy: n
   }
   g.computeVertexNormals();
   return g;
+}
+
+/** Split the triangles of a flat (z = 0) geometry until no edge is longer than `maxEdge`. */
+export function subdivideFlat(src: THREE.BufferGeometry, maxEdge: number) {
+  const g = src.index ? src.toNonIndexed() : src;
+  let tri = Array.from(g.attributes.position.array as Float32Array);
+  const m2 = maxEdge * maxEdge;
+  for (let pass = 0; pass < 6; pass++) {
+    const out: number[] = [];
+    let split = false;
+    for (let i = 0; i < tri.length; i += 9) {
+      const ax = tri[i], ay = tri[i + 1], bx = tri[i + 3], by = tri[i + 4], cx = tri[i + 6], cy = tri[i + 7];
+      const long = Math.max((ax - bx) ** 2 + (ay - by) ** 2, (bx - cx) ** 2 + (by - cy) ** 2, (cx - ax) ** 2 + (cy - ay) ** 2) > m2;
+      if (!long) { out.push(ax, ay, 0, bx, by, 0, cx, cy, 0); continue; }
+      split = true;
+      const abx = (ax + bx) / 2, aby = (ay + by) / 2, bcx = (bx + cx) / 2, bcy = (by + cy) / 2, cax = (cx + ax) / 2, cay = (cy + ay) / 2;
+      out.push(ax, ay, 0, abx, aby, 0, cax, cay, 0, abx, aby, 0, bx, by, 0, bcx, bcy, 0, cax, cay, 0, bcx, bcy, 0, cx, cy, 0, abx, aby, 0, bcx, bcy, 0, cax, cay, 0);
+    }
+    tri = out;
+    if (!split) break;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(tri, 3));
+  // same UVs a ShapeGeometry has (the raw shape x, y) — e.g. the blush gradient texture
+  const uv = new Float32Array((tri.length / 3) * 2);
+  for (let i = 0, j = 0; i < tri.length; i += 3, j += 2) { uv[j] = tri[i]; uv[j + 1] = tri[i + 1]; }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return geo;
 }
 
 /** Lathe from (radius, y) points listed bottom-to-top. */
