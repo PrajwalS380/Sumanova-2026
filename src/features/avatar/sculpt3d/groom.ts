@@ -242,7 +242,10 @@ class Groomer {
     if (p.fade === 'buzz') return null;
     const afro = p.afro;
     // afro volume tapers down to the hairline (no flat 'brim' over the forehead)
-    const thick = (uy: number, az = 0) => this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 1.6 : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
+    // short barbered cuts: the sides and back are a full, smooth sculpted mass (a few locks on top of it)
+    const cutShort = Math.max(p.top, p.side, p.back) < 0.75 && p.tex !== 'coily' && p.tex !== 'curly' && p.afro === 0 && p.loc === 'none' && p.braid === 'none' && p.tie === 'none';
+    const shell = (uy: number, az: number) => (cutShort ? 0.035 * R * smooth(this.lineAt(az), this.lineAt(az) + 0.25, uy) * (1 - smooth(0.35, 0.7, uy)) : 0);
+    const thick = (uy: number, az = 0) => shell(uy, az) + this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 1.6 : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
     const prim: Prim = {
       t: 'fn', c: [0, h.ry * 0.2, -h.rz * 0.05], ext: [R * (1.3 + afro * 0.9), h.ry * (1.3 + afro * 0.9), h.rz * (1.4 + afro * 0.9)], bone: 0, k: 0,
       f: (x, y, z) => {
@@ -263,7 +266,7 @@ class Groomer {
       },
     };
     const f = new Field([{ prims: [prim] }], 0.02 * R, 0.06 * R);
-    const geo = meshField(f, { cell: (afro > 0 ? 0.01 : 0.008) * (R / 0.35), lipschitz: afro > 0 ? 2 : 1.4, color: () => [afro > 0 ? 0.8 : 0.62, afro > 0 ? 0.5 : 0, 0.5] });
+    const geo = meshField(f, { cell: (afro > 0 ? 0.01 : 0.008) * (R / 0.35), lipschitz: afro > 0 ? 2 : 1.4, color: () => [afro > 0 ? 0.8 : cutShort ? 0.74 : 0.62, afro > 0 ? 0.5 : 0, 0.5] });
     // the scalp layer is shaded like hair combed back and down (the material needs a direction)
     const P = geo.getAttribute('position');
     const tan = new Float32Array(P.count * 3);
@@ -334,7 +337,8 @@ class Groomer {
     switch (p.flow) {
       case 'back': out.set(0, 0.15, -1); break;
       case 'forward': out.set(0, -0.2, 1).lerp(v3(0, -1, -0.2), smooth(0.2, -0.6, u.z)); break;
-      case 'up': out.set(0, 1, -0.25).lerp(v3(0, 0.2, -1), smooth(0.4, -0.3, u.z)); break;
+      // quiff: the front sweeps up and back; everything behind the hairline is combed straight back
+      case 'up': out.set(0, 1, -0.55).lerp(v3(0, 0.05, -1), smooth(0.62, 0.3, u.z)); break;
       case 'side': out.set(p.part === 'right' ? 1 : -1, -0.25, 0.1).lerp(v3(away, -0.8, -0.3), smooth(-0.1, -0.6, u.z)); break;
       case 'out': out.copy(u).multiplyScalar(1.5).add(v3(0, 0.6, -0.2)); break;
       case 'hawk': out.set(-root.x * 2, 1.2, -0.15); break;
@@ -388,8 +392,10 @@ class Groomer {
         d.y -= g * (ds / (0.05 * R));
         if (p.flow === 'up' || p.flow === 'hawk') {
           // quiffs / hawks: lift at the front, roll back over the top
-          const rise = (p.lift + 0.3) * smooth(0.6, 0, s / L);
-          d.addScaledVector(nrm, rise * 0.25);
+          const rise = (p.lift + 0.3) * smooth(0.5, 0, s / L);
+          d.addScaledVector(nrm, rise * (p.flow === 'hawk' ? 0.25 : 0.16));
+          // quiffs curl back over the top as they grow (a rolled wave, not upright spikes)
+          if (p.flow === 'up') d.addScaledVector(v3(0, -0.1, -1), 0.22 * smooth(0.15, 0.6, s / L));
         }
         if (p.flow === 'out') d.addScaledVector(nrm, 0.08);
       }
@@ -524,7 +530,11 @@ class Groomer {
       L *= 0.93 + r() * 0.14;
       if (this.hatOn) L = Math.min(L, Math.max(p.side, 0.2));
       // short cuts: locks overlap like feathers (longer than they are wide), sweeping one way
-      if (L < 0.5 && !fringe) L = L * 1.5 + 0.1;
+      // short cuts: the top gets long sweeping locks (sculpted clumps); sides and back stay short
+      // and tight to the head, like a real barbered cut
+      const topZone = u.y > 0.42 || frontness > 0.5;
+      const cutShort = longest < 0.75 && p.tex !== 'coily' && p.tex !== 'curly';
+      if (L < 0.5 && !fringe) L = cutShort && !topZone ? Math.min(L, 0.2) + 0.08 : L * 1.5 + 0.1;
       // graduated into a fade: strands shorten toward the shaved line
       L *= this.fadeBlend(u.y, az);
       if (L < 0.05) continue;
@@ -532,16 +542,21 @@ class Groomer {
       // combed short cuts lie flat on the head (lift only for quiffs / spikes / messy styles)
       const standUp = p.flow === 'up' || p.flow === 'out' || p.flow === 'hawk' || p.flow === 'messy';
       const shortCut = L < 0.75 && !standUp && !coily && !curly;
-      let pts = this.grow(u, L, { fringe, layer, liftK: shortCut ? 0.3 : 1 });
+      const tight = cutShort && !topZone;
+      // the smooth shell carries the sides; only every third lock is drawn there (combed texture)
+      if (tight && r() < 0.66) continue;
+      let pts = this.grow(u, L, { fringe, layer, liftK: tight ? 0.08 : shortCut ? 0.3 : 1 });
       const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
       if (p.tex !== 'straight') pts = this.texture(this.resample(pts, step), r() * Math.PI * 2);
       const short = L < 0.45;
-      const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.11 : 0.085) : curly ? 0.14 : p.fringe === 'wispy' && fringe ? 0.13 : short ? 0.22 : 0.3) * (0.85 + r() * 0.3);
-      const tip = p.fringe === 'straight' && fringe ? 0.4 : shortCut ? 0.32 - 0.15 * p.tips : Math.max(0.03, 0.3 - 0.3 * p.tips);
+      const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.11 : 0.085) : curly ? 0.14 : p.fringe === 'wispy' && fringe ? 0.13 : tight ? 0.16 : cutShort ? 0.3 : short ? 0.22 : 0.3) * (0.85 + r() * 0.3);
+      // quiffs / pompadours: one smooth rolled wave of broad locks (not flame-like spikes)
+      const roll = p.flow === 'up' && p.tips < 0.7;
+      const tip = p.fringe === 'straight' && fringe ? 0.4 : roll ? 0.55 : tight ? 0.5 : shortCut ? 0.32 - 0.15 * p.tips : Math.max(0.03, 0.3 - 0.3 * p.tips);
       this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7 });
       // detail: finer locks riding on top of the main one and fanning apart toward the tips
       // (piecey, separated ends and layered depth — the sculpted-groom look)
-      if (!coily) this.subLocks(pts, w0, { n: curly ? 1 : shortCut ? 1 : short ? 2 : 3, flat: curly ? 0.75 : 0.5, spread: shortCut ? 0.3 : short ? 0.55 : 0.8 });
+      if (!coily && !tight) this.subLocks(pts, roll ? w0 * 1.2 : w0, { n: curly ? 1 : roll ? 1 : shortCut ? 1 : short ? 2 : 3, flat: curly ? 0.75 : 0.5, spread: shortCut ? 0.3 : short ? 0.55 : 0.8 });
       // fly-aways: a few fine single strands lifting off the surface
       if (!coily && u.z < 0.3 && r() < 0.035 + p.messy * 0.05 && L > 0.2) {
         const fp = this.texture(this.resample(this.grow(u, L * (1 + r() * 0.15), { fringe, layer: layer + 0.6, liftK: 1.5 }), 0.03 * R), r() * 6, 'textured', 1);
