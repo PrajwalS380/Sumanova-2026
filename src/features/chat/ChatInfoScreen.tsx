@@ -38,17 +38,24 @@ export default function ChatInfoScreen() {
   const [newTitle, setNewTitle] = useState('');
   const [confirm, setConfirm] = useState<null | { title: string; body: string; action: string; run: () => Promise<void> }>(null);
   const [busy, setBusy] = useState(false);
+  const [missing, setMissing] = useState(false);
   const file = useRef<HTMLInputElement>(null);
 
   async function load() {
     try {
       const [c, m] = await Promise.all([chatApi.conversation(id), chatApi.members(id)]);
+      // deleted, or no longer a member (row hidden by access rules)
+      if (!c) {
+        setMissing(true);
+        return;
+      }
       setConv(c as unknown as Conv);
       setMembers(m);
       const profs = await chatApi.profiles(m.map((x) => x.user_id));
       setPeople(Object.fromEntries(profs.map((p) => [p.id, p])));
     } catch (e) {
       toast((e as Error).message, 'error');
+      setMissing(true);
     }
   }
   useEffect(() => {
@@ -94,6 +101,13 @@ export default function ChatInfoScreen() {
     }, 'Group photo updated');
   }
 
+  if (missing && !conv)
+    return (
+      <div className="flex h-full flex-col">
+        <ScreenHeader title="" back />
+        <p className="mx-4 mt-6 rounded-tile bg-white p-5 text-center text-sm text-ink-mute">This chat doesn’t exist or you’re no longer a member.</p>
+      </div>
+    );
   if (!conv) return <div className="grid h-full place-items-center text-sm text-ink-mute">Loading…</div>;
 
   const name = isGroup ? conv.title ?? 'Group' : otherP?.display_name ?? '';

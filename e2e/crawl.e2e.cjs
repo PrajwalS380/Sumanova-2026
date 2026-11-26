@@ -36,6 +36,9 @@ async function stub(page) {
     if (p.startsWith('/rest/v1/')) {
       const t = p.split('/')[3];
       if (single) return json(t === 'profiles' ? profile : t === 'user_settings' ? settings : t === 'privacy_settings' ? privacy : null);
+      // maybeSingle() asks for a list: answer the signed-in user's own rows
+      const own = { profiles: profile, user_settings: settings, privacy_settings: privacy }[t];
+      if (own && req.method() === 'GET' && u.search.includes(UID)) return json([own]);
       if (req.method() === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': '0-0/0' }, body: '' });
       return json(req.method() === 'GET' ? [] : null, req.method() === 'GET' ? 200 : 201);
     }

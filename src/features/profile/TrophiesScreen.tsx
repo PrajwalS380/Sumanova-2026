@@ -15,7 +15,9 @@ export default function TrophiesScreen() {
   useEffect(() => {
     void supabase.rpc('my_trophy_stats').then(({ data, error: e }) => {
       if (e) return setError(e.message);
-      setStats((data as TrophyStats[])[0] ?? null);
+      // a brand-new account has no activity yet: show every trophy at zero instead of spinning
+      const zero: TrophyStats = { snaps_sent: 0, snaps_received: 0, stories: 0, best_streak: 0, friends: 0, spotlight_videos: 0, spotlight_likes: 0, explored: 0, groups: 0, calls: 0, memories: 0, score: 0 };
+      setStats({ ...zero, ...((data as TrophyStats[] | null)?.[0] ?? {}) });
     });
   }, []);
   const list = stats ? TROPHIES.map((t) => ({ t, p: trophyProgress(t, stats) })).sort((a, b) => Number(b.p.earned) - Number(a.p.earned) || b.p.pct - a.p.pct) : [];

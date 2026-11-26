@@ -189,8 +189,8 @@ export default function SpotlightScreen() {
               <TopBtn label="Search" onClick={() => setSearching(true)}><Search className="h-[22px] w-[22px]" /></TopBtn>
               <div className="flex flex-1 justify-center" role="tablist">
                 <div className="flex gap-1 rounded-2xl bg-[rgba(17,17,17,0.55)] p-1 text-[13px] font-extrabold">
-                  <button role="tab" aria-selected={feed === 'following'} onClick={() => setFeed('following')} className={cn('h-8 rounded-xl px-3.5', feed === 'following' ? 'bg-white text-ink' : 'text-white')}>Following</button>
-                  <button role="tab" aria-selected={feed === 'foryou'} onClick={() => setFeed('foryou')} className={cn('h-8 rounded-xl px-3.5', feed === 'foryou' ? 'bg-white text-ink' : 'text-white')}>For you</button>
+                  <button role="tab" aria-selected={feed === 'following'} onClick={() => setFeed('following')} className={cn('h-8 whitespace-nowrap rounded-xl px-3.5', feed === 'following' ? 'bg-white text-ink' : 'text-white')}>Following</button>
+                  <button role="tab" aria-selected={feed === 'foryou'} onClick={() => setFeed('foryou')} className={cn('h-8 whitespace-nowrap rounded-xl px-3.5', feed === 'foryou' ? 'bg-white text-ink' : 'text-white')}>For you</button>
                 </div>
               </div>
               <TopBtn label="More" onClick={() => setMore2(true)}><MoreHorizontal className="h-[22px] w-[22px]" /></TopBtn>
