@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CountdownChip, isCountdown, type Countdown } from '@/features/social/CountdownChip';
 import { playTrack } from '@/lib/music/tracks';
 import { chatApi } from '@/lib/chat/api';
 import { createPortal } from 'react-dom';
@@ -207,6 +208,7 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
           else next();
         }}
       >
+        {story && isCountdown((story.media_meta as { countdown?: unknown })?.countdown) && <CountdownChip c={(story.media_meta as { countdown: Countdown }).countdown} />}
         {story ? <StoryMedia story={story} paused={paused} onReady={() => setReady(true)} onDuration={(s) => setDuration(Math.min(60, s) * 1000)} onEnded={next} /> : <div className="grid h-full place-items-center"><Loader2 className="h-7 w-7 animate-spin text-white/60" /></div>}
       </motion.div>
 

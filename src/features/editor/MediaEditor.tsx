@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Check, Crop, Download, Gauge, Infinity as InfinityIcon, LayoutTemplate, Loader2, Mic2, Music, Paintbrush, Rewind, RotateCw, Smile, Timer, Trash2, Type, Undo2, X } from 'lucide-react';
+import { ArrowRight, Check, Crop, Download, Gauge, Hourglass, Infinity as InfinityIcon, LayoutTemplate, Loader2, Mic2, Music, Paintbrush, Rewind, RotateCw, Smile, Timer, Trash2, Type, Undo2, X } from 'lucide-react';
 import { TEMPLATES, templateById } from '@/lib/snaps/templates';
 import { CUTOUT_PREFIX, cutoutLibrary, makeCutout } from '@/lib/cutout';
 import { TRACKS, playTrack, trackById } from '@/lib/music/tracks';
 import { hasFx, processVideo, VOICES, type Voice } from '@/lib/media/videoFx';
 import { Sheet } from '@/components/ui/Sheet';
+import { CountdownChip, type Countdown } from '@/features/social/CountdownChip';
 import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/providers/ToastProvider';
@@ -72,7 +73,10 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
   const [speed, setSpeed] = useState(1);
   const [reverse, setReverse] = useState(false);
   const [voice, setVoice] = useState<Voice>('none');
-  const [panel, setPanel] = useState<'templates' | 'music' | 'voice' | null>(null);
+  const [panel, setPanel] = useState<'templates' | 'music' | 'voice' | 'countdown' | null>(null);
+  const [countdown, setCountdown] = useState<Countdown | null>(null);
+  const [cdTitle, setCdTitle] = useState('');
+  const [cdAt, setCdAt] = useState('');
   const [progress, setProgress] = useState<number | null>(null);
   const [cutouts, setCutouts] = useState<string[]>(() => cutoutLibrary.list());
   const [cutBusy, setCutBusy] = useState(false);
@@ -283,10 +287,10 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
       }
       const overlay = await exportOverlay(strokes, items, natural.w, natural.h, tpl);
       const dur = captured.duration ? captured.duration / speed : undefined;
-      return { kind: 'video', blob, overlay, meta: { filter: filterId, width: natural.w, height: natural.h, duration: dur, ...(music ? { music_baked: music } : {}), ...(text ? { text } : {}), ...extraMeta }, duration: null };
+      return { kind: 'video', blob, overlay, meta: { filter: filterId, width: natural.w, height: natural.h, duration: dur, ...(music ? { music_baked: music } : {}), ...(text ? { text } : {}), ...(countdown ? { countdown } : {}), ...extraMeta }, duration: null };
     }
     const blob = await exportImage(src, filterId, strokes, items, 2048, tpl);
-    return { kind: 'image', blob, overlay: null, meta: { width: natural.w, height: natural.h, ...(music ? { music } : {}), ...(text ? { text } : {}), ...extraMeta }, duration: duration || null };
+    return { kind: 'image', blob, overlay: null, meta: { width: natural.w, height: natural.h, ...(music ? { music } : {}), ...(text ? { text } : {}), ...(countdown ? { countdown } : {}), ...extraMeta }, duration: duration || null };
   }
 
   async function save() {
@@ -337,6 +341,7 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
         <canvas ref={tplCanvas} className="pointer-events-none absolute inset-0 h-full w-full" />
         <canvas ref={drawCanvas} className="pointer-events-none absolute inset-0 h-full w-full" />
         {tool === 'crop' && aspect && <CropGuide aspect={aspect} box={box} />}
+        {countdown && <CountdownChip c={countdown} />}
         {items.map((it) => (
           <div
             key={it.id}
@@ -368,6 +373,7 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
           )}
           <EdBtn label="Templates" active={!!template} onClick={() => setPanel('templates')}><LayoutTemplate className="h-5 w-5" /></EdBtn>
           <EdBtn label="Music" active={!!music} onClick={() => setPanel('music')}><Music className="h-5 w-5" /></EdBtn>
+          <EdBtn label="Countdown" active={!!countdown} onClick={() => setPanel('countdown')}><Hourglass className="h-5 w-5" /></EdBtn>
           {isVideo && (
             <EdBtn label={speed >= 4 ? `Time-lapse ${speed}x` : speed < 1 ? `Slow-mo ${speed}x` : `Speed ${speed}x`} active={speed !== 1} onClick={() => setSpeed((v) => SPEEDS[(SPEEDS.indexOf(v as (typeof SPEEDS)[number]) + 1) % SPEEDS.length])}>
               <span className="relative"><Gauge className="h-5 w-5" />{speed !== 1 && <span className="absolute -bottom-2 -right-3 rounded-full bg-ember-flame px-1 text-[9px] font-bold text-white">{speed < 1 ? `${speed}` : speed}x</span>}</span>
@@ -482,6 +488,27 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
             </button>
           ))}
         </div>
+      </Sheet>
+      <Sheet open={panel === 'countdown'} onClose={() => setPanel(null)} title="Countdown sticker">
+        <form
+          className="space-y-2 px-5 pb-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const at = new Date(cdAt);
+            if (!cdTitle.trim() || Number.isNaN(at.getTime())) return toast('Add a name and a date', 'error');
+            if (at.getTime() < Date.now()) return toast('Pick a time in the future', 'error');
+            setCountdown({ title: cdTitle.trim().slice(0, 40), at: at.toISOString() });
+            setPanel(null);
+          }}
+        >
+          <input value={cdTitle} onChange={(e) => setCdTitle(e.target.value)} maxLength={40} placeholder="e.g. Goa trip, Exams over, My birthday" aria-label="Countdown name" className="h-12 w-full rounded-2xl bg-[#F1F1F4] px-4 text-[15px] font-bold outline-none" />
+          <input type="datetime-local" value={cdAt} onChange={(e) => setCdAt(e.target.value)} aria-label="Countdown date and time" className="h-12 w-full rounded-2xl bg-[#F1F1F4] px-4 text-[15px] font-semibold outline-none" />
+          <div className="flex gap-2">
+            {countdown && <button type="button" onClick={() => { setCountdown(null); setPanel(null); }} className="h-12 flex-1 rounded-2xl bg-[#F1F1F4] text-[15px] font-extrabold">Remove</button>}
+            <button type="submit" className="h-12 flex-1 rounded-2xl bg-ink text-[15px] font-extrabold text-white">Add countdown</button>
+          </div>
+          <p className="text-xs text-ink-mute">Friends see it ticking live on your story or snap.</p>
+        </form>
       </Sheet>
       <Sheet open={panel === 'voice'} onClose={() => setPanel(null)} title="Voice changer">
         <div className="grid grid-cols-3 gap-2 px-4 pb-6">

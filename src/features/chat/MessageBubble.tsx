@@ -19,6 +19,7 @@ import { E2EText } from './extras/E2EText';
 import { ReactionGlyph } from './extras/AvatarReaction';
 import { TodoCard } from './more/TodoCard';
 import { LinkCard } from './more/LinkCard';
+import { PuzzleCard } from './more/PuzzleCard';
 
 export type Receipt = 'sending' | 'failed' | 'sent' | 'delivered' | 'seen' | null;
 
@@ -65,7 +66,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
 
   const avatarSticker = m.kind === 'image' && !!m.media_meta?.sticker;
   const isMedia = (m.kind === 'image' && !avatarSticker) || m.kind === 'video';
-  const isSticker = m.kind === 'sticker' || m.kind === 'snap' || m.kind === 'poll' || m.kind === 'location' || m.kind === 'hangout' || m.kind === 'game' || m.kind === 'todo' || avatarSticker;
+  const isSticker = m.kind === 'sticker' || m.kind === 'snap' || m.kind === 'poll' || m.kind === 'location' || m.kind === 'hangout' || m.kind === 'game' || m.kind === 'todo' || m.kind === 'puzzle' || avatarSticker;
   const deleted = !!m.deleted_at;
   const counts = p.reactions.reduce<Record<string, number>>((acc, r) => ((acc[r.emoji] = (acc[r.emoji] ?? 0) + 1), acc), {});
   const r = 'rounded-[20px]';
@@ -115,6 +116,8 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
               {p.translation && <p className="mt-1 whitespace-pre-wrap border-t border-current/20 pt-1 text-[14px] italic leading-snug opacity-90 [overflow-wrap:anywhere]">{p.translation}</p>}
               {!m.local && <LinkCard body={m.body} mine={mine} />}
             </>
+          ) : m.kind === 'puzzle' ? (
+            <PuzzleCard messageId={m.id} meta={m.media_meta ?? {}} senderId={m.sender_id} local={!!m.local} people={p.people ?? {}} />
           ) : m.kind === 'todo' ? (
             <TodoCard messageId={m.id} title={m.body ?? ''} local={!!m.local} people={p.people ?? {}} />
           ) : m.kind === 'snap' ? (

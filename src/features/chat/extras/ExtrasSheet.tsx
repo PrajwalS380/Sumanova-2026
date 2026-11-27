@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CalendarClock, ChevronLeft, Gamepad2, ListChecks, Loader2, MapPin, PartyPopper, Plus, Radio, Trash2, X } from 'lucide-react';
+import { PuzzleMaker } from '../more/PuzzleMaker';
+import { CalendarClock, ChevronLeft, Brain, Gamepad2, ListChecks, Loader2, MapPin, PartyPopper, Plus, Radio, Trash2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { PublicProfile } from '@/lib/chat/types';
 import { Avatar } from '@/components/Avatar';
@@ -11,7 +12,7 @@ import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
 import type { ComposerSend } from '../Composer';
 
-type View = 'menu' | 'poll' | 'live' | 'schedule' | 'hangout' | 'game' | 'todo';
+type View = 'menu' | 'poll' | 'live' | 'schedule' | 'hangout' | 'game' | 'todo' | 'puzzle';
 const LIVE = [
   { min: 15, label: '15 minutes' },
   { min: 60, label: '1 hour' },
@@ -128,7 +129,7 @@ export function ExtrasSheet({ open, onClose, onSend, conversationId, draft, onSc
     }
   }
 
-  const title = { menu: 'Share', poll: 'New poll', live: 'Share live location', schedule: 'Schedule a message', hangout: 'Plan a hangout', game: 'Play a game', todo: 'New to-do list' }[view];
+  const title = { menu: 'Share', poll: 'New poll', live: 'Share live location', schedule: 'Schedule a message', hangout: 'Plan a hangout', game: 'Play a game', todo: 'New to-do list', puzzle: 'Puzzle for the chat' }[view];
   return (
     <Sheet open={open} onClose={close} title={title}>
       <div className="px-4 pb-6">
@@ -144,6 +145,7 @@ export function ExtrasSheet({ open, onClose, onSend, conversationId, draft, onSc
             <Tile icon={<PartyPopper className="h-7 w-7 text-ember-rose" />} label="Hangout" sub="Plan, RSVP, check in" onClick={() => setView('hangout')} />
             <Tile icon={<Gamepad2 className="h-7 w-7" />} label="Game" sub="Play right in the chat" onClick={() => setView('game')} />
             <Tile icon={<ListChecks className="h-7 w-7 text-ember-jade" />} label="To-do list" sub="Everyone can tick items" onClick={() => setView('todo')} />
+            <Tile icon={<Brain className="h-7 w-7 text-ember-plum" />} label="Puzzle" sub="Trivia, words, draw & guess" onClick={() => setView('puzzle')} />
           </div>
         )}
 
@@ -160,6 +162,8 @@ export function ExtrasSheet({ open, onClose, onSend, conversationId, draft, onSc
             <button onClick={sendPoll} className="mt-1 h-12 w-full rounded-2xl bg-ember-flame text-[15px] font-extrabold text-white active:scale-[0.98]">Send poll</button>
           </div>
         )}
+
+        {view === 'puzzle' && <PuzzleMaker conversationId={conversationId} onDone={() => { haptic(10); close(); }} />}
 
         {view === 'todo' && (
           <form

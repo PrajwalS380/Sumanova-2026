@@ -51,6 +51,10 @@ const TrophiesScreen = lazy(() => import('@/features/profile/TrophiesScreen'));
 const SharedAlbumsScreen = lazy(() => import('@/features/reels/SharedAlbumsScreen'));
 const AvatarCamScreen = lazy(() => import('@/features/avatar/AvatarCamScreen'));
 const ProfilePhotoScreen = lazy(() => import('@/features/profile/ProfilePhotoScreen'));
+const RecapScreen = lazy(() => import('@/features/social/RecapScreen'));
+const QuizzesScreen = lazy(() => import('@/features/social/QuizScreens').then((m) => ({ default: m.QuizzesScreen })));
+const QuizNewScreen = lazy(() => import('@/features/social/QuizScreens').then((m) => ({ default: m.QuizNewScreen })));
+const QuizScreen = lazy(() => import('@/features/social/QuizScreens').then((m) => ({ default: m.QuizScreen })));
 
 /** Hooks the native shell (status bar, splash, Android back button) into routing. */
 function NativeBridge() {
@@ -164,6 +168,10 @@ export default function App() {
             <Route path="profile/photo" element={<ProfilePhotoScreen />} />
             <Route path="profile/code" element={<ProfileCodeScreen />} />
             <Route path="settings" element={<SettingsScreen />} />
+            <Route path="recap" element={<RecapScreen />} />
+            <Route path="quizzes" element={<QuizzesScreen />} />
+            <Route path="quiz/new" element={<QuizNewScreen />} />
+            <Route path="quiz/:id" element={<QuizScreen />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

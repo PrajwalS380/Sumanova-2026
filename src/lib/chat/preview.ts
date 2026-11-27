@@ -13,6 +13,7 @@ const KIND_LABEL: Record<MessageKind, string> = {
   hangout: 'Hangout',
   game: 'Game',
   todo: 'To-do list',
+  puzzle: 'Puzzle',
 };
 
 /** One-line preview for the chat list. */
@@ -20,7 +21,7 @@ export function previewText(c: Pick<ConversationSummary, 'last_body' | 'last_kin
   if (!c.last_kind) return 'Say hi 👋';
   if (c.last_deleted) return 'Message deleted';
   const mine = c.last_sender_id === me;
-  const text = (c.last_kind === 'text' && !c.last_body?.startsWith('e2e:')) || c.last_kind === 'system' ? (c.last_body ?? '') : c.last_kind === 'sticker' ? (c.last_body?.startsWith('nova:') ? 'Sticker' : `${c.last_body ?? ''} Sticker`) : c.last_kind === 'text' && c.last_body?.startsWith('e2e:') ? 'Encrypted message' : c.last_kind === 'hangout' ? `Hangout: ${c.last_body ?? ''}` : c.last_kind === 'game' ? `Game: ${c.last_body ?? ''}` : c.last_kind === 'poll' ? `Poll: ${c.last_body ?? ''}` : c.last_kind === 'todo' ? `To-do: ${c.last_body ?? ''}` : c.last_kind === 'location' ? (c.last_body ?? 'Location') : KIND_LABEL[c.last_kind];
+  const text = (c.last_kind === 'text' && !c.last_body?.startsWith('e2e:')) || c.last_kind === 'system' ? (c.last_body ?? '') : c.last_kind === 'sticker' ? (c.last_body?.startsWith('nova:') ? 'Sticker' : `${c.last_body ?? ''} Sticker`) : c.last_kind === 'text' && c.last_body?.startsWith('e2e:') ? 'Encrypted message' : c.last_kind === 'hangout' ? `Hangout: ${c.last_body ?? ''}` : c.last_kind === 'game' ? `Game: ${c.last_body ?? ''}` : c.last_kind === 'poll' ? `Poll: ${c.last_body ?? ''}` : c.last_kind === 'todo' ? `To-do: ${c.last_body ?? ''}` : c.last_kind === 'puzzle' ? `🧩 ${c.last_body ?? 'Puzzle'}` : c.last_kind === 'location' ? (c.last_body ?? 'Location') : KIND_LABEL[c.last_kind];
   if (c.last_kind === 'system') return text;
   return mine ? `You: ${text}` : text;
 }

@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import { DailyQuestionCard } from '@/features/social/DailyQuestionCard';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -92,6 +93,8 @@ export default function StoriesScreen() {
           </div>
           {rings !== null && friends.length === 0 && <p className="px-4 pb-2 text-sm text-ink-mute">No new stories from friends right now.</p>}
         </section>
+
+        <DailyQuestionCard />
 
         <section className="pt-5">
           <h2 className="px-1 text-[17px] font-extrabold">For you</h2>

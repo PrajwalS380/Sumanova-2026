@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { CountdownChip, isCountdown, type Countdown } from '@/features/social/CountdownChip';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { Loader2, X } from 'lucide-react';
@@ -100,6 +101,7 @@ export function SnapViewer({ snapId, mode, onClose }: { snapId: string; mode: 'o
       )}
       {url && f.tint && snap?.kind === 'video' && <div className="pointer-events-none absolute inset-0" style={{ background: f.tint }} />}
       {overlay && <img src={overlay} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-contain" />}
+      {ready && isCountdown((snap?.media_meta as { countdown?: unknown })?.countdown) && <CountdownChip c={(snap!.media_meta as { countdown: Countdown }).countdown} />}
       <div className="absolute inset-x-3 top-0 pt-safe">
         <div className="h-1 overflow-hidden rounded-full bg-white/25">
           <div className="h-full rounded-full bg-white transition-[width] duration-100" style={{ width: `${(snap?.kind === 'image' && !snap.duration_seconds ? 0 : progress) * 100}%` }} />

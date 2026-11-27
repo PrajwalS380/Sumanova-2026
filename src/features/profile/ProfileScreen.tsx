@@ -181,6 +181,17 @@ export default function ProfileScreen() {
           </span>
           <ChevronRight className="h-[18px] w-[18px] text-ink-faint" />
         </Link>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <Link to="/recap" className={cn(tile, 'bg-[#FF4F9A] text-white')}>
+            <span className="block font-display text-2xl">{new Date().getFullYear()}</span>
+            <span className="block text-sm font-extrabold">Your year recap</span>
+          </Link>
+          <Link to="/quizzes" className={cn(tile, 'bg-[#111111] text-white')}>
+            <span className="block font-display text-2xl">?!</span>
+            <span className="block text-sm font-extrabold">Friend quizzes</span>
+          </Link>
+        </div>
       </div>
     </div>
   );
