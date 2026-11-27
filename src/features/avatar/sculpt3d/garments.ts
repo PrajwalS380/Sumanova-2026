@@ -1,6 +1,6 @@
 import type * as THREE from 'three';
 import type { BodyP } from '../look/face';
-import { B, armBlend, bodyPrims, type Joints, type Region } from './anatomy';
+import { B, REST_ARM, armBlend, bodyPrims, softenArmpits, type Joints, type Region } from './anatomy';
 import { Field, loft, type Part, type Prim, type V3 } from './sdf';
 import { GeoCache, meshField } from './mesh';
 import { jointsFor } from './rig';
@@ -62,7 +62,7 @@ function frontZ(J: Joints, y: number, off: number) {
 function meshMain(J: Joints, parts: Part[], skinTau = 0.025) {
   const f = new Field(parts, 0.03);
   // lofted skirts / coats and fold displacement change faster than a true distance: cull conservatively
-  return meshField(f, { cell: CELL, skin: skinTau, uv: clothUV(J), lipschitz: 1.8 });
+  return softenArmpits(meshField(f, { cell: CELL, skin: skinTau, uv: clothUV(J), lipschitz: 1.8 }), J);
 }
 function meshTrim(prims: Prim[], cell = TRIM_CELL, extra?: Partial<Part>) {
   const f = new Field([{ prims, ...extra }], 0.012, 0.05);
@@ -153,7 +153,10 @@ function buildTop(J: Joints, cut: string, layer: 0 | 1, under?: string): Garment
   if (sp.boxy || below?.boxy) {
     // roomy: a straight-hanging block over the ribs instead of following the waist
     const W = J.bp.width;
-    trunk.push({ t: 'ellipsoid', c: [0, 1.25, 0.005], r: [(0.2 + ease) * W, 0.33, 0.135 + ease + J.bp.belly * 0.05], bone: B.chest, k: 0.08, tag: 1 });
+    // kept inside the arms (they hang a little away from the body): a block wider than the armpit
+    // would fuse with the sleeves and stretch into a web when the arms lift
+    const inner = J.sx + 0.008 + 0.282 * Math.sin(REST_ARM) - J.r.upperArm - sEase - 0.018;
+    trunk.push({ t: 'ellipsoid', c: [0, 1.2, 0.005], r: [Math.min((0.2 + ease) * W, inner), 0.3, 0.135 + ease + J.bp.belly * 0.05], bone: B.chest, k: 0.08, tag: 1 });
   }
   // the hem drapes over whatever trousers are worn (the widest hips + thighs), never under them
   if (sp.hem < 1.06) trunk.push(...bodyPrims(J, Math.max(ease, 0.042) + (layer ? 0.016 : 0), ['thigh']).map((p) => ({ ...p, k: 0.06 })));

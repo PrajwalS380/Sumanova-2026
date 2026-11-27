@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { BodyP } from '../look/face';
-import { BONE_COUNT, PARENT, B, bodyParts, footParts, handParts, joints, fingerBone, nailPrims, type Joints } from './anatomy';
+import { BONE_COUNT, PARENT, B, softenArmpits, bodyParts, footParts, handParts, joints, fingerBone, nailPrims, type Joints } from './anatomy';
 import { Field } from './sdf';
 import { GeoCache, meshField } from './mesh';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -41,7 +41,7 @@ export function bodyGeometry(bp: BodyP): THREE.BufferGeometry {
   return bodyGeo.get(bodyKey(bp), () => {
     const J = jointsFor(bp);
     const f = new Field(bodyParts(J), 0.04);
-    return meshField(f, { cell: 0.0105, skin: 0.025 });
+    return softenArmpits(meshField(f, { cell: 0.0105, skin: 0.025 }), J);
   });
 }
 

@@ -198,7 +198,14 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
       ],
     );
     const ext: V3 = [0.22 * Math.max(sh, hp) * W + bl * 0.04 + I + 0.02, (hi - lo) / 2 + 0.01, 0.16 + bl * 0.08 + I];
-    P.push({ t: 'fn', f: inf ? (x, y, z) => f(x, y, z) - I : f, c: [0, (lo + hi) / 2, 0], ext, bone: B.chest, k: 0.05, tag: tagBase + 1 });
+    // clothing ease stays off the sides at armpit height: a garment wider than the armpit would fuse
+    // with its sleeves and stretch into a web when the arms lift
+    const pit = (x: number, y: number) => {
+      const ty = Math.max(0, 1 - Math.abs(y - 1.47) / 0.13);
+      const tx = Math.min(1, Math.max(0, (Math.abs(x) - 0.1) / 0.06));
+      return ty * ty * (3 - 2 * ty) * tx;
+    };
+    P.push({ t: 'fn', f: inf ? (x, y, z) => f(x, y, z) - I * (1 - 0.85 * pit(x, y)) : f, c: [0, (lo + hi) / 2, 0], ext, bone: B.chest, k: 0.05, tag: tagBase + 1 });
     // lower trunk follows the pelvis (skin weights)
     P.push({ t: 'ellipsoid', c: [0, 1.04, -0.01], r: [0.11 * hp * W + I, 0.08 + I, 0.07 + I], bone: B.pelvis, k: 0.06, tag: tagBase + 13 });
   }
@@ -440,4 +447,40 @@ export function footParts(J: Joints, side: -1 | 1): Part[] {
     });
   }
   return parts;
+}
+
+/**
+ * Armpit skinning: blend the upper-arm and chest bones across the armpit (like a hand-rigged
+ * character), so lifting an arm stretches the side smoothly instead of tearing a web between
+ * arm-owned and chest-owned vertices. Works on any skinned geometry (skin, tops, jackets).
+ */
+export function softenArmpits(geo: import('three').BufferGeometry, J: Joints) {
+  const P = geo.getAttribute('position');
+  const I = geo.getAttribute('skinIndex');
+  const W = geo.getAttribute('skinWeight');
+  if (!P || !I || !W) return geo;
+  const sm = (a: number, b: number, x: number) => {
+    const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    return t * t * (3 - 2 * t);
+  };
+  const x0 = J.sx - 0.075; // where the side of the chest turns into the arm
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), y = P.getY(i);
+    const ax = Math.abs(x);
+    // armpit band: from just below the shoulder down the upper ribs
+    const band = sm(1.28, 1.38, y) * (1 - sm(1.55, 1.64, y));
+    if (band <= 0 || ax < x0 - 0.09 || ax > J.sx + 0.08) continue;
+    const arm = x < 0 ? B.upperArmL : B.upperArmR;
+    const b0 = I.getX(i);
+    if (b0 !== arm && b0 !== B.chest && b0 !== B.pelvis) continue;
+    // how much of the arm's motion this vertex takes: none on the chest, all on the arm
+    const tArm = sm(x0 - 0.06, x0 + 0.06, ax);
+    const own = b0 === arm ? 1 : 0;
+    const w = own + (tArm - own) * band;
+    I.setXYZW(i, arm, B.chest, 0, 0);
+    W.setXYZW(i, w, 1 - w, 0, 0);
+  }
+  I.needsUpdate = true;
+  W.needsUpdate = true;
+  return geo;
 }
