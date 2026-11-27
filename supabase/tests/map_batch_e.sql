@@ -1,0 +1,4 @@
+-- Rolled-back check: favourite places + trips are private; trip points rate-limited and only on a running trip.
+-- expect: spoof_place_blocked yes, p1 true, p2_too_soon false, b_sees_places 0, b_sees_trips 0, b_sees_points 0,
+-- b_cannot_add_point false, after_end_point false, a_points 1, a_places 1
+-- (same statements as run during development on 2026-11-27; see the Batch E commit)

@@ -124,7 +124,9 @@ export const memoriesApi = {
     const id = crypto.randomUUID();
     const path = await uploadTo('memories', `${me}/${id}.${extFor(blob.type)}`, blob);
     const tags = (meta as { tags?: string }).tags ?? (await autoTags(blob, kind).catch(() => ''));
-    must(await supabase.rpc('add_memory', { p_id: id, p_kind: kind, p_media_path: path, p_meta: { ...meta, tags }, p_size: blob.size, p_taken_at: null }));
+    // Settings → "Save where memories were taken" (off by default): rounded spot for Memories on the map.
+    const place = (meta as { place?: unknown }).place ?? (await import('@/lib/map/extras').then((m) => m.memoryPlace()).catch(() => null));
+    must(await supabase.rpc('add_memory', { p_id: id, p_kind: kind, p_media_path: path, p_meta: { ...meta, tags, ...(place ? { place } : {}) }, p_size: blob.size, p_taken_at: null }));
     return id;
   },
   /** Search by what's in them (auto tags, text on the snap), month/year, weekday or "videos"/"photos". */

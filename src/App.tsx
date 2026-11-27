@@ -81,6 +81,13 @@ function NativeBridge() {
   useEffect(() => {
     if (uid) liveShare.resume(uid);
   }, [uid]);
+  // Trip mode (Map → My map): saves the route about once a minute while the app is open.
+  useEffect(() => {
+    if (!uid) return;
+    let stop: (() => void) | undefined;
+    void import('@/lib/map/extras').then((m) => (stop = m.startTripRecorder()));
+    return () => stop?.();
+  }, [uid]);
   // Publish this device's secret-chat key (end-to-end encryption) once.
   useEffect(() => {
     if (uid) void import('@/lib/e2e').then((m) => m.ensureMyKey(uid)).catch(() => undefined);

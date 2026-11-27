@@ -1,4 +1,5 @@
 import { MeButton } from '@/components/MeButton';
+import { MyMap } from './MyMap';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
@@ -391,10 +392,11 @@ export default function MapScreen() {
         <span className="pointer-events-auto"><MeButton size={44} className="rounded-2xl" /></span>
         <button onClick={() => setFinder(true)} aria-label="Find a friend on the map" className={cn(WHITE, 'pointer-events-auto')}><Search className="h-5 w-5" /></button>
         <div className="flex flex-1 justify-center">
-          <span className="pointer-events-auto rounded-2xl bg-white px-4 py-[11px] text-sm font-extrabold shadow-[0_8px_20px_-12px_rgba(17,17,17,0.5)]">
+          <span className="pointer-events-auto whitespace-nowrap rounded-2xl bg-white px-3 py-[11px] text-sm font-extrabold shadow-[0_8px_20px_-12px_rgba(17,17,17,0.5)]">
             {sharing ? `Sharing · ${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'Ghost mode'}
           </span>
         </div>
+        <span className="pointer-events-auto"><MyMap map={map} buttonClass={WHITE} onOpenMemory={() => navigate('/memories')} /></span>
         <button onClick={() => setLayersOpen(true)} aria-label="Map layers" className={cn(WHITE, 'pointer-events-auto')}><Layers className="h-5 w-5" /></button>
         <button onClick={() => setSheet(true)} aria-label="Location settings" className={cn(WHITE, 'pointer-events-auto')}><Sun className="h-5 w-5" /></button>
       </header>
