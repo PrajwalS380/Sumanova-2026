@@ -2,7 +2,9 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { MeButton } from '@/components/MeButton';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Check, UserPlus, CameraOff, Images, ImagePlus, Layers, LayoutGrid, Loader2, Moon, RefreshCw, ScanFace, Search, Settings2, Smile, SwitchCamera, Timer, Zap, ZapOff } from 'lucide-react';
+import { Bell, Check, UserPlus, CameraOff, Grid2x2, Images, ImagePlus, Layers, LayoutGrid, Loader2, Moon, PictureInPicture2, RefreshCw, ScanFace, Search, Settings2, Smile, SwitchCamera, Timer, X, Zap, ZapOff } from 'lucide-react';
+import { COLLAGES, composeCollage, composeDual, type CollageLayout } from './collage';
+import { hasCustomBackdrop, setCustomBackdrop } from './frameLenses';
 import { ALL_LENSES } from './allLenses';
 import { LensBrowser } from './LensBrowser';
 import { NovaEmoji } from '@/components/emoji/NovaEmoji';
@@ -38,6 +40,12 @@ export default function CameraScreen() {
   const [screenFlash, setScreenFlash] = useState(false);
   const [flashing, setFlashing] = useState(false);
   const [multi, setMulti] = useState(false);
+  // Collage (several photos into one) and dual camera (back + selfie in one picture).
+  const [collage, setCollage] = useState<{ layout: CollageLayout; shots: Blob[] } | null>(null);
+  const [collagePick, setCollagePick] = useState(false);
+  const [dual, setDual] = useState<{ first: Blob | null; facing: 'user' | 'environment' } | null>(null);
+  const [, setBgTick] = useState(0);
+  const bgFile = useRef<HTMLInputElement>(null);
   const lens = useLens(videoRef, overlayRef, lensId, cam.facing === 'user');
   const recorder = useRecorder(() => {
     const raw = cam.stream();
@@ -109,8 +117,52 @@ export default function CameraScreen() {
     setFlashFx(true);
     setTimeout(() => setFlashFx(false), 180);
     if (!blob) return toast('Couldn’t capture — try again', 'error');
+    if (collage) {
+      const shots = [...collage.shots, blob];
+      if (shots.length < collage.layout.cells.length) return setCollage({ ...collage, shots });
+      setCollage(null);
+      try {
+        return setCaptured({ blob: await composeCollage(shots, collage.layout), kind: 'image', filter: 'none' });
+      } catch (e) {
+        return toast((e as Error).message, 'error');
+      }
+    }
+    if (dual) {
+      if (!dual.first) {
+        // first side done → switch cameras; the second shot fires automatically
+        setDual({ first: blob, facing: cam.facing as 'user' | 'environment' });
+        cam.flip();
+        return;
+      }
+      const [back, front] = dual.facing === 'environment' ? [dual.first, blob] : [blob, dual.first];
+      setDual(null);
+      try {
+        return setCaptured({ blob: await composeDual(back, front), kind: 'image', filter: 'none' });
+      } catch (e) {
+        return toast((e as Error).message, 'error');
+      }
+    }
     setCaptured({ blob, kind: 'image', filter: 'none' });
   }
+
+  // Dual camera: once the other camera is live, count down and take the second picture.
+  useEffect(() => {
+    if (!dual?.first || cam.status !== 'live' || cam.facing === dual.facing) return;
+    let alive = true;
+    void (async () => {
+      await new Promise((r) => setTimeout(r, 700));
+      for (let s = 2; s > 0 && alive; s--) {
+        setCountdown(s);
+        await new Promise((r) => setTimeout(r, 800));
+      }
+      setCountdown(0);
+      if (alive) void takePhoto();
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dual?.first, cam.status, cam.facing]);
 
   async function finishRecording() {
     const out = await recorder.stop();
@@ -232,6 +284,14 @@ export default function CameraScreen() {
         <button onClick={() => { haptic(6); setMulti((v) => !v); }} disabled={recorder.recording} aria-label={multi ? 'Multi-clip off' : 'Multi-clip on: hold, let go, hold again'} aria-pressed={multi} className={cn(RAIL, multi && 'text-ember-gold')}>
           <Layers className="h-[22px] w-[22px]" />
         </button>
+        <button onClick={() => { haptic(6); if (collage) setCollage(null); else { setDual(null); setCollagePick(true); } }} disabled={recorder.recording} aria-label={collage ? 'Collage off' : 'Collage'} aria-pressed={!!collage} className={cn(RAIL, collage && 'text-ember-gold')}>
+          <Grid2x2 className="h-[22px] w-[22px]" />
+        </button>
+        {cam.hasMultiple && (
+          <button onClick={() => { haptic(6); setCollage(null); setDual((d) => (d ? null : { first: null, facing: cam.facing as 'user' | 'environment' })); }} disabled={recorder.recording} aria-label={dual ? 'Dual camera off' : 'Dual camera: back + selfie in one picture'} aria-pressed={!!dual} className={cn(RAIL, dual && 'text-ember-gold')}>
+            <PictureInPicture2 className="h-[22px] w-[22px]" />
+          </button>
+        )}
         <button onClick={() => { haptic(6); setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length]); }} aria-label={`Timer ${timer ? `${timer}s` : 'off'}`} aria-pressed={timer > 0} className={cn(RAIL, 'relative', timer > 0 && 'bg-white/30')}>
           <Timer className="h-[22px] w-[22px]" />
           {timer > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-ember-rose px-1 text-[9px] font-bold">{timer}</span>}
@@ -257,6 +317,44 @@ export default function CameraScreen() {
             {ALL_LENSES.map((l) => (
               <button key={l.id} onClick={() => { haptic(6); setLensId(l.id); }} aria-label={l.name} className={cn('grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl ring-2 transition-transform', lensId === l.id ? 'scale-110 bg-white/30 ring-white' : 'bg-black/45 ring-transparent')}><NovaEmoji id={l.icon} size={38} /></button>
             ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {(collage || dual || (lensId === 'bg-photo')) && (
+        <div className="absolute inset-x-0 top-[calc(var(--safe-top)+64px)] z-20 flex justify-center" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+          {collage ? (
+            <span className="flex items-center gap-2 rounded-full bg-black/60 py-1.5 pl-3.5 pr-1.5 text-xs font-extrabold text-white">
+              Collage · photo {Math.min(collage.shots.length + 1, collage.layout.cells.length)} of {collage.layout.cells.length}
+              <button onClick={() => setCollage(null)} aria-label="Cancel collage" className="grid h-6 w-6 place-items-center rounded-full bg-white/20"><X className="h-3.5 w-3.5" /></button>
+            </span>
+          ) : dual ? (
+            <span className="flex items-center gap-2 rounded-full bg-black/60 py-1.5 pl-3.5 pr-1.5 text-xs font-extrabold text-white">
+              {dual.first ? 'Now the other camera…' : 'Dual camera · take the first photo'}
+              <button onClick={() => setDual(null)} aria-label="Cancel dual camera" className="grid h-6 w-6 place-items-center rounded-full bg-white/20"><X className="h-3.5 w-3.5" /></button>
+            </span>
+          ) : (
+            <button onClick={() => bgFile.current?.click()} className="rounded-full bg-white px-4 py-2 text-xs font-extrabold text-ink">{hasCustomBackdrop() ? 'Change background photo' : 'Choose a background photo'}</button>
+          )}
+          <input ref={bgFile} type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) { await setCustomBackdrop(f).catch(() => toast('Couldn’t read that photo', 'error')); setBgTick((n) => n + 1); } }} />
+        </div>
+      )}
+
+      <AnimatePresence>
+        {collagePick && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="absolute inset-x-3 bottom-[15.5rem] z-30 rounded-3xl bg-black/75 p-3 text-white" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+            <p className="px-1 pb-2 text-sm font-extrabold">Pick a collage</p>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              {COLLAGES.map((c) => (
+                <button key={c.id} onClick={() => { setCollage({ layout: c, shots: [] }); setCollagePick(false); }} aria-label={`Collage ${c.label}`} className="shrink-0 rounded-2xl bg-white/10 p-2 active:scale-95">
+                  <span className="relative block h-16 w-9">
+                    {c.cells.map(([x, y, w, h], i) => <span key={i} className="absolute rounded-[3px] bg-white/80" style={{ left: `${x * 100 + 3}%`, top: `${y * 100 + 2}%`, width: `${w * 100 - 6}%`, height: `${h * 100 - 4}%` }} />)}
+                  </span>
+                  <span className="mt-1 block text-[10px] font-bold">{c.label}</span>
+                </button>
+              ))}
+              <button onClick={() => setCollagePick(false)} className="shrink-0 self-center rounded-2xl px-3 text-sm font-bold text-white/70">Cancel</button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

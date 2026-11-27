@@ -16,6 +16,7 @@ import { NOVA_EMOJI_IDS, NOVA_GIFS, NOVA_STICKER_PREFIX, novaStickerBody } from 
 import { NovaSticker } from '@/components/emoji/NovaSticker';
 import { ExtrasSheet, ScheduledList } from './extras/ExtrasSheet';
 import { AvatarStickers } from './extras/AvatarStickers';
+import { TextStickerMaker } from './more/textSticker';
 import { liveShare, scheduleApi, type Scheduled } from '@/lib/chat/extras';
 import { useAuth } from '@/providers/AuthProvider';
 import { cn } from '@/lib/cn';
@@ -84,7 +85,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
   }
   const [text, setText] = useState('');
   const [stickers, setStickers] = useState(false);
-  const [tab, setTab] = useState<'nova' | 'gifs' | 'me' | 'emoji'>('nova');
+  const [tab, setTab] = useState<'nova' | 'gifs' | 'me' | 'emoji' | 'text'>('nova');
   const [extras, setExtras] = useState(false);
   const [scheduled, setScheduled] = useState<Scheduled[]>([]);
   const [showScheduled, setShowScheduled] = useState(false);
@@ -316,7 +317,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
 
       <Sheet open={stickers} onClose={() => setStickers(false)} title="Stickers">
         <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pb-3" role="tablist">
-          {([['nova', 'Nova'], ['gifs', 'Moving'], ['me', 'My avatar'], ['emoji', 'Emoji']] as const).map(([id, label]) => (
+          {([['nova', 'Nova'], ['gifs', 'Moving'], ['me', 'My avatar'], ['text', 'Text'], ['emoji', 'Emoji']] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={cn('shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold', tab === id ? 'bg-ink text-white' : 'bg-[#F1F1F4] text-ink')}>{label}</button>
           ))}
         </div>
@@ -340,6 +341,9 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
         )}
         {tab === 'me' && stickers && (
           <AvatarStickers onSend={(blob, d) => { haptic(8); onSend({ kind: 'image', blob, meta: { sticker: true, width: 320, height: 320, mime: 'image/png', size: blob.size }, body: null, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); void d; }} />
+        )}
+        {tab === 'text' && (
+          <TextStickerMaker onSend={(blob) => { haptic(8); onSend({ kind: 'image', blob, meta: { sticker: true, width: 512, height: 512, mime: 'image/png', size: blob.size }, body: null, replyTo: replyTo?.id ?? null }); setStickers(false); onCancel(); }} />
         )}
         {tab === 'emoji' && (
           <div className="grid grid-cols-6 gap-1 px-4 pb-6">

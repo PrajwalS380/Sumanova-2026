@@ -7,7 +7,7 @@ import { trackBuffer } from '@/lib/music/tracks';
  */
 export type Voice = 'none' | 'chipmunk' | 'deep' | 'robot' | 'echo' | 'radio';
 export interface VideoFx {
-  speed: number; // 0.5 | 1 | 2
+  speed: number; // 0.25 | 0.5 | 1 | 2 | 4 | 8 (4× / 8× = time-lapse)
   reverse: boolean;
   voice: Voice;
   music: string | null;

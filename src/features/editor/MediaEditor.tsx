@@ -23,6 +23,8 @@ import { SendSheet, type Prepared } from './SendSheet';
 
 type Tool = 'none' | 'text' | 'draw' | 'crop';
 const COLORS = ['#ffffff', '#0c0a09', '#ffb547', '#ff7a3d', '#ff6b6b', '#f4e9da', '#9fdc8f', '#c084b4', '#7cc4e8'];
+/** 1× · fast 2× · time-lapse 4× / 8× · slow-mo ½× / ¼× */
+const SPEEDS = [1, 2, 4, 8, 0.5, 0.25] as const;
 const DURATIONS = [3, 5, 10, 0] as const; // 0 = no limit
 const ASPECTS: { label: string; value: number | null }[] = [
   { label: 'Original', value: null },
@@ -267,8 +269,10 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
     // Words typed on the snap help Memories search find it later.
     const text = items.filter((i) => i.type === 'text').map((i) => i.content).join(' ').slice(0, 300);
     if (isVideo) {
-      const fx = { speed, reverse, voice, music };
+      // time-lapse (4× / 8×) drops the sped-up sound; music still plays
+      const fx = { speed, reverse, voice, music, ...(speed >= 4 ? { keepOriginalAudio: false } : {}) };
       let blob = captured.blob;
+      if (captured.duration && captured.duration / speed > 180) throw new Error('Slow-mo makes this clip over 3 minutes — trim it or pick ½×');
       if (hasFx(fx)) {
         setProgress(0);
         try {
@@ -365,8 +369,8 @@ export default function MediaEditor({ captured, onClose, extraMeta }: { captured
           <EdBtn label="Templates" active={!!template} onClick={() => setPanel('templates')}><LayoutTemplate className="h-5 w-5" /></EdBtn>
           <EdBtn label="Music" active={!!music} onClick={() => setPanel('music')}><Music className="h-5 w-5" /></EdBtn>
           {isVideo && (
-            <EdBtn label={`Speed ${speed}x`} active={speed !== 1} onClick={() => setSpeed((v) => (v === 1 ? 2 : v === 2 ? 0.5 : 1))}>
-              <span className="relative"><Gauge className="h-5 w-5" />{speed !== 1 && <span className="absolute -bottom-2 -right-3 rounded-full bg-ember-flame px-1 text-[9px] font-bold text-white">{speed}x</span>}</span>
+            <EdBtn label={speed >= 4 ? `Time-lapse ${speed}x` : speed < 1 ? `Slow-mo ${speed}x` : `Speed ${speed}x`} active={speed !== 1} onClick={() => setSpeed((v) => SPEEDS[(SPEEDS.indexOf(v as (typeof SPEEDS)[number]) + 1) % SPEEDS.length])}>
+              <span className="relative"><Gauge className="h-5 w-5" />{speed !== 1 && <span className="absolute -bottom-2 -right-3 rounded-full bg-ember-flame px-1 text-[9px] font-bold text-white">{speed < 1 ? `${speed}` : speed}x</span>}</span>
             </EdBtn>
           )}
           {isVideo && <EdBtn label={reverse ? 'Reverse on' : 'Reverse'} active={reverse} onClick={() => setReverse((v) => !v)}><Rewind className="h-5 w-5" /></EdBtn>}

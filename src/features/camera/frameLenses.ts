@@ -120,6 +120,29 @@ function backdrop(id: string, w: number, h: number) {
   return nc;
 }
 
+// ---------- your own photo as the background ----------
+let customBg: ImageBitmap | null = null;
+/** Set (or clear) the picture behind you for the "My photo" background lens. */
+export async function setCustomBackdrop(file: Blob | null) {
+  customBg?.close();
+  customBg = file ? await createImageBitmap(file) : null;
+  delete scratch['bg-custom'];
+}
+export const hasCustomBackdrop = () => !!customBg;
+function customBackdrop(w: number, h: number) {
+  const c = scratch['bg-custom'];
+  if (c && c.width === w && c.height === h) return c;
+  const nc = canvas('bg-custom', w, h);
+  const x = nc.getContext('2d')!;
+  if (customBg) {
+    // cover-fit
+    const s = Math.max(w / customBg.width, h / customBg.height);
+    const dw = customBg.width * s, dh = customBg.height * s;
+    x.drawImage(customBg, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  }
+  return nc;
+}
+
 function bgLens(id: string, name: string, icon: NovaEmojiId): FrameLens {
   return {
     id: `bg-${id}`, name, icon, category: 'Background', needs: ['selfie'],
@@ -164,6 +187,11 @@ const LIP_OUT = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 26
 const LIP_IN = [78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308, 415, 310, 311, 312, 13, 82, 81, 80, 191];
 const LID_L = [33, 246, 161, 160, 159, 158, 157, 173, 133];
 const LID_R = [263, 466, 388, 387, 386, 385, 384, 398, 362];
+const FACE_OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
+const EYE_L = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
+const EYE_R = [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466];
+const BROW_L = [70, 63, 105, 66, 107, 55, 65, 52, 53, 46];
+const BROW_R = [300, 293, 334, 296, 336, 285, 295, 282, 283, 276];
 function path(ctx: CanvasRenderingContext2D, f: NormalizedLandmark[], idx: number[], w: number, h: number, close = true) {
   idx.forEach((i, k) => (k ? ctx.lineTo(f[i].x * w, f[i].y * h) : ctx.moveTo(f[i].x * w, f[i].y * h)));
   if (close) ctx.closePath();
@@ -248,6 +276,44 @@ export const FRAME_LENSES: FrameLens[] = [
       ctx.drawImage(video, 0, 0, w, h);
       ctx.restore();
       if (person) ctx.drawImage(personLayer(video, person, w, h), 0, 0);
+    },
+  },
+  {
+    id: 'bg-photo', name: 'My photo behind me', icon: 'camera', category: 'Background', needs: ['selfie'],
+    frame({ ctx, video, w, h, person }) {
+      if (!person || !customBg) return void ctx.drawImage(video, 0, 0, w, h);
+      ctx.drawImage(customBackdrop(w, h), 0, 0);
+      ctx.drawImage(personLayer(video, person, w, h), 0, 0);
+    },
+  },
+  {
+    // Touch-up: smooths skin (soft blur blended inside the face outline, eyes / brows / lips kept
+    // sharp) and adds a little warmth and glow.
+    id: 'mu-touchup', name: 'Touch-up', icon: 'blush', category: 'Beauty', needs: ['face'],
+    frame({ ctx, video, w, h, faces }) {
+      ctx.drawImage(video, 0, 0, w, h);
+      if (!faces.length) return;
+      const soft = canvas('touchup', w, h);
+      const sx = soft.getContext('2d')!;
+      sx.globalCompositeOperation = 'copy';
+      sx.filter = `blur(${Math.max(2, Math.round(Math.max(w, h) / 220))}px) brightness(1.06) saturate(1.05)`;
+      sx.drawImage(video, 0, 0, w, h);
+      sx.filter = 'none';
+      sx.globalCompositeOperation = 'destination-in';
+      sx.fillStyle = '#000';
+      for (const f of faces) {
+        sx.beginPath(); path(sx, f, FACE_OVAL, w, h); sx.fill();
+      }
+      // keep features crisp
+      sx.globalCompositeOperation = 'destination-out';
+      for (const f of faces) {
+        for (const part of [EYE_L, EYE_R, BROW_L, BROW_R, LIP_OUT]) { sx.beginPath(); path(sx, f, part, w, h); sx.fill(); }
+      }
+      sx.globalCompositeOperation = 'source-over';
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.drawImage(soft, 0, 0);
+      ctx.restore();
     },
   },
   bgLens('beach', 'Sunset beach', 'flower'),
