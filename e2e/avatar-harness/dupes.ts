@@ -88,10 +88,19 @@ export async function showThumbs(slot: Slot, frame: ThumbFrame, ids: number[], c
     if (slot === 'bag') l.pose = 'celebrating';
     const ck = (['top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat'] as const).find((k) => k === slot);
     if (ck) l.color[ck] = color;
-    const url = await renderThumb(`show:${slot}:${id}:${color}:${frame}`, l, frame, slot !== 'hair');
+    // same as the studio cards: face features show on face categories
+    const skin = new URLSearchParams(location.search).get('skin');
+    if (skin) l.skin = '#' + skin;
+    const face = ['head', 'eyes', 'lashes', 'brows', 'nose', 'mouth', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce'].includes(slot);
+    if (slot === 'eyes') l.color.eyes = color ?? '#5a3a22';
+    if (slot === 'brows') l.color.brows = color ?? '#2a1d16';
+    if (slot === 'mouth') l.color.lips = color ?? '#b8676a';
+    if (slot === 'beard') l.color.beard = color ?? '#3b2618';
+    const size = Number(new URLSearchParams(location.search).get('size') ?? 192);
+    const url = await renderThumb(`show:${slot}:${id}:${color}:${frame}:${size}:${skin}`, l, frame, slot !== 'hair' && !face, size);
     const fig = document.createElement('figure');
-    fig.style.cssText = 'margin:0;width:192px;font:11px sans-serif;text-align:center;background:radial-gradient(circle at 50% 32%,#fff,#e3e8f6);border-radius:16px';
-    fig.innerHTML = `<img src="${url}" width="192" height="192"><figcaption>${id} ${list[id].name}</figcaption>`;
+    fig.style.cssText = `margin:0;width:${size}px;font:11px sans-serif;text-align:center;background:radial-gradient(circle at 50% 32%,#fff,#e3e8f6);border-radius:16px`;
+    fig.innerHTML = `<img src="${url}" width="${size}" height="${size}"><figcaption>${id} ${list[id].name}</figcaption>`;
     wrap.appendChild(fig);
   }
   document.title = 'done';

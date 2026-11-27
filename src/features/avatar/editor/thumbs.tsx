@@ -11,13 +11,15 @@ import { DEFAULT_LOOK, type Look } from '../look/config';
  * a time on a warm clay mannequin, and results are cached as image URLs, so
  * scrolling a 100-item grid never creates 100 GL contexts.
  */
-export type ThumbFrame = 'head' | 'face' | 'upper' | 'lower' | 'feet' | 'full' | 'fullroomy' | 'sticker' | 'seated' | 'bag' | 'dress';
+export type ThumbFrame = 'head' | 'face' | 'face34' | 'upper' | 'lower' | 'feet' | 'full' | 'fullroomy' | 'sticker' | 'seated' | 'bag' | 'dress';
 
 const SIZE = 192;
 // (framed for the longer-legged figure: the head sits ~0.06 higher)
 const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
-  head: { pos: [0.38, 2.16, 1.78], target: [0, 2.08, 0], fov: 30 },
-  face: { pos: [0, 2.04, 0.95], target: [0, 2.0, 0], fov: 30 },
+  head: { pos: [0.36, 2.1, 1.98], target: [0, 2.03, 0], fov: 30 },
+  face: { pos: [0, 1.99, 1.3], target: [0, 1.955, 0], fov: 30 },
+  /** three-quarter face: shows a nose's profile (hump, hook, tip angle) */
+  face34: { pos: [0.62, 1.98, 1.12], target: [0.0, 1.95, 0.2], fov: 30 },
   upper: { pos: [0, 1.66, 2.7], target: [0, 1.52, 0], fov: 30 },
   lower: { pos: [0, 0.66, 2.9], target: [0, 0.66, 0], fov: 30 },
   feet: { pos: [0.55, 0.3, 1.05], target: [0, 0.12, 0.05], fov: 30 },
@@ -43,7 +45,7 @@ export function mannequin(): Look {
   l.pick.bottom = null;
   l.pick.shoes = null;
   l.pick.lashes = null;
-  l.color = { eyes: '#8a8078', brows: '#5a4e45', lips: '#d8c4b4' };
+  l.color = { eyes: '#8a8078', brows: '#5a4e45', lips: '#c4847c' };
   l.expression = 'neutral';
   return l;
 }
@@ -55,7 +57,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v30';
+const STORE = 'snv-thumbs-v31';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {
@@ -135,7 +137,7 @@ async function pump() {
         root!.configure({ size: { width: job.size, height: job.size, top: 0, left: 0 } });
       }
       // every sculpted piece must be ready before the single still frame is taken
-      await prepareLook(job.look, job.frame === 'head' || job.frame === 'face' ? 'head' : undefined, job.faceless);
+      await prepareLook(job.look, job.frame === 'head' || job.frame === 'face' || job.frame === 'face34' ? 'head' : undefined, job.faceless);
       const url = await new Promise<string>((resolve) => {
         const onReady = (gl: THREE.WebGLRenderer, scene: THREE.Scene, cam: THREE.Camera) => {
           gl.setClearColor(0x000000, 0);
@@ -150,7 +152,7 @@ async function pump() {
             0.85,
           );
         };
-        const headOnly = job.frame === 'head' || job.frame === 'face';
+        const headOnly = job.frame === 'head' || job.frame === 'face' || job.frame === 'face34';
         root!.render(
           <>
             <hemisphereLight args={['#fff6ec', '#6a5446', 1.0]} />

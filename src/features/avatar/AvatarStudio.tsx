@@ -331,7 +331,7 @@ const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, ti
       if (slot === 'hair') l.color.hairTip = tip;
       if (slot === 'eyes') l.color.eyes = color ?? '#5a3a22';
       if (slot === 'brows') l.color.brows = color ?? '#2a1d16';
-      if (slot === 'mouth') l.color.lips = color ?? '#c98a80';
+      if (slot === 'mouth') l.color.lips = color ?? '#b8676a';
       const ck = (['top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat'] as const).find((k) => k === slot);
       if (ck) l.color[ck] = color;
       return l;

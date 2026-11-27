@@ -170,30 +170,45 @@ function Eyes({ f, ex, ey, er }: { f: FaceProps; ex: number; ey: number; er: num
       g.rotation.x = open + (1.35 - open) * blink;
     });
   });
+  const peak = p.peak ?? 0;
+  const lowTilt = p.lowTilt ?? 0;
+  const fold = p.fold ?? (p.crease > 0 ? 1 : 0);
+  const long = p.long ?? 1;
+  const pupil = 0.27 * (p.pupil ?? 1);
+  const irisA = Math.min(1.1, p.iris * 1.32);
+  const rim = mix(f.colors.eyes, '#000000', 0.35 + 0.35 * (p.ring ?? 0.5));
+  const inner = mix(f.colors.eyes, '#fff4d8', 0.28);
+  const lidEdge = mix(skin, '#6a3a2c', 0.3);
   return (
     <>
+      {(p.deep ?? 0) > 0 && <DeepSet h={h} ex={ex} ey={ey} er={er} amount={p.deep!} />}
       {[-1, 1].map((s, i) => {
         const z = surfaceZ(h, s * ex, ey) - er * 0.5;
         const closed = closedEye(s);
         return (
           <group key={s}>
-            <group position={[s * ex, ey, z]} rotation={[0, s * 0.2, s * -p.tilt]} scale={[1.06, p.squash * 0.9, 1]}>
+            <group position={[s * ex, ey, z]} rotation={[0, s * 0.2, s * -p.tilt]} scale={[1.06 * long, p.squash * 0.9, 1]}>
               {!closed && (
                 <>
                   <mesh>
                     <sphereGeometry args={[er, 32, 24]} />
                     <meshPhysicalMaterial color="#fbf8f4" roughness={0.2} clearcoat={1} clearcoatRoughness={0.08} emissive="#ffffff" emissiveIntensity={0.12} />
                   </mesh>
+                  {/* iris: dark limbal rim, coloured iris, lighter ring round the pupil, pupil */}
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <sphereGeometry args={[er * 1.004, 32, 8, 0, Math.PI * 2, 0, Math.min(1.1, p.iris * 1.32) + 0.08]} />
-                    <meshStandardMaterial color={mix(f.colors.eyes, '#000000', 0.6)} roughness={0.3} />
+                    <sphereGeometry args={[er * 1.004, 32, 8, 0, Math.PI * 2, 0, irisA + 0.08]} />
+                    <meshStandardMaterial color={rim} roughness={0.3} />
                   </mesh>
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <sphereGeometry args={[er * 1.007, 32, 8, 0, Math.PI * 2, 0, Math.min(1.1, p.iris * 1.32)]} />
+                    <sphereGeometry args={[er * 1.007, 32, 8, 0, Math.PI * 2, 0, irisA]} />
                     <meshPhysicalMaterial color={f.colors.eyes} roughness={0.25} clearcoat={1} emissive={f.colors.eyes} emissiveIntensity={0.12} />
                   </mesh>
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <sphereGeometry args={[er * 1.01, 24, 6, 0, Math.PI * 2, 0, e === 'surprised' ? 0.2 : 0.27]} />
+                    <sphereGeometry args={[er * 1.0085, 32, 6, 0, Math.PI * 2, 0, pupil + (irisA - pupil) * 0.45]} />
+                    <meshStandardMaterial color={inner} roughness={0.3} transparent opacity={0.55} />
+                  </mesh>
+                  <mesh rotation={[Math.PI / 2, 0, 0]}>
+                    <sphereGeometry args={[er * 1.01, 24, 6, 0, Math.PI * 2, 0, e === 'surprised' ? pupil * 0.75 : pupil]} />
                     <meshStandardMaterial color="#0d0907" roughness={0.1} />
                   </mesh>
                   <mesh position={[er * 0.3, er * 0.32, er * 0.93]}>
@@ -204,38 +219,92 @@ function Eyes({ f, ex, ey, er }: { f: FaceProps; ex: number; ey: number; er: num
                     <sphereGeometry args={[er * 0.07, 8, 6]} />
                     <meshBasicMaterial color="#ffffff" />
                   </mesh>
-                  <mesh rotation={[lower, 0, 0]}>
-                    <sphereGeometry args={[er * 1.06, 32, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
-                    <SkinMat color={skin} />
+                  {/* pink inner corner */}
+                  <mesh position={[-s * er * 0.93, -er * 0.06, er * 0.28]} scale={[0.8, 1, 0.7]}>
+                    <sphereGeometry args={[er * 0.13, 10, 8]} />
+                    <meshStandardMaterial color={mix(skin, '#d97f7a', 0.5)} roughness={0.35} />
                   </mesh>
-                  {f.lashes && f.lashes.bottom > 0 && <LowerLashes er={er} s={s} p={f.lashes} color={liner} lower={lower} />}
+                  {/* lower lid (slanted per shape) with a soft lash-line edge */}
+                  <group rotation={[0, 0, s * lowTilt * 0.4]}>
+                    <group rotation={[lower, 0, 0]}>
+                      <mesh>
+                        <sphereGeometry args={[er * 1.06, 32, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
+                        <SkinMat color={skin} />
+                      </mesh>
+                      <mesh rotation={[Math.PI / 2, 0, 0]}>
+                        <torusGeometry args={[er * 1.062, 0.0032, 6, 32, Math.PI]} />
+                        <meshStandardMaterial color={lidEdge} roughness={0.7} transparent opacity={0.7} />
+                      </mesh>
+                    </group>
+                    {f.lashes && f.lashes.bottom > 0 && <LowerLashes er={er} s={s} p={f.lashes} color={liner} lower={lower} />}
+                  </group>
                 </>
               )}
-              <group ref={(g) => (upper.current[i] = g)} rotation={[closed ? 1.35 : open, 0, 0]}>
-                <mesh>
-                  <sphereGeometry args={[er * 1.07, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-                  <SkinMat color={lid} />
-                </mesh>
-                {!closed && (
-                  <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <torusGeometry args={[er * 1.075, 0.0105 + (f.lashes?.liner ?? 0.2) * 0.005, 8, 32, Math.PI]} />
-                    <meshStandardMaterial color={liner} roughness={0.6} />
+              {/* upper lid: the edge peaks toward the inner / outer corner per shape */}
+              <group rotation={[0, 0, s * peak * 0.22]}>
+                <group ref={(g) => (upper.current[i] = g)} rotation={[closed ? 1.35 : open, 0, 0]}>
+                  <mesh>
+                    <sphereGeometry args={[er * 1.07, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+                    <SkinMat color={lid} />
                   </mesh>
-                )}
-                {!closed && f.lashes && <UpperLashes er={er} s={s} p={f.lashes} color={liner} />}
+                  {!closed && (
+                    <mesh rotation={[Math.PI / 2, 0, 0]}>
+                      <torusGeometry args={[er * 1.075, 0.0062 + (f.lashes?.liner ?? 0.2) * 0.006, 8, 32, Math.PI]} />
+                      <meshStandardMaterial color={liner} roughness={0.6} />
+                    </mesh>
+                  )}
+                  {!closed && f.lashes && <UpperLashes er={er} s={s} p={f.lashes} color={liner} />}
+                </group>
               </group>
-              {/* crease line above the lid */}
-              {!closed && p.crease > 0 && (
-                <mesh position={[0, er * 0.12, 0]} rotation={[open - 0.45, 0, 0]}>
+              {/* lid fold: a crease line, or a hooded skin overhang; monolids have neither */}
+              {!closed && fold === 1 && (
+                <mesh position={[0, er * 0.12, 0]} rotation={[open - 0.45, 0, s * peak * 0.15]}>
                   <torusGeometry args={[er * 1.16, 0.0028, 4, 24, Math.PI]} />
                   <meshStandardMaterial color={mix(skin, '#5a3020', 0.35)} transparent opacity={0.55} />
                 </mesh>
+              )}
+              {!closed && fold === 2 && (
+                <group rotation={[open - 0.55, 0, s * peak * 0.15]}>
+                  <mesh position={[0, er * 0.06, 0]}>
+                    <sphereGeometry args={[er * 1.13, 32, 10, Math.PI * 0.08, Math.PI * 0.84, 0, Math.PI * 0.42]} />
+                    <SkinMat color={skin} />
+                  </mesh>
+                  <mesh position={[0, er * 0.06, 0]} rotation={[Math.PI / 2 - Math.PI * 0.42 + Math.PI / 2, 0, 0]}>
+                    <torusGeometry args={[er * 1.13 * Math.sin(Math.PI * 0.42), 0.0026, 4, 24, Math.PI]} />
+                    <meshStandardMaterial color={mix(skin, '#5a3020', 0.4)} transparent opacity={0.5} />
+                  </mesh>
+                </group>
               )}
             </group>
             {closed && <ClosedEye h={h} s={s} ex={ex} ey={ey} er={er} happy={e === 'laughing' || e === 'winking'} color={liner} />}
           </group>
         );
       })}
+    </>
+  );
+}
+
+/** Deep-set eyes: a soft shadow tucked under the brow bone. */
+function DeepSet({ h, ex, ey, er, amount }: { h: HeadShape; ex: number; ey: number; er: number; amount: number }) {
+  const tex = useMemo(() => softDot(), []);
+  const geos = useMemo(
+    () =>
+      [-1, 1].map((s) => {
+        const r = er * 1.35;
+        const g = surfaceShape(h, new THREE.Shape().absellipse(0, 0, r, r * 0.62, 0, Math.PI * 2, false, 0), s * ex, ey + er * 0.55, 0.0015);
+        const uv = g.attributes.uv;
+        for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) / (2 * r) + 0.5, uv.getY(k) / (1.24 * r) + 0.5);
+        return g;
+      }),
+    [h, ex, ey, er],
+  );
+  return (
+    <>
+      {geos.map((g, i) => (
+        <mesh key={i} geometry={g} renderOrder={1}>
+          <meshBasicMaterial color="#5a3424" map={tex} transparent opacity={0.22 * amount} depthWrite={false} />
+        </mesh>
+      ))}
     </>
   );
 }
@@ -344,28 +413,48 @@ function Brows({ h, p, color, ex, ey, er, e, pierce }: { h: HeadShape; p: BrowP;
         pts.push(new THREE.Vector3(x, y, surfaceZ(h, x, y) + 0.006));
       }
       const thick = 0.012 * p.thick;
-      const radius = (t: number) => thick * (p.inner * (1 - t) + 0.55 * t) * (t < 0.06 ? 0.7 : 1);
+      // soft base: blunt, full head near the nose, tapering to a fine tail
+      const radius = (t: number) => thick * (p.inner * (1 - t) + 0.45 * t) * (t < 0.06 ? 0.75 : 1) * (t > 0.9 ? 1 - (t - 0.9) * 4 : 1) * 0.82;
       if (p.slits > 0) {
         // split near the tail to leave clean slits
         const cut = (a: number, b: number) => pts.filter((_, i) => i / (n - 1) >= a && i / (n - 1) <= b);
         const ranges = p.slits === 1 ? [[0, 0.62], [0.74, 1]] : [[0, 0.5], [0.6, 0.72], [0.82, 1]];
         for (const [a, b] of ranges) {
           const seg = cut(a, b);
-          if (seg.length >= 2) out.push(taperTube(seg, { radius: (t) => radius(a + (b - a) * t), flat: 0.4, radial: 8, segments: 10, hint: faceOut }));
+          if (seg.length >= 2) out.push(taperTube(seg, { radius: (t) => radius(a + (b - a) * t), flat: 0.3, radial: 8, segments: 10, hint: faceOut }));
         }
       } else {
-        out.push(taperTube(pts, { radius, flat: 0.4, radial: 8, segments: 18, hint: faceOut }));
+        out.push(taperTube(pts, { radius, flat: 0.3, radial: 8, segments: 18, hint: faceOut }));
       }
-      if (p.feather > 0) {
-        for (let k = 0; k < 7; k++) {
-          const t = k / 7;
-          const base = pts[Math.min(n - 1, Math.round(t * (n - 1)))];
-          const tip = base.clone().add(new THREE.Vector3(s * 0.012, 0.012 + (1 - t) * 0.008, 0.002));
-          out.push(taperTube([base, tip], { radius: (q) => thick * 0.45 * (1 - q * 0.8), radial: 4, segments: 3 }));
-        }
+      // hair strokes on top: upright at the head, following the arch in the body, lying flat at the tail
+      const curve = new THREE.CatmullRomCurve3(pts);
+      let seed = 7 + Math.round(p.thick * 31 + p.arch * 900 + p.len * 13) + (s > 0 ? 101 : 0);
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      const count = Math.round((16 + 14 * p.thick) * p.len + p.feather * 12);
+      for (let k = 0; k < count; k++) {
+        const t = Math.min(0.97, Math.pow(rnd(), 0.9));
+        if (p.slits > 0 && ((p.slits === 1 && t > 0.58 && t < 0.78) || (p.slits === 2 && ((t > 0.46 && t < 0.64) || (t > 0.68 && t < 0.86))))) continue;
+        const base = curve.getPoint(t);
+        const tan = curve.getTangent(t);
+        const w = radius(t);
+        base.y += (rnd() * 2 - 1) * w * 0.85;
+        // direction: tangent rotated upward; steeper near the inner head and for feathered brows
+        const up = (t < 0.22 ? 0.95 - t * 2.6 : 0.24 - t * 0.28) + p.feather * 0.3 + (rnd() - 0.5) * 0.22;
+        const dir = new THREE.Vector3(tan.x * Math.cos(up) * (t < 0.22 ? 0.6 : 1), Math.abs(tan.x) * Math.sin(up) + tan.y, 0).normalize();
+        const len = (0.0065 + rnd() * 0.005) * (1 + p.feather * 0.45) * (0.85 + p.thick * 0.15) * (t > 0.85 ? 0.7 : 1);
+        const tip = base.clone().addScaledVector(dir, len);
+        // stay inside the brow's outline (feathered brows may brush a little past it)
+        const cy = curve.getPoint(Math.min(1, t + (tip.x - base.x) / Math.max(1e-4, Math.abs(xo - xi)) * Math.sign(xo - xi))).y;
+        tip.y = Math.min(tip.y, cy + w * (1 + p.feather * 0.6));
+        const mid = base.clone().lerp(tip, 0.5);
+        mid.z += 0.0012;
+        tip.z = surfaceZ(h, tip.x, tip.y) + 0.0045;
+        base.z = surfaceZ(h, base.x, base.y) + 0.0055;
+        out.push(taperTube([base, mid, tip], { radius: (q) => (0.0011 + p.thick * 0.0005) * (1 - q * 0.85), radial: 3, segments: 3 }));
       }
     }
-    return out;
+    // one draw call for both brows and all their strokes
+    return [mergeGeo(out)];
   }, [h, p, ex, ey, er, e]);
   return (
     <>
@@ -386,6 +475,7 @@ function Nose({ h, p, skin, y, pierce, sculpted }: { h: HeadShape; p: NoseP; ski
   const col = mix(skin, '#c06050', 0.04);
   const tipY = y + p.up * 0.008;
   return (
+    <>
     <group scale={1.18} position={[0, -y * 0.18, -z * 0.18]}>
       {!sculpted && (<>
       <mesh position={[0, tipY, z + 0.004]} rotation={[-p.up * 0.3, 0, 0]} scale={[0.034 * p.tipW, 0.032 * p.tipS, 0.042 * p.tipS]} castShadow>
@@ -407,6 +497,38 @@ function Nose({ h, p, skin, y, pierce, sculpted }: { h: HeadShape; p: NoseP; ski
       </>)}
       {pierce && <Jewelry zone="nose" p={pierce} nose={{ y, z, w: 0.026 * p.tipW * p.nostril }} />}
     </group>
+    {sculpted && <NoseShade h={h} p={p} y={y} skin={skin} />}
+    </>
+  );
+}
+
+/** Soft shading that makes the sculpted nose read: shadow under it and creases beside the wings. */
+function NoseShade({ h, p, y, skin }: { h: HeadShape; p: NoseP; y: number; skin: string }) {
+  const tex = useMemo(() => softDot(), []);
+  const parts = useMemo(() => {
+    const out: { g: THREE.BufferGeometry; o: number }[] = [];
+    const dot = (x: number, yy: number, rx: number, ry: number, o: number) => {
+      const g = surfaceShape(h, new THREE.Shape().absellipse(0, 0, rx, ry, 0, Math.PI * 2, false, 0), x, yy, 0.0012);
+      const uv = g.attributes.uv;
+      for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) / (2 * rx) + 0.5, uv.getY(k) / (2 * ry) + 0.5);
+      out.push({ g, o });
+    };
+    const S = 1.18;
+    const tipY = (y + p.up * 0.008 - (p.droop ?? 0) * 0.009) * S - y * 0.18;
+    const w = 0.027 * p.tipW * p.nostril * (1 + (p.flare ?? 0) * 0.18) * S;
+    dot(0, tipY - 0.034 * p.tipS, 0.036 * p.tipW, 0.016, 0.5);
+    for (const s of [-1, 1]) dot(s * (w + 0.014), y * S - y * 0.18 - 0.002, 0.012, 0.024, 0.42);
+    return out;
+  }, [h, p, y]);
+  const col = mix(skin, '#3a1a10', 0.55);
+  return (
+    <>
+      {parts.map(({ g, o }, i) => (
+        <mesh key={i} geometry={g} renderOrder={1}>
+          <meshBasicMaterial color={col} map={tex} transparent opacity={o} depthWrite={false} />
+        </mesh>
+      ))}
+    </>
   );
 }
 
@@ -473,7 +595,7 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
     const smirk = e === 'winking' ? 1 : 0;
     const k = 0.024 * smile + p.corner * 0.006;
     const ys = (t: number) => k * (t * t - 0.35) + smirk * 0.012 * (t + 1) * 0.5;
-    const upperT = 0.015 * p.upper, lowerT = 0.019 * p.lower;
+    const upperT = 0.0195 * p.upper, lowerT = 0.025 * p.lower;
     // upper lip with a cupid's bow
     const up = new THREE.Shape();
     const N = 16;
@@ -500,7 +622,9 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
       lo.lineTo(t * w * 0.9, ys(t) - lowerT * Math.sin(Math.PI * (t + 1) / 2) ** 0.8);
     }
     const line: [number, number][] = [-1, -0.6, -0.25, 0, 0.25, 0.6, 1].map((t) => [t * w, y + ys(t)]);
-    return { open: false, upper: surfaceShape(h, up, 0, y, 0.0035), lower: surfaceShape(h, lo, 0, y, 0.0035), line: surfaceTube(h, line, 0.0032, 0.005, 32) };
+    // lips sit a little proud of the skin (the sculpted head's surface can be a few mm out from the analytic one)
+    const lipMid = y + ys(0) - lowerT * 0.55;
+    return { open: false, upper: surfaceShape(h, up, 0, y, 0.0062), lower: surfaceShape(h, lo, 0, y, 0.0068), line: surfaceTube(h, line, 0.0028, 0.0075, 32), lipMid, upTop: y + ys(0) + upperT };
   }, [e, p, w, h, y]);
 
   const tongue = useMemo(() => {
@@ -515,8 +639,9 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
       {'lips' in parts && parts.lips && <mesh geometry={parts.lips}><meshPhysicalMaterial color={lip} roughness={0.35} clearcoat={0.5} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-30} /></mesh>}
       {'inner' in parts && parts.inner && <mesh geometry={parts.inner} renderOrder={1}><Flat color="#4a1418" rough={0.8} layer={1.5} /></mesh>}
       {'teeth' in parts && parts.teeth && <mesh geometry={parts.teeth} renderOrder={2}><Flat color="#fbf6ef" rough={0.25} layer={2} /></mesh>}
-      {'upper' in parts && parts.upper && <mesh geometry={parts.upper}><meshPhysicalMaterial color={mix(lip, skin, 0.12)} roughness={0.38} clearcoat={0.5} /></mesh>}
-      {'lower' in parts && parts.lower && <mesh geometry={parts.lower}><meshPhysicalMaterial color={lip} roughness={0.3} clearcoat={0.7} /></mesh>}
+      {'upper' in parts && parts.upper && <mesh geometry={parts.upper}><meshPhysicalMaterial color={mix(lip, '#3a1010', 0.12)} roughness={0.38} clearcoat={0.5} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-8} /></mesh>}
+      {'lower' in parts && parts.lower && <mesh geometry={parts.lower}><meshPhysicalMaterial color={lip} roughness={0.3} clearcoat={0.7} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-8} /></mesh>}
+      {'lipMid' in parts && <LipShade h={h} w={w} y={y} lipMid={parts.lipMid!} upTop={parts.upTop!} p={p} skin={skin} />}
       {'line' in parts && parts.line && <mesh geometry={parts.line}><Flat color={mix(lip, '#2a0a0a', 0.45)} /></mesh>}
       {tongue && (
         <mesh geometry={tongue.geo} castShadow>
@@ -526,6 +651,37 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
       {lipPierce && <Jewelry zone="lip" p={lipPierce} lip={{ h, y, w }} />}
       {tonguePierce && tongue && <Jewelry zone="tongue" p={tonguePierce} tongue={tongue.pts} />}
     </group>
+  );
+}
+
+/** Lip detail for closed mouths: gloss on the lower lip, a soft shadow under it, and the philtrum groove. */
+function LipShade({ h, w, y, lipMid, upTop, p, skin }: { h: HeadShape; w: number; y: number; lipMid: number; upTop: number; p: MouthP; skin: string }) {
+  const tex = useMemo(() => softDot(), []);
+  const parts = useMemo(() => {
+    const out: { g: THREE.BufferGeometry; c: string; o: number; lift: number }[] = [];
+    const dot = (x: number, yy: number, rx: number, ry: number, c: string, o: number, lift: number) => {
+      const g = surfaceShape(h, new THREE.Shape().absellipse(0, 0, rx, ry, 0, Math.PI * 2, false, 0), x, yy, lift);
+      const uv = g.attributes.uv;
+      for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) / (2 * rx) + 0.5, uv.getY(k) / (2 * ry) + 0.5);
+      out.push({ g, c, o, lift });
+    };
+    // gloss highlight on the lower lip
+    dot(w * 0.12, lipMid + 0.002, w * 0.28, 0.006 * p.lower, '#ffffff', 0.32, 0.0078);
+    // shadow tucked under the lower lip
+    dot(0, lipMid - 0.022 * p.lower, w * 0.42, 0.011, '#3a1a10', 0.3, 0.0014);
+    // philtrum: two soft ridges' shadow from the nose to the cupid's bow
+    for (const s of [-1, 1]) dot(s * 0.011, upTop + 0.02, 0.0055, 0.02, '#3a1a10', 0.16, 0.0014);
+    return out;
+  }, [h, w, y, lipMid, upTop, p]);
+  void skin;
+  return (
+    <>
+      {parts.map(({ g, c, o }, i) => (
+        <mesh key={i} geometry={g} renderOrder={3}>
+          <meshBasicMaterial color={c} map={tex} transparent opacity={o} depthWrite={false} />
+        </mesh>
+      ))}
+    </>
   );
 }
 

@@ -45,18 +45,24 @@ function build(h: HeadShape, nose: NoseP | null, ears: EarP): THREE.BufferGeomet
     const z = surfaceZ(h, 0, y);
     const S = 1.18; // the old nose group's scale, about the origin, then nudged back onto the face
     const T = (c: V3): V3 => [c[0] * S, c[1] * S - y * 0.18, c[2] * S - z * 0.18];
-    const tipY = y + p.up * 0.008;
+    const hump = p.hump ?? 0, droop = p.droop ?? 0, flare = p.flare ?? 0;
+    const tipY = y + p.up * 0.008 - droop * 0.009;
     const prims: Prim[] = [];
     // bridge: a soft ridge from between the eyes down to the tip
     const top = T([0, y + 0.085, surfaceZ(h, 0, y + 0.085) - 0.012]);
     const tip = T([0, tipY + 0.006, z + 0.014]);
     prims.push({ t: 'cone', a: top, b: tip, ra: 0.012 * p.bridgeW + p.bridge * 0.004, rb: 0.02 * p.tipW, k: 0.016, bone: 0 });
+    // a bump on the bridge (Roman / aquiline profile)
+    if (hump > 0) {
+      const hy = y + 0.04;
+      prims.push({ t: 'ellipsoid', c: T([0, hy, surfaceZ(h, 0, hy) + 0.004 + hump * 0.006]), r: [0.012 * p.bridgeW * S, 0.016 * S, 0.01 * S], k: 0.014, bone: 0 });
+    }
     // a defined nose: a soft bulb at the tip with a little shadow line under it (the columella)
     prims.push({ t: 'ellipsoid', c: T([0, tipY - 0.014 * p.tipS, z - 0.002]), r: [0.011 * p.tipW * S, 0.01 * S, 0.016 * S], k: 0.01, bone: 0 });
     // rounded tip
     prims.push({ t: 'ellipsoid', c: T([0, tipY, z + 0.012]), r: [0.034 * p.tipW * S, 0.031 * p.tipS * S, 0.038 * p.tipS * S], rot: [-p.up * 0.3, 0, 0], k: 0.014, bone: 0 });
     // nostril wings (alae)
-    for (const s of [-1, 1]) prims.push({ t: 'ellipsoid', c: T([s * 0.027 * p.tipW * p.nostril, y - 0.004, z - 0.008]), r: [0.017 * p.nostril * S, 0.016 * S, 0.022 * S], k: 0.012, bone: 0 });
+    for (const s of [-1, 1]) prims.push({ t: 'ellipsoid', c: T([s * 0.027 * p.tipW * p.nostril * (1 + flare * 0.18), y - 0.004, z - 0.008]), r: [0.017 * p.nostril * S * (1 + flare * 0.22), 0.016 * S, 0.022 * S], k: 0.012, bone: 0 });
     parts.push({ prims, k: 0.03 });
     // nostril openings, carved under the tip
     const holes: Prim[] = [];

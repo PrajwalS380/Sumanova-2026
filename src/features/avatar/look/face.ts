@@ -6,10 +6,34 @@ import { rng, step, hashStr } from './rng';
  */
 
 export interface HeadP { rx: number; ry: number; rz: number; jawN: number; jawExp: number; cheeks: number; chinLow: number; topWide: number }
-export interface EyeP { open: number; tilt: number; squash: number; lower: number; size: number; iris: number; crease: number }
+export interface EyeP {
+  open: number; tilt: number; squash: number; lower: number; size: number; iris: number; crease: number;
+  /** where the upper lid peaks: -1 inner corner … 0 centre … 1 outer corner */
+  peak?: number;
+  /** lower lid slant (+ lifts the outer corner) */
+  lowTilt?: number;
+  /** lid fold: 0 none (monolid), 1 crease, 2 hooded overhang */
+  fold?: number;
+  /** deep-set shadow under the brow bone, 0..1 */
+  deep?: number;
+  /** pupil size, 0.7 small … 1.3 large */
+  pupil?: number;
+  /** dark iris rim strength, 0..1 */
+  ring?: number;
+  /** extra width (almond / feline stretch) */
+  long?: number;
+}
 export interface LashP { len: number; density: number; liner: number; wing: number; wingUp: number; bottom: number }
 export interface BrowP { thick: number; arch: number; archPos: number; len: number; tail: number; inner: number; slits: number; feather: number }
-export interface NoseP { tipW: number; tipS: number; bridge: number; bridgeW: number; nostril: number; up: number; len: number }
+export interface NoseP {
+  tipW: number; tipS: number; bridge: number; bridgeW: number; nostril: number; up: number; len: number;
+  /** bump on the bridge (Roman / aquiline) */
+  hump?: number;
+  /** tip hangs down (aquiline hook) */
+  droop?: number;
+  /** nostril wings flare outward */
+  flare?: number;
+}
 export interface MouthP { width: number; upper: number; lower: number; bow: number; corner: number }
 export interface EarP { size: number; out: number; point: number; lobe: number; width: number }
 export interface BodyP { width: number; height: number; belly: number; shoulders: number; hips: number; /** 0 masculine … 1 feminine proportions */ fem?: number }
@@ -54,40 +78,76 @@ const HEAD_BASE: Record<string, [number, number, number, number, number, number,
   Narrow: [0.325, 0.395, 0.35, 0.26, 1.8, 0, 1.02],
 };
 
+/** Ten visibly different steps inside each face shape: width, length, jaw, cheekbones, chin. */
+const HEAD_STEP = [
+  { w: 0.94, h: 1.0, jaw: 1.0, cheeks: 0.25, chin: 0 },
+  { w: 1.0, h: 1.0, jaw: 1.0, cheeks: 0.45, chin: 0 },
+  { w: 1.06, h: 0.98, jaw: 0.9, cheeks: 0.6, chin: -0.01 },
+  { w: 0.97, h: 1.04, jaw: 1.15, cheeks: 0.3, chin: 0.03 },
+  { w: 1.03, h: 1.03, jaw: 0.8, cheeks: 0.75, chin: 0.01 },
+  { w: 0.92, h: 1.05, jaw: 1.25, cheeks: 0.4, chin: 0.04 },
+  { w: 1.08, h: 0.97, jaw: 0.85, cheeks: 0.2, chin: -0.02 },
+  { w: 1.0, h: 1.06, jaw: 1.05, cheeks: 0.65, chin: 0.05 },
+  { w: 1.05, h: 1.0, jaw: 1.2, cheeks: 0.85, chin: 0.02 },
+  { w: 0.95, h: 0.97, jaw: 0.75, cheeks: 0.5, chin: -0.015 },
+];
 export const HEADS = build<HeadP>('head', Object.entries(HEAD_BASE).map(([name, b]) => ({
   name,
   n: 10,
   make: (i) => {
-    const w = step(i % 5, 5, 0.95, 1.05);
-    const j = i < 5 ? 0 : 1;
-    return { rx: b[0] * w, ry: b[1] * (j ? 1.02 : 0.99), rz: b[2], jawN: b[3] * (j ? 0.85 : 1.1), jawExp: b[4], cheeks: step(i % 5, 5, 0.2, 0.7), chinLow: b[6] + (j ? 0.03 : 0), topWide: b[5] };
+    const st = HEAD_STEP[i];
+    return { rx: b[0] * st.w, ry: b[1] * st.h, rz: b[2], jawN: Math.min(0.6, b[3] * st.jaw), jawExp: b[4], cheeks: st.cheeks, chinLow: b[6] + st.chin, topWide: b[5] };
   },
 })));
 
 const EYE_FAM: [string, Partial<EyeP>][] = [
-  ['Almond', { open: -0.68, tilt: 0.06, squash: 0.86 }],
-  ['Round', { open: -0.92, tilt: 0, squash: 1.04 }],
-  ['Hooded', { open: -0.42, tilt: 0.02, squash: 0.9, crease: 0 }],
-  ['Upturned', { open: -0.72, tilt: 0.18, squash: 0.9 }],
-  ['Downturned', { open: -0.66, tilt: -0.14, squash: 0.92 }],
-  ['Monolid', { open: -0.5, tilt: 0.08, squash: 0.8, crease: 0 }],
-  ['Doe', { open: -1.0, tilt: 0.02, squash: 1.08 }],
-  ['Feline', { open: -0.6, tilt: 0.26, squash: 0.8 }],
-  ['Deep-set', { open: -0.55, tilt: 0, squash: 0.9 }],
-  ['Bright', { open: -0.85, tilt: 0.08, squash: 0.98 }],
+  // each family has its own outline; the 10 variants step through size, iris, tilt, openness and lower lid
+  ['Almond', { open: -0.66, tilt: 0.06, squash: 0.8, long: 1.12, peak: 0.15, lowTilt: 0.05, fold: 1 }],
+  ['Round', { open: -0.98, tilt: 0, squash: 1.06, long: 0.96, peak: 0, lowTilt: 0, fold: 1, pupil: 1.1 }],
+  ['Hooded', { open: -0.46, tilt: 0.02, squash: 0.88, long: 1.04, peak: 0.25, lowTilt: 0, fold: 2 }],
+  ['Upturned', { open: -0.72, tilt: 0.16, squash: 0.88, long: 1.08, peak: 0.35, lowTilt: 0.22, fold: 1 }],
+  ['Downturned', { open: -0.66, tilt: -0.12, squash: 0.92, long: 1.05, peak: -0.35, lowTilt: -0.18, fold: 1 }],
+  ['Monolid', { open: -0.5, tilt: 0.1, squash: 0.76, long: 1.1, peak: 0.1, lowTilt: 0.08, fold: 0 }],
+  ['Doe', { open: -1.04, tilt: 0.02, squash: 1.1, long: 0.98, peak: -0.1, lowTilt: -0.04, fold: 1, pupil: 1.2, iris: 0.62 }],
+  ['Feline', { open: -0.58, tilt: 0.26, squash: 0.76, long: 1.18, peak: 0.55, lowTilt: 0.3, fold: 1 }],
+  ['Deep-set', { open: -0.6, tilt: 0, squash: 0.9, long: 1.0, peak: 0.05, lowTilt: 0, fold: 2, deep: 1 }],
+  ['Bright', { open: -0.88, tilt: 0.08, squash: 0.98, long: 1.02, peak: 0.1, lowTilt: 0.06, fold: 1, ring: 1, pupil: 0.9 }],
+];
+/** Steps inside a family: 0-9 → clearly different, still recognisably the family. */
+const EYE_STEP = [
+  { size: 0.9, iris: -0.04, open: 0.08, tilt: 0, lower: 0 },
+  { size: 1.0, iris: 0, open: 0, tilt: 0, lower: 0 },
+  { size: 1.1, iris: 0.04, open: -0.06, tilt: 0, lower: 0.1 },
+  { size: 0.96, iris: 0.02, open: 0.04, tilt: 0.06, lower: -0.1 },
+  { size: 1.04, iris: -0.02, open: -0.1, tilt: -0.05, lower: 0.15 },
+  { size: 0.92, iris: 0.06, open: -0.04, tilt: 0.04, lower: 0.25 },
+  { size: 1.08, iris: -0.06, open: 0.1, tilt: 0.02, lower: -0.15 },
+  { size: 1.0, iris: 0.08, open: 0.05, tilt: -0.08, lower: 0.05 },
+  { size: 1.14, iris: 0, open: -0.12, tilt: 0.05, lower: 0.3 },
+  { size: 0.86, iris: 0.03, open: 0.12, tilt: -0.03, lower: -0.2 },
 ];
 export const EYE_SHAPES = build<EyeP>('eyes', EYE_FAM.map(([name, b]) => ({
   name,
   n: 10,
-  make: (i) => ({
-    open: (b.open ?? -0.7) + ((i % 5) - 2) * 0.05,
-    tilt: (b.tilt ?? 0) + (i >= 5 ? 0.04 : 0),
-    squash: (b.squash ?? 0.92) * (1 + ((i % 5) - 2) * 0.02),
-    lower: 1.4 - (i % 3) * 0.12,
-    size: 0.94 + (i % 5) * 0.03,
-    iris: i >= 5 ? 0.6 : 0.56,
-    crease: b.crease ?? 1,
-  }),
+  make: (i) => {
+    const st = EYE_STEP[i];
+    return {
+      open: (b.open ?? -0.7) + st.open,
+      tilt: (b.tilt ?? 0) + st.tilt,
+      squash: b.squash ?? 0.92,
+      lower: 1.4 + st.lower,
+      size: 0.94 * st.size,
+      iris: (b.iris ?? 0.57) + st.iris,
+      crease: b.fold === 0 ? 0 : 1,
+      peak: (b.peak ?? 0) + ((i % 3) - 1) * 0.12,
+      lowTilt: (b.lowTilt ?? 0) + st.tilt * 0.6,
+      fold: b.fold ?? 1,
+      deep: b.deep ?? (i === 8 ? 0.35 : 0),
+      pupil: (b.pupil ?? 1) * (i % 2 ? 1.08 : 0.94),
+      ring: b.ring ?? (i >= 5 ? 0.8 : 0.45),
+      long: b.long ?? 1,
+    };
+  },
 })));
 
 export const LASHES = build<LashP>('lashes', [
@@ -110,45 +170,80 @@ const BROW_FAM: [string, Partial<BrowP>][] = [
   ['Feathered', { arch: 0.014, feather: 1 }],
   ['Slit', { arch: 0.012, slits: 1 }],
 ];
+/** Ten clearly different steps inside each brow family (thickness, arch, length, inner head, tail). */
+const BROW_STEP = [
+  { thick: 0.75, arch: 0, pos: 0, len: 0.95, inner: 1, tail: 0 },
+  { thick: 0.9, arch: 0.003, pos: 0.04, len: 1.0, inner: 1.15, tail: 0.002 },
+  { thick: 1.05, arch: -0.002, pos: -0.04, len: 1.05, inner: 0.9, tail: 0.004 },
+  { thick: 1.2, arch: 0.005, pos: 0.06, len: 1.0, inner: 1.3, tail: 0 },
+  { thick: 0.85, arch: 0.008, pos: 0.08, len: 1.1, inner: 0.85, tail: 0.006 },
+  { thick: 1.3, arch: -0.004, pos: -0.06, len: 0.92, inner: 1.2, tail: 0.002 },
+  { thick: 1.0, arch: 0.006, pos: 0.02, len: 1.12, inner: 1.05, tail: 0.008 },
+  { thick: 0.7, arch: 0.01, pos: 0.1, len: 1.05, inner: 0.95, tail: 0.004 },
+  { thick: 1.4, arch: 0.002, pos: 0, len: 1.08, inner: 1.35, tail: 0.003 },
+  { thick: 1.1, arch: -0.006, pos: -0.08, len: 0.98, inner: 1.1, tail: 0.01 },
+];
 export const BROWS = build<BrowP>('brows', BROW_FAM.map(([name, b]) => ({
   name,
   n: 10,
-  make: (i) => ({
-    thick: (b.thick ?? 1) * step(i % 5, 5, 0.8, 1.2),
-    arch: b.arch ?? 0.012,
-    archPos: b.archPos ?? 0.6,
-    len: i >= 5 ? 1.1 : 0.95,
-    tail: (b.tail ?? 0.012) + (i % 2) * 0.004,
-    inner: name === 'Slit' ? 1 : 1 + ((i % 3) - 1) * 0.15,
-    slits: name === 'Slit' ? 1 + (i % 2) : 0,
-    feather: b.feather ?? 0,
-  }),
+  make: (i) => {
+    const st = BROW_STEP[i];
+    return {
+      thick: (b.thick ?? 1) * st.thick,
+      arch: Math.max(0, (b.arch ?? 0.012) + st.arch),
+      archPos: Math.min(0.8, Math.max(0.35, (b.archPos ?? 0.6) + st.pos)),
+      len: st.len,
+      tail: (b.tail ?? 0.012) + st.tail,
+      inner: name === 'Slit' ? 1 : st.inner,
+      slits: name === 'Slit' ? 1 + (i % 2) : 0,
+      feather: b.feather ?? (i === 8 ? 0.4 : 0),
+    };
+  },
 })));
 
 const NOSE_FAM: [string, Partial<NoseP>][] = [
-  ['Button', { tipW: 0.95, tipS: 0.85, bridge: 0, up: 0.4 }],
-  ['Straight', { tipW: 1, tipS: 1, bridge: 0.6 }],
-  ['Roman', { tipW: 1, tipS: 1.05, bridge: 1, up: -0.3 }],
-  ['Snub', { tipW: 1.05, tipS: 0.9, bridge: 0.2, up: 0.7 }],
-  ['Wide', { tipW: 1.35, tipS: 1.05, bridge: 0.4, nostril: 1.35 }],
-  ['Narrow', { tipW: 0.8, tipS: 0.95, bridge: 0.6, nostril: 0.85 }],
-  ['Aquiline', { tipW: 0.95, tipS: 1.1, bridge: 1.1, up: -0.5, len: 1.1 }],
-  ['Rounded', { tipW: 1.15, tipS: 1.15, bridge: 0.3 }],
-  ['Flat', { tipW: 1.25, tipS: 0.9, bridge: 0.05, nostril: 1.3 }],
-  ['Petite', { tipW: 0.85, tipS: 0.78, bridge: 0.15, up: 0.3, len: 0.9 }],
+  ['Button', { tipW: 0.92, tipS: 0.88, bridge: 0, up: 0.45, len: 0.9 }],
+  ['Straight', { tipW: 0.95, tipS: 1, bridge: 0.6, len: 1.02 }],
+  ['Roman', { tipW: 1, tipS: 1.02, bridge: 1, up: -0.2, hump: 0.9, len: 1.08 }],
+  ['Snub', { tipW: 1.05, tipS: 0.92, bridge: 0.15, up: 0.8, len: 0.92 }],
+  ['Wide', { tipW: 1.3, tipS: 1.05, bridge: 0.35, nostril: 1.3, flare: 1 }],
+  ['Narrow', { tipW: 0.78, tipS: 0.95, bridge: 0.7, nostril: 0.82, len: 1.06 }],
+  ['Aquiline', { tipW: 0.92, tipS: 1.08, bridge: 1.1, up: -0.55, hump: 1, droop: 1, len: 1.12 }],
+  ['Rounded', { tipW: 1.18, tipS: 1.2, bridge: 0.3, flare: 0.3 }],
+  ['Flat', { tipW: 1.22, tipS: 0.86, bridge: 0, nostril: 1.28, flare: 0.7, len: 0.94 }],
+  ['Petite', { tipW: 0.82, tipS: 0.76, bridge: 0.12, up: 0.3, len: 0.86 }],
+];
+/** Ten different steps inside each nose family. */
+const NOSE_STEP = [
+  { w: 0.9, s: 0.95, bw: 0.85, up: 0, len: 0, n: 1 },
+  { w: 1.0, s: 1.0, bw: 1.0, up: 0, len: 0, n: 1 },
+  { w: 1.1, s: 1.04, bw: 1.1, up: 0.1, len: 0.03, n: 1.05 },
+  { w: 0.95, s: 1.08, bw: 0.9, up: -0.12, len: 0.05, n: 0.95 },
+  { w: 1.05, s: 0.92, bw: 1.15, up: 0.2, len: -0.04, n: 1.1 },
+  { w: 0.88, s: 1.02, bw: 0.8, up: 0.05, len: 0.06, n: 0.9 },
+  { w: 1.14, s: 1.1, bw: 1.2, up: -0.05, len: 0, n: 1.15 },
+  { w: 1.0, s: 0.9, bw: 0.95, up: 0.25, len: -0.06, n: 1 },
+  { w: 0.93, s: 1.12, bw: 1.05, up: -0.2, len: 0.08, n: 0.92 },
+  { w: 1.08, s: 0.98, bw: 0.88, up: 0.12, len: -0.02, n: 1.08 },
 ];
 export const NOSES = build<NoseP>('nose', NOSE_FAM.map(([name, b]) => ({
   name,
   n: 10,
-  make: (i) => ({
-    tipW: (b.tipW ?? 1) * step(i % 5, 5, 0.92, 1.08),
-    tipS: (b.tipS ?? 1) * (i >= 5 ? 1.06 : 0.97),
-    bridge: b.bridge ?? 0.5,
-    bridgeW: step(i % 5, 5, 0.85, 1.15),
-    nostril: (b.nostril ?? 1) * (i >= 5 ? 1.05 : 1),
-    up: b.up ?? 0,
-    len: (b.len ?? 1) * (1 + ((i % 3) - 1) * 0.04),
-  }),
+  make: (i) => {
+    const st = NOSE_STEP[i];
+    return {
+      tipW: (b.tipW ?? 1) * st.w,
+      tipS: (b.tipS ?? 1) * st.s,
+      bridge: b.bridge ?? 0.5,
+      bridgeW: st.bw,
+      nostril: (b.nostril ?? 1) * st.n,
+      up: (b.up ?? 0) + st.up,
+      len: (b.len ?? 1) + st.len,
+      hump: b.hump ?? (i === 8 ? 0.35 : 0),
+      droop: b.droop ?? 0,
+      flare: b.flare ?? 0,
+    };
+  },
 })));
 
 const MOUTH_FAM: [string, Partial<MouthP>][] = [
