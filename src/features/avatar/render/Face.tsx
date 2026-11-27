@@ -1,5 +1,5 @@
 import { useSculpt } from '../sculpt3d/async';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { mix, shellGeometry, smooth, softDot, surfaceShape, surfaceTube, surfaceZ, wobble, type HeadShape } from '../sculpt';
@@ -185,11 +185,11 @@ function Eyes({ f, ex, ey, er }: { f: FaceProps; ex: number; ey: number; er: num
                     <meshPhysicalMaterial color="#fbf8f4" roughness={0.2} clearcoat={1} clearcoatRoughness={0.08} emissive="#ffffff" emissiveIntensity={0.12} />
                   </mesh>
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <sphereGeometry args={[er * 1.004, 32, 8, 0, Math.PI * 2, 0, p.iris + 0.1]} />
-                    <meshStandardMaterial color={mix(f.colors.eyes, '#000000', 0.35)} roughness={0.3} />
+                    <sphereGeometry args={[er * 1.004, 32, 8, 0, Math.PI * 2, 0, Math.min(1.1, p.iris * 1.32) + 0.08]} />
+                    <meshStandardMaterial color={mix(f.colors.eyes, '#000000', 0.6)} roughness={0.3} />
                   </mesh>
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <sphereGeometry args={[er * 1.007, 32, 8, 0, Math.PI * 2, 0, p.iris]} />
+                    <sphereGeometry args={[er * 1.007, 32, 8, 0, Math.PI * 2, 0, Math.min(1.1, p.iris * 1.32)]} />
                     <meshPhysicalMaterial color={f.colors.eyes} roughness={0.25} clearcoat={1} emissive={f.colors.eyes} emissiveIntensity={0.12} />
                   </mesh>
                   <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -547,19 +547,54 @@ function Tears({ h, ex, ey, er }: { h: HeadShape; ex: number; ey: number; er: nu
 
 /* ---------------------------------------------------------------- Beard */
 
+/**
+ * Stubble: fine dark hair dots on the skin whose density follows the beard shape (vertex
+ * attribute `density`) and thins out at its edges — not a tinted mask.
+ */
+function useStubbleMat(color: string, amount: number) {
+  const mat = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({ roughness: 0.95, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 });
+    m.userData.u = { uAmt: { value: amount } };
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, m.userData.u);
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float density;\nvarying float vDen;\nvarying vec3 vSP;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvDen = density; vSP = position;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nuniform float uAmt;\nvarying float vDen;\nvarying vec3 vSP;\nfloat bHash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }')
+        .replace(
+          '#include <color_fragment>',
+          `#include <color_fragment>
+float d = clamp(vDen, 0.0, 1.0);
+float dots = step(1.0 - d * 0.6, bHash(floor(vSP * 900.0)));
+float shadow = d * d * (0.32 + 0.25 * uAmt);
+diffuseColor.a = clamp(shadow + dots * d * 0.18, 0.0, 0.72);`,
+        );
+    };
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    mat.color.set(color);
+    (mat.userData.u as { uAmt: { value: number } }).uAmt.value = amount;
+  }, [mat, color, amount]);
+  return mat;
+}
+
 function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string; mouthY: number }) {
   const geo = useMemo(() => {
     if (p.beard <= 0 && p.stubble <= 0) return null;
     const my = mouthY / (h.ry * h.chinLow);
     const thick = p.beard > 0 ? p.beard * 0.6 : 0.006; // close-trimmed, sculpted
-    return shellGeometry(h, (ux, uy, uz, az) => {
+    const ms: number[] = []; // beard density per vertex (same order as the sphere's vertices)
+    const g = shellGeometry(h, (ux, uy, uz, az) => {
       let m: number;
       if (p.chinOnly > 0) {
         m = smooth(-0.08, 0.02, uz) * smooth(p.chinW + 0.08, p.chinW, Math.abs(ux)) * smooth(my - 0.05, my - 0.15, uy);
         if (p.soul) m = Math.max(m, smooth(0.08, 0.04, Math.abs(ux)) * smooth(my - 0.04, my - 0.08, uy) * smooth(my - 0.2, my - 0.14, uy));
       } else {
         const front = smooth(-0.35, -0.1, uz);
-        const below = smooth(my + 0.03 + p.cheekLine * 0.35, my - 0.03 + p.cheekLine * 0.15, uy) * (1 - 0.6 * smooth(0.45, 0.2, Math.abs(ux)) * smooth(my + 0.12, my + 0.22, uy));
+        const below = smooth(my + 0.1 + p.cheekLine * 0.35, my - 0.05 + p.cheekLine * 0.15, uy) * (1 - 0.6 * smooth(0.45, 0.2, Math.abs(ux)) * smooth(my + 0.12, my + 0.22, uy));
         const side = smooth(1.12, 1.4, Math.abs(az)) * smooth(1.9, 1.65, Math.abs(az)) * smooth(0.02, -0.1, uy) * p.sides; // sideburns stay by the ears
         const mouthHole = smooth(0.8, 1.05, (ux / 0.36) ** 2 + ((uy - my + 0.07) / 0.13) ** 2); // an oval hugging the full open grin
         const chinGap = p.chinOnly < 0 ? 1 - smooth(0.3, 0.15, Math.abs(ux)) : 1; // mutton chops leave the chin bare
@@ -567,9 +602,15 @@ function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string
       }
       const lumps = p.beard > 0.06 ? 0.012 * wobble(ux, uy, uz, 2.4) : 0;
       const drop = p.drop * smooth(-0.6, -0.95, uy) * smooth(0, 0.4, uz) * (1 + p.curl * 0.2 * wobble(ux, uy, uz, 4));
+      ms.push(m);
+      // stubble only: a thin skin-hugging layer everywhere (its density shader decides where it shows),
+      // so there is no line where a shell would cut through the skin
+      if (p.beard <= 0) return 1.006;
       return 0.985 + (thick + 0.015 + lumps + drop) * m;
-    }, 72, 56);
+    }, 96, 72, ms);
+    return g;
   }, [p, h, mouthY]);
+  const stubble = useStubbleMat(color, p.stubble);
 
   const tache = useMemo(() => {
     if (!p.tache) return null;
@@ -593,8 +634,8 @@ function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string
   return (
     <>
       {geo && (
-        <mesh geometry={geo} castShadow={p.beard > 0}>
-          <HairMat color={color} opacity={p.beard > 0 ? 1 : Math.max(0.2, p.stubble * 0.75)} />
+        <mesh geometry={geo} castShadow={p.beard > 0} material={p.beard > 0 ? undefined : stubble}>
+          {p.beard > 0 && <HairMat color={color} />}
         </mesh>
       )}
       {geo && p.beard > 0 && p.stubble > 0 && null}

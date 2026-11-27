@@ -86,7 +86,8 @@ export function surfaceZ(h: HeadShape, x: number, y: number) {
 }
 
 /** A sphere sculpted onto the head surface, with a per-direction radial multiplier. */
-export function shellGeometry(h: HeadShape, radial: (ux: number, uy: number, uz: number, az: number) => number, w = 64, hs = 48) {
+/** `density`: optional per-vertex values filled by `radial` (one per call), kept through the vertex merge. */
+export function shellGeometry(h: HeadShape, radial: (ux: number, uy: number, uz: number, az: number) => number, w = 64, hs = 48, density?: number[]) {
   const g = new THREE.SphereGeometry(1, w, hs);
   const p = g.attributes.position;
   const v = new THREE.Vector3();
@@ -97,6 +98,7 @@ export function shellGeometry(h: HeadShape, radial: (ux: number, uy: number, uz:
   }
   g.deleteAttribute('uv');
   g.deleteAttribute('normal');
+  if (density && density.length === p.count) g.setAttribute('density', new THREE.Float32BufferAttribute(density, 1));
   const m = mergeVertices(g, 1e-4);
   m.computeVertexNormals();
   g.dispose();

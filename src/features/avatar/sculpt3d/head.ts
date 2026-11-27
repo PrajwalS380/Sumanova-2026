@@ -34,7 +34,8 @@ function build(h: HeadShape, nose: NoseP | null, ears: EarP): THREE.BufferGeomet
   const ex = 0.127 * (h.rx / 0.35), ey = -0.025;
   const at = (x: number, y: number, inset: number): V3 => [x, y, surfaceZ(h, x, y) - inset];
   const soft: Prim[] = [];
-  for (const s of [-1, 1]) soft.push({ t: 'ellipsoid', c: at(s * (ex + 0.03), ey - 0.085, 0.042), r: [0.055, 0.04, 0.04], rot: [0, s * 0.5, 0], bone: 0, k: 0.02 });
+  // (very soft and broad, so the cheek reads as a smooth curve, not a bump)
+  for (const s of [-1, 1]) soft.push({ t: 'ellipsoid', c: at(s * (ex + 0.03), ey - 0.085, 0.052), r: [0.07, 0.05, 0.045], rot: [0, s * 0.5, 0], bone: 0, k: 0.035 });
   parts.push({ prims: soft, k: 0.028 });
 
   // ------------------------------------------------------------ nose (same placement as before)
