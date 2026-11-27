@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import type { ChatTheme, DisappearMode, Member, PublicProfile } from '@/lib/chat/types';
 import { cn } from '@/lib/cn';
 import { CHAT_THEMES } from './themes';
+import { WallpaperPicker } from './more/WallpaperPicker';
 import { NewGroupSheet } from './NewGroupSheet';
 
 interface Conv { id: string; kind: 'direct' | 'group'; title: string | null; avatar_url: string | null; disappear_mode: DisappearMode }
@@ -159,6 +160,7 @@ export default function ChatInfoScreen() {
               ))}
             </div>
           </div>
+          <WallpaperPicker chatId={id} />
           <button onClick={() => void setPref({ muted: !summary?.muted })} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
             {summary?.muted ? <Bell className="h-5 w-5 text-ink-mute" /> : <BellOff className="h-5 w-5 text-ink-mute" />}
             <span className="text-[15px]">{summary?.muted ? 'Unmute' : 'Mute notifications'}</span>

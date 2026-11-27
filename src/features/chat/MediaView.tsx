@@ -67,6 +67,7 @@ export const VoiceView = memo(function VoiceView({ path, localUrl, meta, mine }:
   const audio = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [rate, setRate] = useState(1);
   const bars = meta.waveform?.length ? meta.waveform : Array(32).fill(0.3);
   const duration = meta.duration ?? 0;
 
@@ -85,6 +86,7 @@ export const VoiceView = memo(function VoiceView({ path, localUrl, meta, mine }:
       a.onplay = () => setPlaying(true);
       audio.current = a;
     }
+    audio.current.playbackRate = rate;
     if (playing) audio.current.pause();
     else {
       if (current && current !== audio.current) current.pause();
@@ -98,12 +100,44 @@ export const VoiceView = memo(function VoiceView({ path, localUrl, meta, mine }:
       <button onClick={toggle} disabled={!url} aria-label={playing ? 'Pause' : 'Play voice note'} className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-2xl', mine ? 'bg-white/25' : 'bg-white/10')}>
         {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
       </button>
-      <div className="flex h-8 flex-1 items-center gap-[2px]" aria-hidden>
+      <div
+        className="flex h-8 flex-1 cursor-pointer items-center gap-[2px]"
+        role="slider"
+        aria-label="Seek voice note"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress * 100)}
+        onClick={(e) => {
+          // tap the waveform to jump there
+          const r = e.currentTarget.getBoundingClientRect();
+          const f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+          if (!audio.current) toggle();
+          const a = audio.current;
+          if (a && (a.duration || duration)) {
+            a.currentTime = f * (Number.isFinite(a.duration) ? a.duration : duration);
+            setProgress(f);
+          }
+        }}
+      >
         {bars.map((v, i) => (
           <span key={i} className={cn('w-[3px] rounded-full transition-colors', i / bars.length <= progress ? 'bg-white' : mine ? 'bg-white/45' : 'bg-white/25')} style={{ height: `${Math.max(12, v * 100)}%` }} />
         ))}
       </div>
-      <span className="w-9 text-right text-[11px] tabular-nums opacity-80">{formatDuration(playing || progress ? duration * progress : duration)}</span>
+      <span className="flex flex-col items-end gap-0.5">
+        <span className="w-9 text-right text-[11px] tabular-nums opacity-80">{formatDuration(playing || progress ? duration * progress : duration)}</span>
+        <button
+          type="button"
+          onClick={() => {
+            const next = rate === 1 ? 1.5 : rate === 1.5 ? 2 : 1;
+            setRate(next);
+            if (audio.current) audio.current.playbackRate = next;
+          }}
+          aria-label={`Playback speed ${rate}×`}
+          className={cn('rounded-md px-1 text-[10px] font-extrabold', mine ? 'bg-white/25' : 'bg-white/10')}
+        >
+          {rate}×
+        </button>
+      </span>
     </div>
   );
 });

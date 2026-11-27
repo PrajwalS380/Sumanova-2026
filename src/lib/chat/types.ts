@@ -1,6 +1,6 @@
 import type { AuraColor } from '@/lib/types';
 
-export type MessageKind = 'text' | 'image' | 'video' | 'voice' | 'sticker' | 'system' | 'snap' | 'poll' | 'location' | 'hangout' | 'game';
+export type MessageKind = 'text' | 'image' | 'video' | 'voice' | 'sticker' | 'system' | 'snap' | 'poll' | 'location' | 'hangout' | 'game' | 'todo';
 export type DisappearMode = 'never' | 'after_view' | '24h';
 export type ChatTheme = 'aurora' | 'sunset' | 'ocean' | 'forest' | 'mono' | 'rose';
 

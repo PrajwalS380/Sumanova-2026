@@ -5,6 +5,7 @@ import { AudioLines, CalendarClock, Camera, Lock, Mic, PencilLine, Plus, Reply, 
 import { currentKeyOf, encryptFor, ensureMyKey, secretMode } from '@/lib/e2e';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/providers/ToastProvider';
+import { VoiceView } from './MediaView';
 import { MAX_VOICE_SECONDS, prepareMedia, startVoiceRecording, type VoiceRecording } from '@/lib/chat/media';
 import { formatDuration } from '@/lib/chat/time';
 import type { LocalMessage, MediaMeta, MessageKind, PublicProfile } from '@/lib/chat/types';
@@ -97,6 +98,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
     onCancel();
   }
   const [rec, setRec] = useState<VoiceRecording | null>(null);
+  const [voicePreview, setVoicePreview] = useState<{ blob: Blob; duration: number; waveform: number[]; url: string } | null>(null);
   const [recSecs, setRecSecs] = useState(0);
   const [level, setLevel] = useState(0);
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -181,6 +183,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
     }
   }
 
+  /** Stop → listen back → send or delete. */
   async function finishRecording() {
     if (!rec) return;
     const r = rec;
@@ -188,8 +191,18 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
     const out = await r.stop();
     if (!out) return toast('Hold on a little longer to record', 'info');
     haptic(10);
+    setVoicePreview({ ...out, url: URL.createObjectURL(out.blob) });
+  }
+  function sendPreview() {
+    if (!voicePreview) return;
+    const out = voicePreview;
+    setVoicePreview(null);
     onSend({ kind: 'voice', blob: out.blob, meta: { duration: out.duration, waveform: out.waveform, mime: out.blob.type, size: out.blob.size }, replyTo: replyTo?.id ?? null });
     onCancel();
+  }
+  function dropPreview() {
+    if (voicePreview) URL.revokeObjectURL(voicePreview.url);
+    setVoicePreview(null);
   }
 
   if (disabled) {
@@ -218,7 +231,17 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
           <CalendarClock className="h-3.5 w-3.5" /> {scheduled.length} scheduled · next {new Date(scheduled[0].send_at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
         </button>
       )}
-      {rec ? (
+      {voicePreview ? (
+        <div className="flex h-14 items-center gap-2 rounded-2xl bg-white px-2">
+          <button onClick={dropPreview} aria-label="Delete voice note" className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-ember-rose"><Trash2 className="h-5 w-5" /></button>
+          <div className="min-w-0 flex-1 rounded-2xl bg-ink px-2 text-white">
+            <VoiceView path={null} localUrl={voicePreview.url} meta={{ duration: voicePreview.duration, waveform: voicePreview.waveform }} mine />
+          </div>
+          <button onClick={sendPreview} aria-label="Send voice note" className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white shadow-glow" style={{ background: accent }}>
+            <SendHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+      ) : rec ? (
         <div className="flex h-14 items-center gap-3 rounded-2xl bg-white px-2">
           <button onClick={() => { rec.cancel(); setRec(null); }} aria-label="Discard recording" className="grid h-10 w-10 place-items-center rounded-2xl text-ember-rose"><Trash2 className="h-5 w-5" /></button>
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-ember-rose" />
@@ -228,7 +251,7 @@ export function Composer({ onSend, onEdit, onTyping, replyTo, replyName, editing
               <span key={i} className="w-[3px] rounded-full bg-ink/70 transition-[height] duration-100" style={{ height: `${6 + level * 26 * (0.5 + Math.abs(Math.sin(i * 1.7 + recSecs * 6)) * 0.5)}px` }} />
             ))}
           </div>
-          <button onClick={finishRecording} aria-label="Send voice note" className="grid h-11 w-11 place-items-center rounded-2xl text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #8E5BEA)` }}>
+          <button onClick={finishRecording} aria-label="Stop and listen back" className="grid h-11 w-11 place-items-center rounded-2xl text-white shadow-glow" style={{ background: `linear-gradient(135deg, ${accent}, #8E5BEA)` }}>
             <Square className="h-4 w-4 fill-current" />
           </button>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarClock, ChevronLeft, Gamepad2, Loader2, MapPin, PartyPopper, Plus, Radio, Trash2, X } from 'lucide-react';
+import { CalendarClock, ChevronLeft, Gamepad2, ListChecks, Loader2, MapPin, PartyPopper, Plus, Radio, Trash2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { PublicProfile } from '@/lib/chat/types';
 import { Avatar } from '@/components/Avatar';
@@ -11,7 +11,7 @@ import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
 import type { ComposerSend } from '../Composer';
 
-type View = 'menu' | 'poll' | 'live' | 'schedule' | 'hangout' | 'game';
+type View = 'menu' | 'poll' | 'live' | 'schedule' | 'hangout' | 'game' | 'todo';
 const LIVE = [
   { min: 15, label: '15 minutes' },
   { min: 60, label: '1 hour' },
@@ -97,6 +97,8 @@ export function ExtrasSheet({ open, onClose, onSend, conversationId, draft, onSc
     }
   }
 
+  const [todoTitle, setTodoTitle] = useState('');
+
   function sendPoll() {
     const options = opts.map((o) => o.trim()).filter(Boolean);
     if (!question.trim()) return toast('Ask a question', 'error');
@@ -126,7 +128,7 @@ export function ExtrasSheet({ open, onClose, onSend, conversationId, draft, onSc
     }
   }
 
-  const title = { menu: 'Share', poll: 'New poll', live: 'Share live location', schedule: 'Schedule a message', hangout: 'Plan a hangout', game: 'Play a game' }[view];
+  const title = { menu: 'Share', poll: 'New poll', live: 'Share live location', schedule: 'Schedule a message', hangout: 'Plan a hangout', game: 'Play a game', todo: 'New to-do list' }[view];
   return (
     <Sheet open={open} onClose={close} title={title}>
       <div className="px-4 pb-6">
@@ -141,6 +143,7 @@ export function ExtrasSheet({ open, onClose, onSend, conversationId, draft, onSc
             <Tile icon={<CalendarClock className="h-7 w-7" />} label="Schedule" sub="Send it later" onClick={() => { setText(draft); setView('schedule'); }} />
             <Tile icon={<PartyPopper className="h-7 w-7 text-ember-rose" />} label="Hangout" sub="Plan, RSVP, check in" onClick={() => setView('hangout')} />
             <Tile icon={<Gamepad2 className="h-7 w-7" />} label="Game" sub="Play right in the chat" onClick={() => setView('game')} />
+            <Tile icon={<ListChecks className="h-7 w-7 text-ember-jade" />} label="To-do list" sub="Everyone can tick items" onClick={() => setView('todo')} />
           </div>
         )}
 
@@ -156,6 +159,24 @@ export function ExtrasSheet({ open, onClose, onSend, conversationId, draft, onSc
             {opts.length < 6 && <button onClick={() => setOpts([...opts, ''])} className="flex items-center gap-1.5 px-1 py-1 text-sm font-extrabold text-ember-flame"><Plus className="h-4 w-4" /> Add option</button>}
             <button onClick={sendPoll} className="mt-1 h-12 w-full rounded-2xl bg-ember-flame text-[15px] font-extrabold text-white active:scale-[0.98]">Send poll</button>
           </div>
+        )}
+
+        {view === 'todo' && (
+          <form
+            className="space-y-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!todoTitle.trim()) return toast('Give the list a name', 'error');
+              onSend({ kind: 'todo', body: todoTitle.trim().slice(0, 80) });
+              setTodoTitle('');
+              haptic(10);
+              close();
+            }}
+          >
+            <input value={todoTitle} onChange={(e) => setTodoTitle(e.target.value)} maxLength={80} placeholder="e.g. Trip packing, Party shopping" aria-label="List name" className="h-12 w-full rounded-2xl bg-[#F1F1F4] px-4 text-[15px] font-bold outline-none" />
+            <p className="px-1 text-sm text-ink-mute">Send it, then anyone in the chat can add items and tick them off.</p>
+            <button type="submit" className="h-12 w-full rounded-2xl bg-ember-flame text-[15px] font-extrabold text-white active:scale-[0.98]">Send list</button>
+          </form>
         )}
 
         {view === 'live' && (

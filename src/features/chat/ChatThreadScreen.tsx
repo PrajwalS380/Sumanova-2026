@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronLeft, Copy, CornerUpRight, Flag, Info, Loader2, PencilLine, Phone, Reply, Trash2, Users, Video } from 'lucide-react';
+import { BellRing, ChevronDown, ChevronLeft, Copy, CornerUpRight, Flag, Info, Languages, Loader2, PencilLine, Phone, Pin, PinOff, Reply, Trash2, Users, Video } from 'lucide-react';
 import { useCalls } from '@/providers/CallProvider';
 import { Avatar } from '@/components/Avatar';
 import { Sheet, SheetItem } from '@/components/ui/Sheet';
@@ -28,6 +28,9 @@ import { watchChatScreenshots } from '@/lib/privacy';
 import { callsApi, type CallRow } from '@/lib/calls/api';
 import { supabase } from '@/lib/supabase';
 import { reportChatScreenshot } from '@/lib/chat/extras';
+import { PinnedBar, usePins, useWallpaper } from './more/useChatMore';
+import { pinsApi, reminderApi, reminderChoices } from '@/lib/chat/more';
+import { translateSupported, translateText } from '@/lib/translate';
 
 export default function ChatThreadScreen() {
   const { id = '' } = useParams();
@@ -47,6 +50,43 @@ export default function ChatThreadScreen() {
   const [viewer, setViewer] = useState<string | null>(null);
   const [snapView, setSnapView] = useState<{ id: string; mode: 'open' | 'replay' | 'own' } | null>(null);
   const [atBottom, setAtBottom] = useState(true);
+  const { pins, setPins } = usePins(id);
+  const pinned = useMemo(() => new Set(pins.map((p) => p.message_id)), [pins]);
+  const wall = useWallpaper(id);
+  const [remindFor, setRemindFor] = useState<LocalMessage | null>(null);
+  const [customAt, setCustomAt] = useState('');
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  async function togglePin(msgId: string) {
+    try {
+      const on = await pinsApi.toggle(msgId);
+      if (!on) setPins((l) => l.filter((x) => x.message_id !== msgId));
+      else setPins((l) => [{ message_id: msgId, conversation_id: id, pinned_by: me, created_at: new Date().toISOString() }, ...l]);
+      toast(on ? 'Pinned for everyone in this chat' : 'Unpinned', 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
+  async function remind(m: LocalMessage, at: Date) {
+    setRemindFor(null);
+    try {
+      await reminderApi.create(m.id, at);
+      toast(`I’ll remind you ${at.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}`, 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
+  async function translate(m: LocalMessage) {
+    setMenu(null);
+    if (translations[m.id]) return setTranslations(({ [m.id]: _, ...rest }) => rest);
+    try {
+      const r = await translateText(m.body ?? '');
+      if (!r) return;
+      if (r.text === m.body) return toast('It’s already in your language', 'info');
+      setTranslations((t) => ({ ...t, [m.id]: r.text }));
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
   const [loadingOlder, setLoadingOlder] = useState(false);
   // Live group call in this chat → "Join" bar.
   const [liveCall, setLiveCall] = useState<CallRow | null>(null);
@@ -193,7 +233,7 @@ export default function ChatThreadScreen() {
   const close = (a: LocalMessage, b?: LocalMessage) => !!b && b.kind !== 'system' && a.kind !== 'system' && a.sender_id === b.sender_id && Math.abs(new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) < 3 * 60_000;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-noir" style={{ backgroundImage: theme.wallpaper }}>
+    <div className="fixed inset-0 flex flex-col bg-noir" style={wall ? { background: wall.css } : { backgroundImage: theme.wallpaper }}>
       {/* Header */}
       <header className="z-30 flex items-center gap-2.5 bg-noir px-3.5 pb-3 pt-safe">
         <button onClick={() => navigate('/chat')} className={CIRCLE} aria-label="Back to chats">
@@ -262,6 +302,8 @@ export default function ChatThreadScreen() {
         </button>
       )}
 
+      <PinnedBar pins={pins} byId={byId} onJump={jumpTo} onUnpin={(mid) => void togglePin(mid)} />
+
       {/* Messages */}
       <div
         ref={scroller}
@@ -302,6 +344,8 @@ export default function ChatThreadScreen() {
                     bubbleInk={theme.ink}
                     onMenu={setMenu}
                     onReplyTap={jumpTo}
+                    pinned={pinned.has(r.m!.id)}
+                    translation={translations[r.m!.id]}
                     onRetry={conv.retry}
                     onOpenImage={setViewer}
                     onQuickReact={(m) => { haptic(10); void safe(() => conv.react(m.id, '❤️')); }}
@@ -379,6 +423,13 @@ export default function ChatThreadScreen() {
             </div>
             <SheetItem icon={<Reply className="h-4 w-4" />} label="Reply" onClick={() => { setReplyTo(menu); setMenu(null); }} />
             {menu.body && menu.kind === 'text' && <SheetItem icon={<Copy className="h-4 w-4" />} label="Copy text" onClick={() => { void navigator.clipboard?.writeText(menu.body ?? ''); toast('Copied', 'success'); setMenu(null); }} />}
+            {menu.kind !== 'snap' && (
+              <SheetItem icon={pinned.has(menu.id) ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />} label={pinned.has(menu.id) ? 'Unpin' : 'Pin in chat'} onClick={() => { const m = menu; setMenu(null); void togglePin(m.id); }} />
+            )}
+            <SheetItem icon={<BellRing className="h-4 w-4" />} label="Remind me" onClick={() => { setRemindFor(menu); setMenu(null); }} />
+            {translateSupported() && menu.kind === 'text' && menu.body && !menu.body.startsWith('e2e:') && (
+              <SheetItem icon={<Languages className="h-4 w-4" />} label={translations[menu.id] ? 'Hide translation' : 'Translate'} onClick={() => void translate(menu)} />
+            )}
             {menu.kind !== 'snap' && <SheetItem icon={<CornerUpRight className="h-4 w-4" />} label="Forward" onClick={() => { setForwarding(menu); setMenu(null); }} />}
             {menu.sender_id === me && menu.kind === 'text' && Date.now() - new Date(menu.created_at).getTime() < 86_400_000 && (
               <SheetItem icon={<PencilLine className="h-4 w-4" />} label="Edit" onClick={() => { setEditing(menu); setMenu(null); }} />
@@ -389,6 +440,25 @@ export default function ChatThreadScreen() {
             {menu.sender_id !== me && (
               <SheetItem danger icon={<Flag className="h-4 w-4" />} label="Report message" onClick={() => { const m = menu; setMenu(null); void safe(() => friendsApi.report(m.sender_id, 'inappropriate', undefined, m.id), 'Reported. Thanks for keeping SUMANOVA safe.'); }} />
             )}
+          </div>
+        )}
+      </Sheet>
+
+      {/* Reminder picker */}
+      <Sheet open={!!remindFor} onClose={() => setRemindFor(null)} title="Remind me">
+        {remindFor && (
+          <div className="space-y-2 px-4 pb-6">
+            {reminderChoices().map((c) => (
+              <button key={c.label} onClick={() => void remind(remindFor, c.at)} className="flex h-12 w-full items-center justify-between rounded-2xl bg-[#F1F1F4] px-4 text-[15px] font-bold active:scale-[0.98]">
+                {c.label}
+                <span className="text-xs font-semibold text-ink-mute">{c.at.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</span>
+              </button>
+            ))}
+            <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (customAt) void remind(remindFor, new Date(customAt)); }}>
+              <input type="datetime-local" value={customAt} onChange={(e) => setCustomAt(e.target.value)} aria-label="Pick a date and time" className="h-12 min-w-0 flex-1 rounded-2xl bg-[#F1F1F4] px-3 text-[15px] font-semibold outline-none" />
+              <button type="submit" disabled={!customAt} className="h-12 rounded-2xl bg-ink px-4 text-sm font-extrabold text-white disabled:opacity-40">Set</button>
+            </form>
+            <p className="px-1 text-xs text-ink-mute">You’ll get a notification (within a minute of the time).</p>
           </div>
         )}
       </Sheet>
