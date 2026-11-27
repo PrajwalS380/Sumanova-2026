@@ -50,7 +50,9 @@ function build(h: HeadShape, nose: NoseP | null, ears: EarP): THREE.BufferGeomet
     // bridge: a soft ridge from between the eyes down to the tip
     const top = T([0, y + 0.085, surfaceZ(h, 0, y + 0.085) - 0.012]);
     const tip = T([0, tipY + 0.006, z + 0.014]);
-    prims.push({ t: 'cone', a: top, b: tip, ra: 0.014 * p.bridgeW + p.bridge * 0.004, rb: 0.022 * p.tipW, k: 0.02, bone: 0 });
+    prims.push({ t: 'cone', a: top, b: tip, ra: 0.012 * p.bridgeW + p.bridge * 0.004, rb: 0.02 * p.tipW, k: 0.016, bone: 0 });
+    // a defined nose: a soft bulb at the tip with a little shadow line under it (the columella)
+    prims.push({ t: 'ellipsoid', c: T([0, tipY - 0.014 * p.tipS, z - 0.002]), r: [0.011 * p.tipW * S, 0.01 * S, 0.016 * S], k: 0.01, bone: 0 });
     // rounded tip
     prims.push({ t: 'ellipsoid', c: T([0, tipY, z + 0.012]), r: [0.034 * p.tipW * S, 0.031 * p.tipS * S, 0.038 * p.tipS * S], rot: [-p.up * 0.3, 0, 0], k: 0.014, bone: 0 });
     // nostril wings (alae)
