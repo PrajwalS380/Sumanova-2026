@@ -111,20 +111,20 @@ const TOPS: Record<string, TopSpec> = {
   Polo: { ease: 0.014, hem: 0.97, sleeve: 'short', neck: 'polo', placket: 'buttons' },
   Shirt: { ease: 0.018, hem: 0.95, sleeve: 'long', neck: 'shirt', placket: 'buttons', pocket: 'chest1' },
   'Lounge shirt': { ease: 0.022, hem: 0.96, sleeve: 'short', sleeveEase: 0.02, neck: 'camp', placket: 'buttons', pocket: 'chest1' },
-  Sweatshirt: { ease: 0.026, hem: 0.96, sleeve: 'long', sleeveEase: 0.02, neck: 'rib', boxy: true, rib: 'dark' },
+  Sweatshirt: { ease: 0.022, hem: 0.96, sleeve: 'long', sleeveEase: 0.017, neck: 'rib', boxy: true, rib: 'dark' },
   Tank: { ease: 0.01, hem: 0.98, sleeve: 'none', neck: 'scoop' },
   'Crop top': { ease: 0.011, hem: 1.24, sleeve: 'short', neck: 'crew' },
   // jackets (worn over a top: ease is bumped above the top's)
   Puffer: { ease: 0.05, hem: 0.92, sleeve: 'long', sleeveEase: 0.034, neck: 'high', quilt: true, placket: 'zip' },
-  Bomber: { ease: 0.038, hem: 0.98, sleeve: 'long', sleeveEase: 0.026, neck: 'rib', rib: 'dark', placket: 'zip' },
-  'Denim jacket': { ease: 0.032, hem: 0.99, sleeve: 'long', sleeveEase: 0.02, neck: 'denim', open: 0.03, pocket: 'chest2', placket: 'buttons' },
+  Bomber: { ease: 0.032, hem: 0.98, sleeve: 'long', sleeveEase: 0.022, neck: 'rib', rib: 'dark', placket: 'zip' },
+  'Denim jacket': { ease: 0.028, hem: 0.99, sleeve: 'long', sleeveEase: 0.018, neck: 'denim', open: 0.03, pocket: 'chest2', placket: 'buttons' },
   Biker: { ease: 0.03, hem: 1.0, sleeve: 'long', sleeveEase: 0.018, neck: 'lapel', open: 0.022, placket: 'zip' },
   'Shaggy coat': { ease: 0.058, hem: 0.66, sleeve: 'long', sleeveEase: 0.036, neck: 'lapel', open: 0.05, fur: true },
-  'Zip hoodie': { ease: 0.036, hem: 0.95, sleeve: 'long', sleeveEase: 0.024, neck: 'crew', open: 0.018, hood: true, rib: 'c1', placket: 'zip' },
-  Hoodie: { ease: 0.04, hem: 0.93, sleeve: 'long', sleeveEase: 0.026, neck: 'crew', boxy: true, hood: true, rib: 'c1', pocket: 'kangaroo' },
+  'Zip hoodie': { ease: 0.031, hem: 0.95, sleeve: 'long', sleeveEase: 0.021, neck: 'crew', open: 0.018, hood: true, rib: 'c1', placket: 'zip' },
+  Hoodie: { ease: 0.034, hem: 0.93, sleeve: 'long', sleeveEase: 0.022, neck: 'crew', boxy: true, hood: true, rib: 'c1', pocket: 'kangaroo' },
   Trench: { ease: 0.042, hem: 0.46, sleeve: 'long', sleeveEase: 0.024, neck: 'lapel', open: 0.04, belt: true, placket: 'buttons' },
-  Blazer: { ease: 0.034, hem: 0.88, sleeve: 'long', sleeveEase: 0.02, neck: 'lapel', open: 0.045, placket: 'buttons', pocket: 'chest1' },
-  Varsity: { ease: 0.04, hem: 0.97, sleeve: 'long', sleeveEase: 0.026, neck: 'rib', rib: 'c3', placket: 'snaps' },
+  Blazer: { ease: 0.028, hem: 0.88, sleeve: 'long', sleeveEase: 0.018, neck: 'lapel', open: 0.045, placket: 'buttons', pocket: 'chest1' },
+  Varsity: { ease: 0.034, hem: 0.97, sleeve: 'long', sleeveEase: 0.022, neck: 'rib', rib: 'c3', placket: 'snaps' },
 };
 export const topSpec = (cut: string) => TOPS[cut] ?? TOPS.Tee;
 
@@ -143,7 +143,7 @@ export function topGeometry(bp: BodyP, cut: string, layer: 0 | 1, under?: string
 function buildTop(J: Joints, cut: string, layer: 0 | 1, under?: string): GarmentGeo {
   const sp = topSpec(cut);
   const below = layer && under ? topSpec(under) : null;
-  const ease = layer ? Math.max(sp.ease, (below?.ease ?? 0.012) + 0.016) : sp.ease;
+  const ease = layer ? Math.max(sp.ease, (below?.ease ?? 0.012) + 0.013) : sp.ease;
   const sEase = layer ? Math.max(sp.sleeveEase ?? ease * 0.7, (below?.sleeveEase ?? 0.012) + 0.012) : sp.sleeveEase ?? Math.min(ease, 0.016);
   const parts: Part[] = [];
   const trims: Trim[] = [];
@@ -361,12 +361,14 @@ function buildDress(J: Joints, cut: string): GarmentGeo {
   const bodiceClips = [plane([0, neckY, 0.02], [0, 1, sp.neck === 'scoop' ? 0.9 : 0.5], 0.01)];
   if (sp.blouse) bodiceClips.push(plane([0, sp.blouse, 0], [0, -1, 0], 0.008));
   parts.push({ prims: bodice, clips: bodiceClips });
+  // the top of the thighs never pushes through the front of the skirt
+  if (!sp.blouse && sp.hem < 0.9) parts.push({ prims: bodyPrims(J, 0.024, ['thigh']), clips: [plane([0, 0.84, 0], [0, -1, 0], 0.02)], k: 0.06 });
   // skirt: a lofted bell from the waist to the hem, clearing the legs
   const top = sp.blouse ? 1.14 : 1.1;
   const hemW = Math.max(0.215 * hp * W, 0.2 * hp * W + sp.flare + (0.6 - sp.hem) * 0.05);
   // the skirt clears the hips and thighs (widest at the seat), then falls to the hem
   const seatW = (J.hx + J.r.thigh) * 1.0 + 0.03;
-  const f = loft(sp.hem, top, [[sp.hem, Math.max(hemW, seatW * 0.9) + 0.02], [Math.max(sp.hem + 0.02, 0.62), Math.max(seatW * 0.97, hemW * 0.9)], [0.93, seatW], [1.03, 0.172 * hp * W + 0.026], [top, 0.158 * W + 0.016 + J.bp.belly * 0.03]], [[sp.hem, 0.15 + sp.flare * 0.8], [0.93, 0.142 + ease], [top, 0.108 + ease + J.bp.belly * 0.05]], [[sp.hem, -0.005], [0.95, -0.014], [top, 0.0]]);
+  const f = loft(sp.hem, top, [[sp.hem, Math.max(hemW, seatW * 0.9) + 0.02], [Math.max(sp.hem + 0.02, 0.62), Math.max(seatW * 0.97, hemW * 0.9)], [0.93, seatW], [1.03, Math.max(0.172 * hp * W + 0.026, (0.176 + 0.018 * J.fem) * hp * W + 0.022)], [top, 0.158 * W + 0.016 + J.bp.belly * 0.03]], [[sp.hem, 0.15 + sp.flare * 0.8], [0.93, 0.142 + ease], [top, 0.108 + ease + J.bp.belly * 0.05]], [[sp.hem, -0.005], [0.95, -0.014], [top, 0.0]]);
   const tiers = sp.tiers ?? 0;
   parts.push({
     prims: [{ t: 'fn', f, c: [0, (sp.hem + top) / 2, 0], ext: [hemW + 0.06, (top - sp.hem) / 2 + 0.01, 0.3], bone: B.pelvis, k: 0, tag: 1 }],

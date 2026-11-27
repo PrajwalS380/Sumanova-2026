@@ -126,7 +126,7 @@ export function surfaceTube(h: HeadShape, pts: [number, number][], radius: numbe
 }
 
 /** A flat 2D shape bent to sit on the face surface. */
-export function surfaceShape(h: HeadShape, shape: THREE.Shape, cx: number, cy: number, lift = 0.004) {
+export function surfaceShape(h: HeadShape, shape: THREE.Shape | THREE.Shape[], cx: number, cy: number, lift = 0.004) {
   // The triangulated shape has long triangles spanning the whole outline; laid on a curved face
   // their middles would sink under the skin. Split them until every edge is short.
   const g = subdivideFlat(new THREE.ShapeGeometry(shape, 24), 0.008);

@@ -133,23 +133,24 @@ export function handLayout(side: number, S = 1): FingerLayout[] {
     const dir: V3 = [palmIn * 0.08, -1, spread];
     const n = Math.hypot(...dir);
     const d: V3 = [dir[0] / n, dir[1] / n, dir[2] / n];
-    const L = len * S;
+    const L = len * 1.06 * S; // long, elegant fingers
     // phalanx lengths ≈ 0.45 : 0.3 : 0.25 of the finger, curling slightly toward the palm
     const mid = add(base, scl(d, L * 0.45));
     const dip = add(mid, add(scl(d, L * 0.3), [palmIn * 0.002 * S, 0, 0]));
     const tip = add(dip, add(scl(d, L * 0.25), [palmIn * 0.003 * S, 0, 0]));
-    return { base, mid, dip, tip, r0: r * 0.9 * S, r1: r * 0.8 * S, r2: r * 0.72 * S };
+    // tapering clearly from the knuckle to a slim, rounded tip
+    return { base, mid, dip, tip, r0: r * 0.86 * S, r1: r * 0.7 * S, r2: r * 0.56 * S };
   };
   const tb: V3 = scl([palmIn * 0.014, -0.046, 0.034], S);
   const tm: V3 = scl([palmIn * 0.027, -0.081, 0.055], S);
   const td: V3 = scl([palmIn * 0.03, -0.101, 0.06], S);
   const tt: V3 = scl([palmIn * 0.032, -0.118, 0.062], S);
   return [
-    { base: tb, mid: tm, dip: td, tip: tt, r0: 0.0128 * S, r1: 0.0112 * S, r2: 0.0098 * S },
-    F(0.0285, 0.08, 0.0108, 0.1),
-    F(0.0095, 0.089, 0.0112, 0.02),
-    F(-0.0095, 0.083, 0.0106, -0.06),
-    F(-0.027, 0.066, 0.0094, -0.15),
+    { base: tb, mid: tm, dip: td, tip: tt, r0: 0.0124 * S, r1: 0.0102 * S, r2: 0.0082 * S },
+    F(0.0285, 0.08, 0.0104, 0.1),
+    F(0.0095, 0.089, 0.0106, 0.02),
+    F(-0.0095, 0.083, 0.01, -0.06),
+    F(-0.027, 0.066, 0.0088, -0.15),
   ];
 }
 
@@ -171,6 +172,8 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
   // muscle detail fades out on clothing (it shouldn't show through a puffer)
   // clothing keeps the body's forms (so it never shows skin through), softened as it loosens
   const detail = Math.max(0, 1 - inf / 0.02);
+  // chest forms keep their full shape on snug tops (a softened copy would sit inside the body's and show skin)
+  const chestK = 1;
   // tags: 1 torso, 2 neck, 3 upper arm L, 4 upper arm R, 5 forearm L, 6 forearm R, 7 thigh L, 8 thigh R, 9 shin L, 10 shin R, 11 foot L, 12 foot R, 13 pelvis
 
   if (want('torso') || want('pelvis')) {
@@ -215,18 +218,18 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
   }
   if (want('torso')) {
     for (const s of [-1, 1]) {
-      if (detail > 0) {
+      {
         if (F < 0.5) {
           // pectorals: a broad, flat plane with a soft lower edge
-          P.push({ t: 'ellipsoid', c: [s * 0.072 * sh * w, 1.47, 0.07], r: [0.07 * sh + I, 0.052 + I, 0.04 + I], rot: [0, s * 0.25, s * -0.15], bone: B.chest, k: 0.045 * detail, tag: tagBase + 1 });
+          P.push({ t: 'ellipsoid', c: [s * 0.072 * sh * w, 1.47, 0.07], r: [0.07 * sh + I, 0.052 + I, 0.04 + I], rot: [0, s * 0.25, s * -0.15], bone: B.chest, k: 0.045 * chestK, tag: tagBase + 1 });
         } else {
           // feminine chest: a gentle, neutral volume (mannequin-like)
-          P.push({ t: 'ellipsoid', c: [s * 0.066 * w, 1.43, 0.07], r: [0.062 + I, 0.058 + I, 0.052 + I], rot: [0.2, s * 0.25, 0], bone: B.chest, k: 0.05 * detail, tag: tagBase + 1 });
+          P.push({ t: 'ellipsoid', c: [s * 0.066 * w, 1.43, 0.07], r: [0.062 + I, 0.058 + I, 0.052 + I], rot: [0.2, s * 0.25, 0], bone: B.chest, k: 0.05 * chestK, tag: tagBase + 1 });
         }
         // shoulder blades
-        P.push({ t: 'ellipsoid', c: [s * 0.084 * sh * w, 1.5, -0.094], r: [0.056 + I, 0.07 + I, 0.022 + I], rot: [0, s * -0.35, s * 0.15], bone: B.chest, k: 0.05 * detail, tag: tagBase + 1 });
+        P.push({ t: 'ellipsoid', c: [s * 0.084 * sh * w, 1.5, -0.094], r: [0.056 + I, 0.07 + I, 0.022 + I], rot: [0, s * -0.35, s * 0.15], bone: B.chest, k: 0.05 * chestK, tag: tagBase + 1 });
         // collarbones
-        P.push({ t: 'cone', a: [s * 0.03, 1.69, 0.045], b: [s * (J.sx - 0.03), 1.655, 0.02], ra: 0.011 + I, rb: 0.012 + I, bone: B.chest, k: 0.03 * detail, tag: tagBase + 1 });
+        if (detail > 0) P.push({ t: 'cone', a: [s * 0.03, 1.69, 0.045], b: [s * (J.sx - 0.03), 1.655, 0.02], ra: 0.011 + I, rb: 0.012 + I, bone: B.chest, k: 0.03 * detail, tag: tagBase + 1 });
       }
       // shoulder cap (deltoid) — rounds the shoulder into the arm (no "ball joint")
       P.push({ t: 'ellipsoid', c: [s * (J.sx - 0.006), 1.588, -0.008], r: [0.058 * Math.min(w, 1.14) * (1 - 0.1 * F) + I, 0.07 + I, 0.062 + I], rot: [0, 0, s * 0.5], bone: s < 0 ? B.upperArmL : B.upperArmR, k: 0.06, tag: tagBase + (s < 0 ? 3 : 4) });
@@ -246,18 +249,20 @@ export function bodyPrims(J: Joints, inf = 0, only?: Region[], tagBase = 0): Pri
     const S = pos[ua], E = pos[ua + 1], Wr = pos[ua + 2];
     if (want('upperArm')) {
       // starts below the joint so its rounded end hides inside the shoulder cap
-      P.push({ t: 'cone', a: add(S, [0, -0.045, 0]), b: E, ra: r.upperArm + I, rb: r.upperArm * 0.78 + I, bone: ua, k: 0.04, tag: tagBase + 3 + s });
+      const cloth = inf > 0.006; // fabric hangs as a smooth tube over the arm, not shrink-wrapped muscles
+      P.push({ t: 'cone', a: add(S, [0, -0.045, 0]), b: E, ra: r.upperArm * (cloth ? 1.12 : 1) + I, rb: r.upperArm * (cloth ? 0.98 : 0.78) + I, bone: ua, k: 0.04, tag: tagBase + 3 + s });
       // biceps (front) and triceps (back) — the arm reads round-but-shaped, not as a tube
-      P.push({ t: 'ellipsoid', c: add(lerp(S, E, 0.52), [0, 0, 0.014]), r: [r.upperArm * 0.86 + I, 0.085 + I, r.upperArm * 0.8 + I], bone: ua, k: 0.04, tag: tagBase + 3 + s });
-      P.push({ t: 'ellipsoid', c: add(lerp(S, E, 0.38), [side * 0.004, 0, -0.016]), r: [r.upperArm * 0.84 + I, 0.1 + I, r.upperArm * 0.8 + I], bone: ua, k: 0.04, tag: tagBase + 3 + s });
+      if (!cloth) P.push({ t: 'ellipsoid', c: add(lerp(S, E, 0.52), [0, 0, 0.014]), r: [r.upperArm * 0.86 + I, 0.085 + I, r.upperArm * 0.8 + I], bone: ua, k: 0.04, tag: tagBase + 3 + s });
+      if (!cloth) P.push({ t: 'ellipsoid', c: add(lerp(S, E, 0.38), [side * 0.004, 0, -0.016]), r: [r.upperArm * 0.84 + I, 0.1 + I, r.upperArm * 0.8 + I], bone: ua, k: 0.04, tag: tagBase + 3 + s });
     }
     if (want('foreArm')) {
       // elbow: a soft joint with the point of the elbow behind
       P.push({ t: 'sphere', c: add(E, [0, 0, -0.006]), r: r.upperArm * 0.76 + I, bone: ua + 1, k: 0.035, tag: tagBase + 5 + s });
       if (detail > 0) P.push({ t: 'ellipsoid', c: add(E, [0, 0.004, -0.04]), r: [0.018 + I, 0.022 + I, 0.014 + I], bone: ua + 1, k: 0.02 * detail, tag: tagBase + 5 + s });
       // forearm: full near the elbow (outer muscle bulge), slimming into a flattened wrist
-      P.push({ t: 'cone', a: E, b: add(Wr, [0, 0.03, 0]), ra: r.foreArm + I, rb: r.wrist * 0.82 + I, bone: ua + 1, k: 0.04, tag: tagBase + 5 + s });
-      P.push({ t: 'ellipsoid', c: add(lerp(E, Wr, 0.28), [side * 0.008, 0, 0.004]), r: [r.foreArm * 0.96 + I, 0.09 + I, r.foreArm * 1.04 + I], bone: ua + 1, k: 0.04, tag: tagBase + 5 + s });
+      const clothF = inf > 0.006;
+      P.push({ t: 'cone', a: E, b: add(Wr, [0, 0.03, 0]), ra: r.foreArm * (clothF ? 1.14 : 1) + I, rb: r.wrist * (clothF ? 1.0 : 0.82) + I, bone: ua + 1, k: 0.04, tag: tagBase + 5 + s });
+      if (!clothF) P.push({ t: 'ellipsoid', c: add(lerp(E, Wr, 0.28), [side * 0.008, 0, 0.004]), r: [r.foreArm * 0.96 + I, 0.09 + I, r.foreArm * 1.04 + I], bone: ua + 1, k: 0.04, tag: tagBase + 5 + s });
       P.push({ t: 'ellipsoid', c: add(Wr, [0, 0.05, 0]), r: [r.wrist * 0.74 + I, 0.06 + I, r.wrist * 1.0 + I], bone: ua + 1, k: 0.03, tag: tagBase + 5 + s });
     }
     const th = s ? B.thighR : B.thighL;

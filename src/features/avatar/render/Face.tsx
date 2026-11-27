@@ -635,7 +635,38 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
         if (e === 'surprised') return new THREE.Shape().absellipse(0, 0, ww * sx, depth * sy, 0, Math.PI * 2, false, 0);
         return lens(ww * sx, 0, -top * sy, -depth * 2 * sy);
       };
-      const teeth = lens(ww * 0.86, -0.004, -top - 0.003, -top - 0.036);
+      // individual teeth: two bigger front teeth, smaller toward the corners, tiny gaps between
+      const toothRow = (x0: number, y0: number, cTop: number, cBot: number, n: number, lower = false) => {
+        const yAt = (x: number, c: number) => { const t = (x / x0 + 1) / 2; return y0 + 2 * t * (1 - t) * c; };
+        const widths = Array.from({ length: n }, (_, i) => { const d = Math.abs(i - (n - 1) / 2); return d < 1 ? 1.25 : d < 2 ? 1.0 : 0.88; });
+        const sum = widths.reduce((a, b) => a + b, 0);
+        const shapes: THREE.Shape[] = [];
+        const gap = 0.0011;
+        let x = -x0;
+        for (let i = 0; i < n; i++) {
+          const tw = (2 * x0 * widths[i]) / sum;
+          const a = x + gap / 2, b = x + tw - gap / 2;
+          const d = Math.abs(i - (n - 1) / 2);
+          const len = d < 1 ? 1 : d < 2 ? 0.9 : 0.8; // front teeth longest
+          const pts: THREE.Vector2[] = [];
+          const steps = 6;
+          const r = Math.min((b - a) * 0.35, 0.004);
+          // root edge (hidden under the lip) then the rounded biting edge
+          for (let k = 0; k <= steps; k++) { const xx = a + ((b - a) * k) / steps; pts.push(new THREE.Vector2(xx, yAt(xx, lower ? cBot : cTop))); }
+          const edge = (xx: number) => { const y1 = yAt(xx, lower ? cBot : cTop), y2 = yAt(xx, lower ? cTop : cBot); return y1 + (y2 - y1) * len; };
+          for (let k = steps; k >= 0; k--) {
+            const xx = a + ((b - a) * k) / steps;
+            const fromEdge = Math.min(xx - a, b - xx);
+            const round = fromEdge < r ? r - Math.sqrt(Math.max(0, r * r - (r - fromEdge) ** 2)) : 0;
+            pts.push(new THREE.Vector2(xx, edge(xx) + (lower ? -round : round)));
+          }
+          shapes.push(new THREE.Shape(pts));
+          x += tw;
+        }
+        return shapes;
+      };
+      const teeth = toothRow(ww * 0.86, -0.004, -top - 0.003, -top - 0.036, 8);
+      const lowerTeeth = e === 'laughing' ? toothRow(ww * 0.5, -depth * 0.62, -depth * 0.36, -depth * 0.62, 6, true) : null;
       const ell = (rx: number, ry: number) => new THREE.Shape().absellipse(0, 0, rx, ry, 0, Math.PI * 2, false, 0);
       // inside the mouth: a darker throat at the back and a rounded tongue resting on the floor
       const sur = e === 'surprised';
@@ -649,6 +680,7 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
         throat: surfaceShape(h, throat, 0, y + 0.004 - (sur ? 0 : depth * 0.5), 0.0048),
         tongue: e !== 'tongue' ? surfaceShape(h, tongueShape, 0, y + 0.004 + tongueY, 0.0052) : null,
         teeth: !sur ? surfaceShape(h, teeth, 0, y + 0.004, 0.0055) : null,
+        lowerTeeth: lowerTeeth ? surfaceShape(h, lowerTeeth, 0, y + 0.004, 0.0056) : null,
         ww, depth, top,
       };
     }
@@ -701,7 +733,8 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
       {'inner' in parts && parts.inner && <mesh geometry={parts.inner} renderOrder={1}><Flat color="#4a1418" rough={0.8} layer={1.5} /></mesh>}
       {'throat' in parts && parts.throat && <mesh geometry={parts.throat} renderOrder={1}><Flat color="#2a080c" rough={0.9} layer={1.7} /></mesh>}
       {'tongue' in parts && parts.tongue && <mesh geometry={parts.tongue} renderOrder={2}><meshPhysicalMaterial color="#c8505e" roughness={0.4} clearcoat={0.5} polygonOffset polygonOffsetFactor={-5.6} polygonOffsetUnits={-112} /></mesh>}
-      {'teeth' in parts && parts.teeth && <mesh geometry={parts.teeth} renderOrder={2}><Flat color="#f7f1e8" rough={0.25} layer={2.2} /></mesh>}
+      {'teeth' in parts && parts.teeth && <mesh geometry={parts.teeth} renderOrder={2}><meshPhysicalMaterial color="#f7f1e8" roughness={0.22} clearcoat={0.4} polygonOffset polygonOffsetFactor={-6.6} polygonOffsetUnits={-132} /></mesh>}
+      {'lowerTeeth' in parts && parts.lowerTeeth && <mesh geometry={parts.lowerTeeth} renderOrder={2}><meshPhysicalMaterial color="#efe7dc" roughness={0.25} clearcoat={0.3} polygonOffset polygonOffsetFactor={-6.6} polygonOffsetUnits={-132} /></mesh>}
       {'ww' in parts && parts.ww && <SmileShade h={h} y={y + 0.004} ww={parts.ww} depth={parts.depth!} top={parts.top!} teeth={!!parts.teeth} />}
       {'upper' in parts && parts.upper && <mesh geometry={parts.upper}><meshPhysicalMaterial color={mix(lip, '#3a1010', 0.12)} roughness={0.38} clearcoat={0.5} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-8} /></mesh>}
       {'lower' in parts && parts.lower && <mesh geometry={parts.lower}><meshPhysicalMaterial color={lip} roughness={0.3} clearcoat={0.7} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-8} /></mesh>}

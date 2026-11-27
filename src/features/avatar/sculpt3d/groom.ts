@@ -460,10 +460,13 @@ export class Groomer {
       B.crossVectors(T, N).normalize();
       const ramp = smooth(0, 0.12 * R, s);
       const q = pts[i].clone();
+      // waves and curls follow the height on the head (not the distance along each lock), so
+      // neighbouring locks wave together and the outside reads as one smooth, rippled mass
+      const yy = -pts[i].y;
       if (tex === 'wavy') {
-        q.addScaledVector(B, Math.sin(s / (0.075 * R) + phase) * 0.045 * R * amount * ramp);
+        q.addScaledVector(B, Math.sin(yy / (0.075 * R) + phase) * 0.045 * R * amount * ramp);
       } else if (tex === 'curly') {
-        const th = s / ((0.05 - 0.02 * amount) * R) + phase, A = (0.035 + 0.035 * amount) * R * ramp;
+        const th = yy / ((0.05 - 0.02 * amount) * R) + phase, A = (0.035 + 0.035 * amount) * R * ramp;
         q.addScaledVector(B, Math.cos(th) * A).addScaledVector(N, Math.sin(th) * A * 0.8);
       } else if (tex === 'coily') {
         const th = s / ((0.02 - 0.008 * amount) * R) + phase, A = (0.022 + 0.012 * amount) * R * smooth(0, 0.04 * R, s);
@@ -569,18 +572,20 @@ export class Groomer {
       // roots by the hairline rise out of the scalp layer (no stepped edge)
       if (!fringe) this.bury(pts, u);
       const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
-      if (p.tex !== 'straight') pts = this.texture(this.resample(pts, step), r() * Math.PI * 2);
+      // long waves / curls: neighbouring locks nearly in phase (one coherent ripple); short: varied
+      const coherent = longest > 0.8 && (p.tex === 'wavy' || curly);
+      if (p.tex !== 'straight') pts = this.texture(this.resample(pts, step), coherent ? r() * 0.9 : r() * Math.PI * 2);
       const short = L < 0.45;
       // medium cuts (jaw to shoulder): full, chunky locks — not thin tails
       const medium = longest >= 0.45 && longest <= 1.05 && !coily && !curly;
-      const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.11 : 0.085) : curly ? 0.14 : p.fringe === 'wispy' && fringe ? 0.13 : tight ? 0.16 : cutShort ? 0.3 : medium && !fringe ? 0.38 : short ? 0.22 : 0.3) * (0.85 + r() * 0.3);
+      const w0 = R * p.clump * (coily ? (longest > 0.8 ? 0.11 : 0.085) : curly ? (longest > 0.8 ? 0.2 : 0.14) : p.fringe === 'wispy' && fringe ? 0.13 : tight ? 0.16 : cutShort ? 0.3 : medium && !fringe ? 0.38 : short ? 0.22 : 0.3) * (0.85 + r() * 0.3);
       // quiffs / pompadours: one smooth rolled wave of broad locks (not flame-like spikes)
       const roll = p.flow === 'up' && p.tips < 0.7;
       const tip = p.fringe === 'straight' && fringe ? 0.4 : roll ? 0.55 : tight ? 0.5 : medium && !fringe ? Math.max(0.14, 0.3 - 0.2 * p.tips) : shortCut ? 0.32 - 0.15 * p.tips : Math.max(0.03, 0.3 - 0.3 * p.tips);
       this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : medium ? 0.55 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7 });
       // detail: finer locks riding on top of the main one and fanning apart toward the tips
       // (piecey, separated ends and layered depth — the sculpted-groom look)
-      if (!coily && !tight) this.subLocks(pts, roll ? w0 * 1.2 : w0, { n: curly ? 1 : roll ? 1 : shortCut ? 1 : short ? 2 : 3, flat: curly ? 0.75 : 0.5, spread: shortCut ? 0.3 : short ? 0.55 : 0.8 });
+      if (!coily && !tight) this.subLocks(pts, roll ? w0 * 1.2 : w0, { n: curly ? (longest > 0.8 ? 0 : 1) : roll ? 1 : shortCut ? 1 : short ? 2 : 3, flat: curly ? 0.75 : 0.5, spread: shortCut ? 0.3 : short ? 0.55 : 0.8 });
       // fly-aways: a few fine single strands lifting off the surface
       if (!coily && u.z < 0.3 && r() < 0.035 + p.messy * 0.05 && L > 0.2) {
         const fp = this.texture(this.resample(this.grow(u, L * (1 + r() * 0.15), { fringe, layer: layer + 0.6, liftK: 1.5 }), 0.03 * R), r() * 6, 'textured', 1);
