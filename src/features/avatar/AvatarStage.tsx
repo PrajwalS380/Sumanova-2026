@@ -14,8 +14,8 @@ export interface AvatarStageHandle {
 export type Framing = 'full' | 'head' | 'upper' | 'feet';
 const FRAMES: Record<Framing, { pos: [number, number, number]; target: [number, number, number] }> = {
   full: { pos: [0, 1.42, 5.6], target: [0, 1.26, 0] },
-  head: { pos: [0, 2.12, 2.3], target: [0, 2.05, 0] },
-  upper: { pos: [0, 1.95, 3.7], target: [0, 1.78, 0] },
+  head: { pos: [0, 2.18, 2.3], target: [0, 2.11, 0] },
+  upper: { pos: [0, 2.0, 3.7], target: [0, 1.83, 0] },
   feet: { pos: [0, 0.55, 2.6], target: [0, 0.35, 0] },
 };
 
@@ -69,8 +69,8 @@ function Capturer({ apiRef }: { apiRef: React.MutableRefObject<AvatarStageHandle
     const prev = { pos: cam.position.clone(), q: cam.quaternion.clone() };
     if (framing === 'bust') {
       // face close-up for the round profile picture
-      cam.position.set(0, 2.1, 1.75);
-      cam.lookAt(0, 2.03, 0);
+      cam.position.set(0, 2.16, 1.75);
+      cam.lookAt(0, 2.09, 0);
     } else {
       // whole figure, head to toe
       cam.position.set(0, 1.25, 5.6);

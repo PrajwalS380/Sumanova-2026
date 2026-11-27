@@ -14,21 +14,22 @@ import { DEFAULT_LOOK, type Look } from '../look/config';
 export type ThumbFrame = 'head' | 'face' | 'upper' | 'lower' | 'feet' | 'full' | 'fullroomy' | 'sticker' | 'seated' | 'bag' | 'dress';
 
 const SIZE = 192;
+// (framed for the longer-legged figure: the head sits ~0.06 higher)
 const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
-  head: { pos: [0.35, 2.06, 1.55], target: [0, 1.99, 0], fov: 30 },
-  face: { pos: [0, 1.98, 0.95], target: [0, 1.94, 0], fov: 30 },
-  upper: { pos: [0, 1.6, 2.7], target: [0, 1.46, 0], fov: 30 },
+  head: { pos: [0.38, 2.16, 1.78], target: [0, 2.08, 0], fov: 30 },
+  face: { pos: [0, 2.04, 0.95], target: [0, 2.0, 0], fov: 30 },
+  upper: { pos: [0, 1.66, 2.7], target: [0, 1.52, 0], fov: 30 },
   lower: { pos: [0, 0.66, 2.9], target: [0, 0.66, 0], fov: 30 },
   feet: { pos: [0.55, 0.3, 1.05], target: [0, 0.12, 0.05], fov: 30 },
   /** Three-quarter view of the bag side (bags hang at the avatar's right hip; backpacks sit behind). */
   bag: { pos: [-1.75, 1.15, 0.75], target: [-0.36, 1.0, -0.04], fov: 30 },
   /** Shoulders to shins, so prints on dresses read clearly. */
   dress: { pos: [0, 1.12, 3.5], target: [0, 1.06, 0], fov: 30 },
-  full: { pos: [0, 1.26, 4.8], target: [0, 1.2, 0], fov: 30 },
+  full: { pos: [0, 1.29, 4.9], target: [0, 1.23, 0], fov: 30 },
   // room above the head for big hair and raised arms (welcome / starter art)
   fullroomy: { pos: [0, 1.34, 5.7], target: [0, 1.3, 0], fov: 30 },
   /** Knees up, with head-room for raised arms (chat stickers). */
-  sticker: { pos: [0, 1.5, 3.9], target: [0, 1.45, 0], fov: 30 },
+  sticker: { pos: [0, 1.56, 3.9], target: [0, 1.51, 0], fov: 30 },
   seated: { pos: [0, 1.05, 3.6], target: [0, 1.0, 0], fov: 30 },
 };
 
@@ -54,7 +55,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v27';
+const STORE = 'snv-thumbs-v28';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {

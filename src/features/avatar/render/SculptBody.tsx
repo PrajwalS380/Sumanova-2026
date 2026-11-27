@@ -9,6 +9,8 @@ import { useSculpt } from '../sculpt3d/async';
 import { SkinMat, nailTone } from './Face';
 
 const I4 = new THREE.Matrix4();
+/** Leg length factor (hip to ankle), a slimmer, taller stylised-adult silhouette. */
+export const LEG_STRETCH = 1.07;
 
 /** A mesh skinned to the figure's skeleton (bound once, in the rest pose). */
 export function Skinned({ geometry, skeleton, children, shadow = true }: { geometry: THREE.BufferGeometry; skeleton: THREE.Skeleton; children: ReactNode; shadow?: boolean }) {
@@ -81,6 +83,7 @@ export function SculptBody({ look, body, pose, animate, head, clothes, skirt = 0
     return sp;
   }, [pose, skirt]);
   const { bones } = rig;
+  const legLift = (J.pos[B.thighL][1] - J.pos[B.footL][1]) * (LEG_STRETCH - 1);
 
   function apply(t: number) {
     const s = (f: number, a: number, ph = 0) => Math.sin(t * f + ph) * a;
@@ -100,7 +103,11 @@ export function SculptBody({ look, body, pose, animate, head, clothes, skirt = 0
     // feet stay level when sitting
     bones[B.footL].rotation.x = bones[B.footR].rotation.x = pose === 'sitting' ? 0 : 0;
     const pel = bones[B.pelvis];
-    pel.position.y = J.pos[B.pelvis][1] + (pose === 'dancing' ? Math.abs(s(5, 0.05)) : 0) + (pose === 'walking' ? Math.abs(s(8, 0.02)) : 0) + (pose === 'sitting' ? -0.4 : 0);
+    // longer legs: each thigh bone is stretched along its length (thigh + shin skin and trousers stretch
+    // with it), the feet are scaled back to normal height, and the body rises so the soles stay on the ground
+    for (const b of [B.thighL, B.thighR]) bones[b].scale.set(1, LEG_STRETCH, 1);
+    for (const b of [B.footL, B.footR]) bones[b].scale.set(1, 1 / LEG_STRETCH, 1);
+    pel.position.y = J.pos[B.pelvis][1] + legLift * (pose === 'sitting' ? 0.52 : 1) + (pose === 'dancing' ? Math.abs(s(5, 0.05)) : 0) + (pose === 'walking' ? Math.abs(s(8, 0.02)) : 0) + (pose === 'sitting' ? -0.4 : 0);
     pel.rotation.set(0, pose === 'dancing' ? s(1.25, 0.25) : 0, pose === 'dancing' ? s(2.5, 0.07) : 0);
     bones[B.chest].rotation.set(s(1.5, 0.008), 0, 0);
     const hd = bones[B.head];
