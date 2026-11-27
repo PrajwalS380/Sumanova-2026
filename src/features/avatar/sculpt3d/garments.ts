@@ -1,6 +1,6 @@
 import type * as THREE from 'three';
 import type { BodyP } from '../look/face';
-import { B, REST_ARM, armBlend, bodyPrims, softenArmpits, type Joints, type Region } from './anatomy';
+import { B, REST_ARM, armBlend, bodyParts, bodyPrims, softenArmpits, type Joints, type Region } from './anatomy';
 import { Field, loft, type Part, type Prim, type V3 } from './sdf';
 import { GeoCache, meshField } from './mesh';
 import { jointsFor } from './rig';
@@ -59,10 +59,52 @@ function frontZ(J: Joints, y: number, off: number) {
   return z0 + off;
 }
 
+/** The body's own field (cached per body), so clothing can borrow its skin weights. */
+const bodyFields = new Map<string, Field>();
+function bodyField(J: Joints) {
+  const key = bodyKey(J.bp);
+  let f = bodyFields.get(key);
+  if (!f) {
+    if (bodyFields.size > 8) bodyFields.clear();
+    bodyFields.set(key, (f = new Field(bodyParts(J), 0.04)));
+  }
+  return f;
+}
 function meshMain(J: Joints, parts: Part[], skinTau = 0.025) {
   const f = new Field(parts, 0.03);
-  // lofted skirts / coats and fold displacement change faster than a true distance: cull conservatively
-  return softenArmpits(meshField(f, { cell: CELL, skin: skinTau, uv: clothUV(J), lipschitz: 1.8 }), J);
+  // lofted skirts / coats and fold displacement change faster than a true distance: cull conservatively.
+  // Cloth near the body moves exactly like the skin under it (borrowed weights): a lifted arm no longer
+  // stretches the shirt's side into a web or lets the shoulder push through the neckline.
+  return dropLimbBridges(softenArmpits(meshField(f, { cell: CELL, skin: skinTau, uv: clothUV(J), lipschitz: 1.8, weightField: { field: bodyField(J), tau: 0.025, within: 0.12, limbs: LIMBS, limbTag: (t) => t >= 3 && t <= 6, limbOnlyBelow: 1.52, minY: 1.08 } }), J));
+}
+const LIMBS: number[] = [B.upperArmL, B.foreArmL, B.handL, B.upperArmR, B.foreArmR, B.handR];
+/**
+ * Where a loose sleeve touches the side of the garment below the armpit, the mesher fuses them with
+ * a few tiny triangles that join an arm-only vertex to a chest-only one. They're invisible at rest but
+ * stretch into a web when the arm lifts — drop them.
+ */
+function dropLimbBridges(geo: THREE.BufferGeometry) {
+  const idx = geo.getIndex(), P = geo.getAttribute('position'), I = geo.getAttribute('skinIndex'), W = geo.getAttribute('skinWeight');
+  if (!idx || !I || !W) return geo;
+  const limbW = new Float32Array(P.count);
+  for (let v = 0; v < P.count; v++) {
+    let a = 0;
+    if (LIMBS.includes(I.getX(v))) a += W.getX(v);
+    if (LIMBS.includes(I.getY(v))) a += W.getY(v);
+    if (LIMBS.includes(I.getZ(v))) a += W.getZ(v);
+    if (LIMBS.includes(I.getW(v))) a += W.getW(v);
+    limbW[v] = a;
+  }
+  const out: number[] = [];
+  for (let t = 0; t < idx.count; t += 3) {
+    const a = idx.getX(t), b = idx.getX(t + 1), c = idx.getX(t + 2);
+    const lo = Math.min(limbW[a], limbW[b], limbW[c]), hi = Math.max(limbW[a], limbW[b], limbW[c]);
+    const low = Math.max(P.getY(a), P.getY(b), P.getY(c)) < 1.44;
+    if (low && hi - lo > 0.85) continue;
+    out.push(a, b, c);
+  }
+  if (out.length !== idx.count) geo.setIndex(out);
+  return geo;
 }
 function meshTrim(prims: Prim[], cell = TRIM_CELL, extra?: Partial<Part>) {
   const f = new Field([{ prims, ...extra }], 0.012, 0.05);
@@ -155,7 +197,7 @@ function buildTop(J: Joints, cut: string, layer: 0 | 1, under?: string): Garment
     const W = J.bp.width;
     // kept inside the arms (they hang a little away from the body): a block wider than the armpit
     // would fuse with the sleeves and stretch into a web when the arms lift
-    const inner = J.sx + 0.008 + 0.282 * Math.sin(REST_ARM) - J.r.upperArm - sEase - 0.018;
+    const inner = J.sx + 0.008 + 0.282 * Math.sin(REST_ARM) - J.r.upperArm - sEase - 0.06;
     trunk.push({ t: 'ellipsoid', c: [0, 1.2, 0.005], r: [Math.min((0.2 + ease) * W, inner), 0.3, 0.135 + ease + J.bp.belly * 0.05], bone: B.chest, k: 0.08, tag: 1 });
   }
   // the hem drapes over whatever trousers are worn (the widest hips + thighs), never under them
@@ -362,7 +404,7 @@ function buildDress(J: Joints, cut: string): GarmentGeo {
   if (sp.blouse) bodiceClips.push(plane([0, sp.blouse, 0], [0, -1, 0], 0.008));
   parts.push({ prims: bodice, clips: bodiceClips });
   // the top of the thighs never pushes through the front of the skirt
-  if (!sp.blouse && sp.hem < 0.9) parts.push({ prims: bodyPrims(J, 0.024, ['thigh']), clips: [plane([0, 0.84, 0], [0, -1, 0], 0.02)], k: 0.06 });
+  if (!sp.blouse && sp.hem < 0.9) parts.push({ prims: bodyPrims(J, 0.024, ['thigh']), clips: [plane([0, 0.93, 0], [0, -1, 0], 0.02)], k: 0.06 });
   // skirt: a lofted bell from the waist to the hem, clearing the legs
   const top = sp.blouse ? 1.14 : 1.1;
   const hemW = Math.max(0.215 * hp * W, 0.2 * hp * W + sp.flare + (0.6 - sp.hem) * 0.05);

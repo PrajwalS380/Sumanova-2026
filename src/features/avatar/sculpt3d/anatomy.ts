@@ -472,8 +472,25 @@ export function softenArmpits(geo: import('three').BufferGeometry, J: Joints) {
   for (let i = 0; i < P.count; i++) {
     const x = P.getX(i), y = P.getY(i);
     const ax = Math.abs(x);
-    // armpit band: from just below the shoulder down the upper ribs
-    const band = sm(1.28, 1.38, y) * (1 - sm(1.55, 1.64, y));
+    // the base of the neck and the inner shoulder never follow the arm (a lifted arm would drag
+    // the neckline into a ragged edge); the arm's share fades out toward the neck
+    if (y > 1.5 && ax < J.sx - 0.06) {
+      const keep = sm(J.sx - 0.16, J.sx - 0.06, ax);
+      const arm = x < 0 ? B.upperArmL : B.upperArmR;
+      const ws = [W.getX(i), W.getY(i), W.getZ(i), W.getW(i)], is = [I.getX(i), I.getY(i), I.getZ(i), I.getW(i)];
+      let moved = 0;
+      for (let q = 0; q < 4; q++) if (is[q] === arm || is[q] === arm + 1) { moved += ws[q] * (1 - keep); ws[q] *= keep; }
+      if (moved > 0) {
+        const c = is.indexOf(B.chest);
+        if (c >= 0) ws[c] += moved;
+        else { const q = ws.indexOf(Math.min(...ws)); is[q] = B.chest; ws[q] = moved; }
+        I.setXYZW(i, is[0], is[1], is[2], is[3]);
+        W.setXYZW(i, ws[0], ws[1], ws[2], ws[3]);
+      }
+    }
+    // armpit band: only the hollow right under the shoulder. (Lower down, the inner arm must stay on
+    // the arm: sharing it with the chest leaves a sheet from the elbow to the ribs when the arm lifts.)
+    const band = sm(1.43, 1.5, y) * (1 - sm(1.58, 1.66, y));
     if (band <= 0 || ax < x0 - 0.09 || ax > J.sx + 0.08) continue;
     const arm = x < 0 ? B.upperArmL : B.upperArmR;
     const b0 = I.getX(i);

@@ -17,6 +17,8 @@ export interface MeshOptions {
    * Raises the culling margin so no block that holds surface is skipped (which leaves holes).
    */
   lipschitz?: number;
+  /** take skin weights from another field (e.g. clothing borrows the body's) where it lies within `within` of it */
+  weightField?: { field: Field; tau: number; within: number; /** limb bones a vertex may only borrow if its own surface belongs to a limb (by volume tag) */ limbs?: number[]; limbTag?: (tag: number) => boolean; /** below this height a limb surface follows only limb bones */ limbOnlyBelow?: number; /** only borrow above this height */ minY?: number };
   /** per-vertex colour (x, y, z, tag, normal) — e.g. hair root→tip */
   color?: (x: number, y: number, z: number, tag: number, n: V3) => [number, number, number];
 }
@@ -157,7 +159,33 @@ export function meshField(f: Field, o: MeshOptions): THREE.BufferGeometry {
     if (!skinIdx && !uvs && !cols) continue;
     f.eval(x, y, z); // refresh per-prim distances for weights / tags
     if (skinIdx && skinW) {
+      const wf = o.weightField;
       f.weights(o.skin!, bi, bw);
+      if (wf && y > (wf.minY ?? -Infinity) && wf.field.eval(x, y, z) < wf.within) {
+        const ownLimb = !wf.limbs || (wf.limbTag ? wf.limbTag(f.tagAt()) : bi.some((b, q) => bw[q] > 0.05 && wf.limbs!.includes(b)));
+        const bi2: number[] = [], bw2: number[] = [];
+        wf.field.weights(wf.tau, bi2, bw2);
+        // a garment's body panel (e.g. a boxy sweatshirt hanging beside the arm) never follows the arm
+        if (!ownLimb) for (let q = bi2.length - 1; q >= 0; q--) if (wf.limbs!.includes(bi2[q])) { bi2.splice(q, 1); bw2.splice(q, 1); }
+        // …and a loose sleeve's inner side, hanging next to the ribs, never stays behind with the chest
+        if (ownLimb && wf.limbs && wf.limbOnlyBelow != null && y < wf.limbOnlyBelow) {
+          const hasLimb = bi2.some((b) => wf.limbs!.includes(b));
+          if (hasLimb) for (let q = bi2.length - 1; q >= 0; q--) if (!wf.limbs.includes(bi2[q])) { bi2.splice(q, 1); bw2.splice(q, 1); }
+          else { bi2.length = bw2.length = 0; for (let q = 0; q < bi.length; q++) if (wf.limbs.includes(bi[q])) { bi2.push(bi[q]); bw2.push(bw[q]); } }
+        }
+        const tot = bw2.reduce((a, b) => a + b, 0);
+        if (tot > 0.2) {
+          bi.length = bw.length = 0;
+          for (let q = 0; q < bi2.length; q++) { bi.push(bi2[q]); bw.push(bw2[q] / tot); }
+        } else if (!ownLimb && wf.limbs) {
+          // the body under this panel is all arm (a jacket's side beside the arm): it stays with the chest
+          let kept = 0;
+          for (let q = bi.length - 1; q >= 0; q--) if (wf.limbs.includes(bi[q])) { bi.splice(q, 1); bw.splice(q, 1); } else kept += bw[q];
+          if (kept > 1e-4) for (let q = 0; q < bw.length; q++) bw[q] /= kept;
+          else { bi.length = bw.length = 0; bi.push(1); bw.push(1); }
+        }
+        f.eval(x, y, z); // restore this field's per-prim state for tags
+      }
       for (let q = 0; q < 4; q++) {
         skinIdx[v * 4 + q] = bi[q] ?? 0;
         skinW[v * 4 + q] = bw[q] ?? 0;
