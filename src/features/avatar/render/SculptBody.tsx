@@ -40,7 +40,7 @@ interface PoseSpec {
 }
 
 function poseSpec(pose: Pose): PoseSpec {
-  const v: PoseSpec = { armL: [0.19, -0.04], armR: [-0.19, -0.04], foreL: [0.07, -0.24], foreR: [-0.07, -0.24], legL: 0, legR: 0, knee: 0, gL: 'relaxed', gR: 'relaxed' };
+  const v: PoseSpec = { armL: [0.12, 0.03], armR: [-0.12, 0.03], foreL: [0.06, -0.16], foreR: [-0.06, -0.16], rollL: 0.12, rollR: -0.12, legL: 0, legR: 0, knee: 0, gL: 'relaxed', gR: 'relaxed' };
   switch (pose) {
     case 'waving':
       return { ...v, armR: [-2.45, 0.1], foreR: [-0.5, 0], gR: 'wave', twistR: -0.3 };
@@ -108,8 +108,19 @@ export function SculptBody({ look, body, pose, animate, head, clothes, skirt = 0
     for (const b of [B.thighL, B.thighR]) bones[b].scale.set(1, LEG_STRETCH, 1);
     for (const b of [B.footL, B.footR]) bones[b].scale.set(1, 1 / LEG_STRETCH, 1);
     pel.position.y = J.pos[B.pelvis][1] + legLift * (pose === 'sitting' ? 0.52 : 1) + (pose === 'dancing' ? Math.abs(s(5, 0.05)) : 0) + (pose === 'walking' ? Math.abs(s(8, 0.02)) : 0) + (pose === 'sitting' ? -0.4 : 0);
-    pel.rotation.set(0, pose === 'dancing' ? s(1.25, 0.25) : 0, pose === 'dancing' ? s(2.5, 0.07) : 0);
-    bones[B.chest].rotation.set(s(1.5, 0.008), 0, 0);
+    // relaxed stance: weight on the left leg, hips tilt a touch, the free leg turns out slightly
+    const rest = pose === 'standing';
+    pel.rotation.set(0, pose === 'dancing' ? s(1.25, 0.25) : rest ? 0.06 : 0, pose === 'dancing' ? s(2.5, 0.07) : rest ? 0.035 : 0);
+    if (rest) {
+      bones[B.thighL].rotation.z = -0.035;
+      bones[B.thighR].rotation.z = -0.075;
+      bones[B.thighR].rotation.y = -0.12;
+      bones[B.shinR].rotation.x = 0.1;
+      bones[B.thighR].rotation.x -= 0.04;
+    } else {
+      bones[B.thighL].rotation.z = bones[B.thighR].rotation.z = bones[B.thighR].rotation.y = 0;
+    }
+    bones[B.chest].rotation.set(s(1.5, 0.008), rest ? -0.05 : 0, rest ? -0.03 : 0);
     const hd = bones[B.head];
     hd.rotation.y = pose === 'standing' || pose === 'sitting' ? s(0.45, 0.16) + s(0.23, 0.08) : pose === 'waving' ? 0.12 : 0;
     hd.rotation.z = pose === 'dancing' ? s(2.5, -0.1) : s(0.6, 0.035);

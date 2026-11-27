@@ -83,7 +83,7 @@ export type Gesture = 'relaxed' | 'open' | 'fist' | 'point' | 'peace' | 'thumbsu
 /** Finger curl (radians) per finger [thumb, index, middle, ring, pinky], [base, tip]. */
 const CURL: Record<Gesture, [number, number][]> = {
   // natural rest: a soft cascade — index nearly straight, each finger toward the pinky a bit more curled
-  relaxed: [[0.2, 0.25], [0.3, 0.42], [0.42, 0.55], [0.52, 0.62], [0.62, 0.72]],
+  relaxed: [[0.15, 0.15], [0.16, 0.22], [0.22, 0.3], [0.28, 0.36], [0.34, 0.44]],
   open: [[0.0, 0.05], [0.05, 0.05], [0.04, 0.05], [0.05, 0.06], [0.06, 0.08]],
   wave: [[-0.1, 0.0], [0.0, 0.02], [0.0, 0.02], [0.02, 0.03], [0.04, 0.05]],
   fist: [[0.55, 0.7], [1.45, 1.6], [1.5, 1.65], [1.5, 1.6], [1.45, 1.55]],
@@ -101,7 +101,7 @@ const SPREAD: Partial<Record<Gesture, number[]>> = {
 
 /** Thumb [swing out/forward (x), fold toward the palm (z), tip bend] per gesture. */
 const THUMB: Record<Gesture, [number, number, number]> = {
-  relaxed: [-0.3, 0.25, 0.25],
+  relaxed: [-0.22, 0.16, 0.15],
   open: [-0.55, -0.1, 0.05],
   wave: [-0.65, -0.15, 0.0],
   fist: [-0.25, 0.75, 0.55],

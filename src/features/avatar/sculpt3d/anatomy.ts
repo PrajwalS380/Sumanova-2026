@@ -44,7 +44,7 @@ export const REST_ARM = 0.17;
 
 /** Head centre in body space (the face/hair rig hangs off it) and its scale. */
 export const HEAD_Y = 2.03;
-export const HEAD_SCALE = 0.7;
+export const HEAD_SCALE = 0.8;
 
 export interface Joints {
   /** world-space rest position of every bone */

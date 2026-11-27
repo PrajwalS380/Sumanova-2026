@@ -49,7 +49,7 @@ vec3 hairBase(float t, float rnd, vec3 pos) {
 
 function useHairMaterial(root: string, tip: string | null, hi: string | null, paint: PaintT, gloss: number, sway: React.MutableRefObject<{ value: THREE.Vector3 }>, normalMap: THREE.Texture | null = null) {
   const mat = useMemo(() => {
-    const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0, envMapIntensity: 0.55 });
+    const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0, envMapIntensity: 0.3 });
     const uniforms = { uRoot: { value: new THREE.Color(root) }, uTip: { value: new THREE.Color(tip ?? root) }, uHi: { value: new THREE.Color(hi ?? '#e8c9a0') }, uPaint: { value: 0 }, uGloss: { value: 0.6 }, uBaked: { value: 0 }, uSway: sway.current };
     m.userData.uniforms = uniforms;
     m.onBeforeCompile = (sh) => {
@@ -84,7 +84,7 @@ vHairT = normalize(normalMatrix * hairT);`,
   // clump separation: the top of each ribbon catches light, its edges and underside fall into shadow
   // sculpted locks: the crown of each lock catches light, deep grooves between locks
   // (roots melt into one smooth mass; the locks separate toward their tips)
-  float side = mix(1.0, 0.5 + 0.5 * smoothstep(-0.35, 0.75, sin(vHUv.x * 6.2832)), mix(0.35, 1.0, smoothstep(0.1, 0.6, vColor.g)));
+  float side = mix(1.0, 0.7 + 0.3 * smoothstep(-0.35, 0.75, sin(vHUv.x * 6.2832)), mix(0.25, 1.0, smoothstep(0.15, 0.7, vColor.g)));
   // baked sculpts carry their grooves in the normal map and occlusion in vColor.r
   if (uBaked > 0.5) { side = 1.0; st = 0.6; }
   diffuseColor.rgb = hc * vColor.r * side * (0.9 + 0.14 * st);
@@ -103,7 +103,7 @@ if (uBaked < 0.5) {
   float across = cos(ang);
   float topSide = smoothstep(-0.2, 0.45, sin(ang));
   float ph = across * 3.14159 * 3.0 + vColor.b * 7.0;
-  float slope = sin(ph) * 0.6 + sin(across * 26.0 + vColor.b * 13.0 + vColor.g * 4.0) * 0.14;
+  float slope = sin(ph) * 0.42 + sin(across * 26.0 + vColor.b * 13.0 + vColor.g * 4.0) * 0.14;
   float k = topSide * mix(0.3, 1.0, smoothstep(0.05, 0.5, vColor.g));
   normal = normalize(normal + Bg * slope * k);
 }

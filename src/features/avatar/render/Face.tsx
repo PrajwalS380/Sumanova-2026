@@ -636,11 +636,20 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
         return lens(ww * sx, 0, -top * sy, -depth * 2 * sy);
       };
       const teeth = lens(ww * 0.86, -0.004, -top - 0.003, -top - 0.036);
+      const ell = (rx: number, ry: number) => new THREE.Shape().absellipse(0, 0, rx, ry, 0, Math.PI * 2, false, 0);
+      // inside the mouth: a darker throat at the back and a rounded tongue resting on the floor
+      const sur = e === 'surprised';
+      const throat = sur ? ell(ww * 0.55, depth * 0.55) : ell(ww * 0.62, depth * 0.42);
+      const tongueY = sur ? -depth * 0.55 : -depth * 0.76;
+      const tongueShape = sur ? ell(ww * 0.6, depth * 0.28) : ell(ww * 0.44, depth * 0.19);
       return {
         open: true,
         lips: surfaceShape(h, mk(1.12 + p.upper * 0.04, 1.14 + p.lower * 0.06), 0, y + 0.004, 0.003),
         inner: surfaceShape(h, mk(1, 1), 0, y + 0.004, 0.0045),
-        teeth: e !== 'surprised' ? surfaceShape(h, teeth, 0, y + 0.004, 0.0055) : null,
+        throat: surfaceShape(h, throat, 0, y + 0.004 - (sur ? 0 : depth * 0.5), 0.0048),
+        tongue: e !== 'tongue' ? surfaceShape(h, tongueShape, 0, y + 0.004 + tongueY, 0.0052) : null,
+        teeth: !sur ? surfaceShape(h, teeth, 0, y + 0.004, 0.0055) : null,
+        ww, depth, top,
       };
     }
     const smile = e === 'sad' || e === 'crying' ? -0.7 : e === 'angry' ? -0.35 : e === 'neutral' || e === 'sleeping' ? 0.06 : 0.75 + p.corner * 0.5;
@@ -690,7 +699,10 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
     <group>
       {'lips' in parts && parts.lips && <mesh geometry={parts.lips}><meshPhysicalMaterial color={lip} roughness={0.35} clearcoat={0.5} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-30} /></mesh>}
       {'inner' in parts && parts.inner && <mesh geometry={parts.inner} renderOrder={1}><Flat color="#4a1418" rough={0.8} layer={1.5} /></mesh>}
-      {'teeth' in parts && parts.teeth && <mesh geometry={parts.teeth} renderOrder={2}><Flat color="#fbf6ef" rough={0.25} layer={2} /></mesh>}
+      {'throat' in parts && parts.throat && <mesh geometry={parts.throat} renderOrder={1}><Flat color="#2a080c" rough={0.9} layer={1.7} /></mesh>}
+      {'tongue' in parts && parts.tongue && <mesh geometry={parts.tongue} renderOrder={2}><meshPhysicalMaterial color="#c8505e" roughness={0.4} clearcoat={0.5} polygonOffset polygonOffsetFactor={-5.6} polygonOffsetUnits={-112} /></mesh>}
+      {'teeth' in parts && parts.teeth && <mesh geometry={parts.teeth} renderOrder={2}><Flat color="#f7f1e8" rough={0.25} layer={2.2} /></mesh>}
+      {'ww' in parts && parts.ww && <SmileShade h={h} y={y + 0.004} ww={parts.ww} depth={parts.depth!} top={parts.top!} teeth={!!parts.teeth} />}
       {'upper' in parts && parts.upper && <mesh geometry={parts.upper}><meshPhysicalMaterial color={mix(lip, '#3a1010', 0.12)} roughness={0.38} clearcoat={0.5} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-8} /></mesh>}
       {'lower' in parts && parts.lower && <mesh geometry={parts.lower}><meshPhysicalMaterial color={lip} roughness={0.3} clearcoat={0.7} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-8} /></mesh>}
       {'lipMid' in parts && <LipShade h={h} w={w} y={y} lipMid={parts.lipMid!} upTop={parts.upTop!} p={p} skin={skin} />}
@@ -703,6 +715,36 @@ function Mouth({ h, p, y, lip, skin, e, lipPierce, tonguePierce }: { h: HeadShap
       {lipPierce && <Jewelry zone="lip" p={lipPierce} lip={{ h, y, w }} />}
       {tonguePierce && tongue && <Jewelry zone="tongue" p={tonguePierce} tongue={tongue.pts} />}
     </group>
+  );
+}
+
+/** Open-smile detail: the upper lip's shadow across the teeth and soft creases at the mouth corners. */
+function SmileShade({ h, y, ww, depth, top, teeth }: { h: HeadShape; y: number; ww: number; depth: number; top: number; teeth: boolean }) {
+  const tex = useMemo(() => softDot(), []);
+  const parts = useMemo(() => {
+    const out: { g: THREE.BufferGeometry; c: string; o: number; layer: number }[] = [];
+    const dot = (x: number, yy: number, rx: number, ry: number, c: string, o: number, lift: number, layer: number) => {
+      const g = surfaceShape(h, new THREE.Shape().absellipse(0, 0, rx, ry, 0, Math.PI * 2, false, 0), x, yy, lift);
+      const uv = g.attributes.uv;
+      for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) / (2 * rx) + 0.5, uv.getY(k) / (2 * ry) + 0.5);
+      out.push({ g, c, o, layer });
+    };
+    if (teeth) dot(0, y - top - 0.006, ww * 0.78, 0.008, '#5a3a30', 0.35, 0.0058, 2.6);
+    for (const s of [-1, 1]) {
+      // the cheek folds up around the corners of a smile
+      dot(s * ww * 1.2, y - depth * 0.25, 0.007, 0.018, '#3a1a10', 0.22, 0.0016, 0.5);
+      dot(s * ww * 1.32, y + 0.018, 0.03, 0.018, '#ffffff', 0.1, 0.0016, 0.5);
+    }
+    return out;
+  }, [h, y, ww, depth, top, teeth]);
+  return (
+    <>
+      {parts.map(({ g, c, o, layer }, i) => (
+        <mesh key={i} geometry={g} renderOrder={3}>
+          <meshBasicMaterial color={c} map={tex} transparent opacity={o} depthWrite={false} polygonOffset polygonOffsetFactor={-3 * layer} polygonOffsetUnits={-60 * layer} />
+        </mesh>
+      ))}
+    </>
   );
 }
 
@@ -792,7 +834,7 @@ diffuseColor.a = clamp(shadow + dots * d * 0.18, 0.0, 0.72);`,
 /** Beard surface: fine downward strands (light / dark streaks) instead of a flat solid. */
 function useBeardMat(color: string) {
   const mat = useMemo(() => {
-    const m = new THREE.MeshPhysicalMaterial({ roughness: 0.62, sheen: 0.7, sheenRoughness: 0.4 });
+    const m = new THREE.MeshPhysicalMaterial({ roughness: 0.88, sheen: 0.45, sheenRoughness: 0.8 });
     m.onBeforeCompile = (sh) => {
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vBP;')
@@ -804,14 +846,17 @@ function useBeardMat(color: string) {
           `#include <color_fragment>
 // strands run downward: fine across, long along y
 float st = bH(floor(vec3(vBP.x * 700.0, vBP.y * 70.0 + bH(floor(vec3(vBP.x * 700.0, 0.0, vBP.z * 700.0))) * 3.0, vBP.z * 700.0)));
-diffuseColor.rgb *= 0.78 + 0.38 * st;`,
+diffuseColor.rgb *= 0.72 + 0.5 * st;`,
         );
     };
     return m;
   }, []);
   useEffect(() => {
-    mat.color.set(color);
-    mat.sheenColor.set(mix(color, '#ffffff', 0.3));
+    // very dark beards are lifted a touch so the strand texture still reads (pure black looks like plastic)
+    const c = new THREE.Color(color);
+    const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+    mat.color.set(lum < 0.02 ? mix(color, '#4a3a30', 0.25) : color);
+    mat.sheenColor.set(mix(color, '#d8c0a8', 0.25));
   }, [mat, color]);
   return mat;
 }
