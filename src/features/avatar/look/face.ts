@@ -35,7 +35,12 @@ export interface NoseP {
   flare?: number;
 }
 export interface MouthP { width: number; upper: number; lower: number; bow: number; corner: number }
-export interface EarP { size: number; out: number; point: number; lobe: number; width: number }
+export interface EarP {
+  size: number; out: number; point: number; lobe: number; width: number;
+  /** fuller, rounder upper ear (0 narrow … 1 round) */ top?: number;
+  /** helix rim thickness (0.6 thin … 1.4 rolled) */ rim?: number;
+  /** lobe joined to the cheek instead of hanging free */ attached?: boolean;
+}
 export interface BodyP { width: number; height: number; belly: number; shoulders: number; hips: number; /** 0 masculine … 1 feminine proportions */ fem?: number }
 export interface BeardP {
   stubble: number; // 0..1 opacity of stubble shell
@@ -50,6 +55,8 @@ export interface BeardP {
   tacheT: number;
   curl: number;
   soul: number;
+  /** chinstrap: only a band along the jawline */
+  band?: number;
 }
 
 export interface Variant<P> { id: number; name: string; family: string; p: P }
@@ -266,27 +273,44 @@ export const MOUTHS = build<MouthP>('mouth', MOUTH_FAM.map(([name, b]) => ({
 export const EARS = build<EarP>('ears', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((f) => ({
   name: ['Neat', 'Classic', 'Round', 'Long', 'Small', 'Wide', 'Elfin', 'Lobed', 'Flat', 'Bold'][f],
   n: 10,
-  make: (i) => ({
-    size: [1, 1, 0.95, 1.15, 0.85, 1.05, 1.05, 1.05, 0.95, 1.2][f] * step(i % 5, 5, 0.92, 1.08),
-    out: [0.3, 0.45, 0.4, 0.4, 0.3, 0.55, 0.45, 0.4, 0.15, 0.7][f] + (i >= 5 ? 0.15 : 0),
-    point: f === 6 ? 0.6 + (i % 5) * 0.1 : 0,
-    lobe: f === 7 ? 1 : f === 4 ? 0.3 : 0.6,
-    width: [1, 1, 1.15, 0.9, 0.95, 1.2, 0.9, 1, 0.95, 1.15][f],
-  }),
+  make: (i) => {
+    const k = i % 5;
+    return {
+      size: [1, 1, 0.95, 1.15, 0.82, 1.05, 1.05, 1.05, 0.95, 1.22][f] * step(k, 5, 0.9, 1.1),
+      out: [0.3, 0.45, 0.4, 0.4, 0.3, 0.55, 0.45, 0.4, 0.12, 0.75][f] + (i >= 5 ? 0.18 : 0),
+      point: f === 6 ? 0.5 + k * 0.13 : 0,
+      lobe: f === 7 ? 1 + k * 0.12 : f === 4 ? 0.3 : f === 3 ? 0.9 : 0.45 + (k % 3) * 0.12,
+      width: [1, 1, 1.18, 0.86, 0.95, 1.22, 0.88, 1, 0.95, 1.15][f] * step(k, 5, 1.05, 0.95),
+      top: [0.4, 0.5, 1, 0.2, 0.6, 0.8, 0, 0.4, 0.3, 0.7][f],
+      rim: [1, 1.15, 1.1, 1, 0.8, 1.2, 0.85, 1, 0.65, 1.4][f] * (i >= 5 ? 1.1 : 1),
+      attached: f === 0 || f === 4 || (f !== 7 && i >= 5 && k % 2 === 1),
+    };
+  },
 })));
 
+/** five builds inside every family: leaner & taller → stockier & fuller */
+const BODY_STEP = [
+  { w: 0.92, h: 0.03, belly: 0, sh: 0.97, hp: -0.03 },
+  { w: 0.96, h: 0.015, belly: 0.04, sh: 0.99, hp: -0.01 },
+  { w: 1, h: 0, belly: 0.1, sh: 1, hp: 0 },
+  { w: 1.05, h: -0.015, belly: 0.18, sh: 1.03, hp: 0.03 },
+  { w: 1.1, h: -0.03, belly: 0.3, sh: 1.05, hp: 0.06 },
+];
 export const BODIES = build<BodyP>('body', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((f) => ({
   name: ['Slim', 'Lean', 'Average', 'Athletic', 'Curvy', 'Broad', 'Soft', 'Tall slim', 'Petite', 'Strong'][f],
   n: 10,
-  make: (i) => ({
-    width: [0.86, 0.92, 1, 1.06, 1.04, 1.14, 1.1, 0.9, 0.9, 1.18][f] * step(i % 5, 5, 0.97, 1.03),
-    height: [1, 1, 1, 1.02, 0.98, 1.02, 0.98, 1.07, 0.92, 1.03][f] + (i >= 5 ? -0.035 : 0.01),
-    belly: [0, 0, 0.15, 0, 0.25, 0.25, 0.6, 0, 0.1, 0.2][f] + (i % 5) * 0.04,
-    shoulders: [0.92, 0.96, 1, 1.12, 0.96, 1.12, 1, 0.94, 0.92, 1.18][f],
-    hips: [0.94, 0.96, 1, 1, 1.2, 1.05, 1.12, 0.94, 0.96, 1.05][f] + (i >= 5 ? 0.04 : 0),
-    // each build comes in masculine (1–5) and feminine (6–10) proportions
-    fem: i >= 5 ? 1 : 0,
-  }),
+  make: (i) => {
+    const st = BODY_STEP[i % 5];
+    return {
+      width: [0.86, 0.92, 1, 1.06, 1.04, 1.14, 1.1, 0.9, 0.9, 1.18][f] * st.w,
+      height: [1, 1, 1, 1.02, 0.98, 1.02, 0.98, 1.07, 0.92, 1.03][f] + st.h + (i >= 5 ? -0.035 : 0.01),
+      belly: [0, 0, 0.15, 0, 0.25, 0.25, 0.6, 0, 0.1, 0.2][f] + st.belly * ([3, 9].includes(f) ? 0.4 : 1),
+      shoulders: [0.92, 0.96, 1, 1.12, 0.96, 1.12, 1, 0.94, 0.92, 1.18][f] * st.sh,
+      hips: [0.94, 0.96, 1, 1, 1.2, 1.05, 1.12, 0.94, 0.96, 1.05][f] + st.hp + (i >= 5 ? 0.04 : 0),
+      // each build comes in masculine (1–5) and feminine (6–10) proportions
+      fem: i >= 5 ? 1 : 0,
+    };
+  },
 })));
 
 const B0: BeardP = { stubble: 0, beard: 0, cheekLine: 0.3, drop: 0, sides: 1, chinOnly: 0, chinW: 0.3, tache: 0, tacheW: 1, tacheT: 1, curl: 0, soul: 0 };
@@ -294,7 +318,7 @@ export const BEARDS = build<BeardP>('beard', [
   { name: 'Stubble', n: 12, make: (i) => ({ ...B0, stubble: step(i % 6, 6, 0.25, 0.7), cheekLine: i >= 6 ? 0.36 : 0.26 }) },
   { name: 'Moustache', n: 14, make: (i) => ({ ...B0, tache: 1 + (i % 7), tacheW: i >= 7 ? 1.15 : 0.95, tacheT: 1 + (i % 3) * 0.2, curl: i % 7 === 4 ? 1 : 0 }) },
   { name: 'Goatee', n: 14, make: (i) => ({ ...B0, beard: 0.05, chinOnly: 1, chinW: step(i % 7, 7, 0.16, 0.34), drop: i >= 7 ? 0.05 : 0, tache: i % 2 ? 2 : 0, soul: i % 7 === 0 ? 1 : 0 }) },
-  { name: 'Chinstrap', n: 10, make: (i) => ({ ...B0, beard: 0.03, cheekLine: 0.05, sides: 1, tache: i >= 5 ? 1 : 0, chinW: 0.2, drop: 0, stubble: (i % 5) * 0.08 }) },
+  { name: 'Chinstrap', n: 10, make: (i) => ({ ...B0, beard: 0.03 + (i % 5) * 0.006, cheekLine: 0.05, sides: 1, tache: i >= 5 ? 1 : 0, chinW: 0.2, drop: 0, stubble: (i % 5) * 0.08, band: 0.9 - (i % 5) * 0.1 }) },
   { name: 'Short beard', n: 16, make: (i) => ({ ...B0, beard: step(i % 4, 4, 0.03, 0.06), cheekLine: step(Math.floor(i / 4), 4, 0.12, 0.26), tache: 1 + (i % 3), stubble: 0.3 }) },
   { name: 'Full beard', n: 16, make: (i) => ({ ...B0, beard: step(i % 4, 4, 0.06, 0.1), cheekLine: step(Math.floor(i / 4), 4, 0.16, 0.28), drop: step(i % 4, 4, 0.02, 0.1), tache: 3, stubble: 0.3 }) },
   { name: 'Long beard', n: 10, make: (i) => ({ ...B0, beard: 0.1, cheekLine: 0.24, drop: step(i % 5, 5, 0.14, 0.32), tache: 3 + (i % 2), curl: i >= 5 ? 0.6 : 0 }) },

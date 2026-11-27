@@ -16,9 +16,6 @@ export function SkinMat({ color, nail = false }: { color: string; /** glossier, 
 }
 /** Fingernail tone: the skin lifted toward a pale pink. */
 export const nailTone = (skin: string) => mix(skin, '#f3cfc6', 0.35);
-function HairMat({ color, opacity = 1 }: { color: string; opacity?: number }) {
-  return <meshPhysicalMaterial color={color} roughness={0.5} sheen={0.8} sheenRoughness={0.35} sheenColor={mix(color, '#ffffff', 0.3)} transparent={opacity < 1} opacity={opacity} depthWrite={opacity >= 1} />;
-}
 function Flat({ color, rough = 0.6, layer = 0 }: { color: string; rough?: number; /** >0 wins depth ties against thin layers below it (no z-fighting) */ layer?: number }) {
   return <meshStandardMaterial color={color} roughness={rough} polygonOffset={layer > 0} polygonOffsetFactor={-3 * layer} polygonOffsetUnits={-60 * layer} />;
 }
@@ -60,7 +57,7 @@ export function Face(f: FaceProps) {
       </mesh>
       <Ears h={h} p={f.ears} skin={skin} left={f.piercings.earL} right={f.piercings.earR} hearing={f.hearing} sculpted={!!sculpted} />
       {!f.faceless && <Features f={f} ex={ex} ey={ey} er={er} noseY={noseY} mouthY={mouthY} lipColor={lipColor} sculpted={!!sculpted} />}
-      {f.faceless && f.beard && <Beard h={h} p={f.beard} color={f.colors.beard} mouthY={mouthY} />}
+      {f.faceless && f.beard && <Beard h={h} p={f.beard} color={f.colors.beard} mouthY={mouthY} open={false} />}
     </group>
   );
 }
@@ -77,7 +74,7 @@ function Features({ f, ex, ey, er, noseY, mouthY, lipColor, sculpted }: { f: Fac
       <Blush h={h} ex={ex} ey={ey} color={f.colors.blush ?? '#ff7d7d'} strength={f.colors.blush ? 0.4 : e === 'blushing' ? 0.5 : e === 'laughing' || e === 'happy' ? 0.12 : 0.08} />
       <Mouth h={h} p={f.mouth} y={mouthY} lip={lipColor} skin={skin} e={e} lipPierce={f.piercings.lip} tonguePierce={f.piercings.tongue} />
       {e === 'crying' && <Tears h={h} ex={ex} ey={ey} er={er} />}
-      {f.beard && <Beard h={h} p={f.beard} color={f.colors.beard} mouthY={mouthY} />}
+      {f.beard && <Beard h={h} p={f.beard} color={f.colors.beard} mouthY={mouthY} open={e === 'laughing' || e === 'surprised' || e === 'tongue' || (e === 'happy' && f.mouth.corner >= 0)} />}
     </group>
   );
 }
@@ -737,7 +734,54 @@ diffuseColor.a = clamp(shadow + dots * d * 0.18, 0.0, 0.72);`,
   return mat;
 }
 
-function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string; mouthY: number }) {
+/** Beard surface: fine downward strands (light / dark streaks) instead of a flat solid. */
+function useBeardMat(color: string) {
+  const mat = useMemo(() => {
+    const m = new THREE.MeshPhysicalMaterial({ roughness: 0.62, sheen: 0.7, sheenRoughness: 0.4 });
+    m.onBeforeCompile = (sh) => {
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vBP;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBP = position;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vBP;\nfloat bH(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }')
+        .replace(
+          '#include <color_fragment>',
+          `#include <color_fragment>
+// strands run downward: fine across, long along y
+float st = bH(floor(vec3(vBP.x * 700.0, vBP.y * 70.0 + bH(floor(vec3(vBP.x * 700.0, 0.0, vBP.z * 700.0))) * 3.0, vBP.z * 700.0)));
+diffuseColor.rgb *= 0.78 + 0.38 * st;`,
+        );
+    };
+    return m;
+  }, []);
+  useEffect(() => {
+    mat.color.set(color);
+    mat.sheenColor.set(mix(color, '#ffffff', 0.3));
+  }, [mat, color]);
+  return mat;
+}
+
+function Beard({ h, p, color, mouthY, open }: { h: HeadShape; p: BeardP; color: string; mouthY: number; open: boolean }) {
+  const halo = useMemo(() => {
+    // soft stubble fade around a beard's edge, so it grows out of the skin instead of ending in a hard line
+    if (p.beard <= 0) return null;
+    const my = mouthY / (h.ry * h.chinLow);
+    const ms: number[] = [];
+    const g = shellGeometry(h, (ux, uy, uz, az) => {
+      const front = smooth(-0.45, -0.1, uz);
+      const below = p.chinOnly > 0
+        ? smooth(p.chinW + 0.16, p.chinW, Math.abs(ux)) * smooth(my - 0.02, my - 0.12, uy)
+        : smooth(my + 0.16 + p.cheekLine * 0.35, my - 0.02 + p.cheekLine * 0.15, uy);
+      const side = p.chinOnly > 0 ? 0 : smooth(1.05, 1.35, Math.abs(az)) * smooth(1.95, 1.65, Math.abs(az)) * smooth(0.06, -0.1, uy) * p.sides;
+      const mouthHole = smooth(0.6, 1.0, (ux / 0.22) ** 2 + ((uy - my + 0.01) / 0.07) ** 2);
+      const band = p.band ? smooth(my - 0.16 - p.band * 0.12, my - 0.28 - p.band * 0.12, uy) : 1;
+      ms.push(Math.max(front * below * band, side) * mouthHole * 0.85);
+      return 1.006;
+    }, 96, 72, ms);
+    return g;
+  }, [p, h, mouthY]);
+  const haloMat = useStubbleMat(color, 0.55);
+  const beardMat = useBeardMat(color);
   const geo = useMemo(() => {
     if (p.beard <= 0 && p.stubble <= 0) return null;
     const my = mouthY / (h.ry * h.chinLow);
@@ -752,9 +796,12 @@ function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string
         const front = smooth(-0.35, -0.1, uz);
         const below = smooth(my + 0.1 + p.cheekLine * 0.35, my - 0.05 + p.cheekLine * 0.15, uy) * (1 - 0.6 * smooth(0.45, 0.2, Math.abs(ux)) * smooth(my + 0.12, my + 0.22, uy));
         const side = smooth(1.12, 1.4, Math.abs(az)) * smooth(1.9, 1.65, Math.abs(az)) * smooth(0.02, -0.1, uy) * p.sides; // sideburns stay by the ears
-        const mouthHole = smooth(0.8, 1.05, (ux / 0.36) ** 2 + ((uy - my + 0.07) / 0.13) ** 2); // an oval hugging the full open grin
+        // hugs the lips; widens only for open-mouth expressions (a grin, laughing)
+        const mouthHole = open ? smooth(0.8, 1.05, (ux / 0.36) ** 2 + ((uy - my + 0.07) / 0.13) ** 2) : smooth(0.75, 1.0, (ux / 0.27) ** 2 + ((uy - my + 0.012) / 0.072) ** 2);
         const chinGap = p.chinOnly < 0 ? 1 - smooth(0.3, 0.15, Math.abs(ux)) : 1; // mutton chops leave the chin bare
-        m = Math.max(front * below, side) * mouthHole * chinGap;
+        // chinstrap: only a band hugging the jawline (higher band = thinner strap)
+        const band = p.band ? smooth(my - 0.2 - p.band * 0.12, my - 0.3 - p.band * 0.12, uy) : 1;
+        m = Math.max(front * below * band, side) * mouthHole * chinGap;
       }
       const lumps = p.beard > 0.06 ? 0.012 * wobble(ux, uy, uz, 2.4) : 0;
       const drop = p.drop * smooth(-0.6, -0.95, uy) * smooth(0, 0.4, uz) * (1 + p.curl * 0.2 * wobble(ux, uy, uz, 4));
@@ -763,9 +810,9 @@ function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string
       // so there is no line where a shell would cut through the skin
       if (p.beard <= 0) return 1.006;
       return 0.985 + (thick + 0.015 + lumps + drop) * m;
-    }, 96, 72, ms);
+    }, 128, 96, ms);
     return g;
-  }, [p, h, mouthY]);
+  }, [p, h, mouthY, open]);
   const stubble = useStubbleMat(color, p.stubble);
 
   const tache = useMemo(() => {
@@ -784,21 +831,17 @@ function Beard({ h, p, color, mouthY }: { h: HeadShape; p: BeardP; color: string
     const pts = shapes[p.tache] ?? shapes[1];
     const t = { 1: 0.013, 2: 0.006, 3: 0.018, 4: 0.012, 5: 0.012, 6: 0.022, 7: 0.009 }[p.tache] ?? 0.012;
     const P = pts.map(([x, yy]) => new THREE.Vector3(x, yy, surfaceZ(h, x, yy) + 0.008));
-    return taperTube(P, { radius: (k) => t * p.tacheT * (0.55 + 0.45 * Math.sin(Math.PI * k)), flat: 0.6, radial: 8, segments: 24 });
+    return taperTube(P, { radius: (k) => t * 1.45 * p.tacheT * (0.55 + 0.45 * Math.sin(Math.PI * k)), flat: 0.6, radial: 8, segments: 24 });
   }, [p, h, mouthY]);
 
   return (
     <>
       {geo && (
-        <mesh geometry={geo} castShadow={p.beard > 0} material={p.beard > 0 ? undefined : stubble}>
-          {p.beard > 0 && <HairMat color={color} />}
-        </mesh>
+        <mesh geometry={geo} castShadow={p.beard > 0} material={p.beard > 0 ? beardMat : stubble} />
       )}
-      {geo && p.beard > 0 && p.stubble > 0 && null}
+      {halo && <mesh geometry={halo} material={haloMat} />}
       {tache && (
-        <mesh geometry={tache} castShadow>
-          <HairMat color={color} />
-        </mesh>
+        <mesh geometry={tache} castShadow material={beardMat} />
       )}
     </>
   );

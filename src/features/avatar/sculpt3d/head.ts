@@ -90,15 +90,31 @@ function build(h: HeadShape, nose: NoseP | null, ears: EarP): THREE.BufferGeomet
     const ear: Prim = {
       t: 'fn', c: [pos.x, pos.y, pos.z], ext: [0.08 * sz, 0.12 * sz, 0.09 * sz], bone: 0, k: 0, f: (x, y, z) => {
         L.set(x, y, z).applyMatrix4(inv);
-        // outer ear: a flattened, slightly curved shell
-        let d = ell(L.x, L.y, L.z, 0, 0, 0, 0.022, 0.07, 0.048);
+        // outer ear: a flattened shell, fuller at the top (helix) than at the lobe
+        const top = ears.top ?? 0.4, rim = ears.rim ?? 1;
+        let d = ell(L.x, L.y, L.z, 0, 0.004, 0, 0.027, 0.07, 0.05);
+        // rounder upper ear: a broad cap over the helix
+        if (top > 0) d = -smax(-d, -ell(L.x, L.y, L.z, 0, 0.03, -0.004, 0.025, 0.038 + 0.008 * top, 0.04 + 0.016 * top), 0.012);
         // root: joins the ear to the side of the head
         d = Math.min(d, ell(L.x, L.y, L.z, -s * 0.026, -0.006, 0.006, 0.03, 0.045, 0.03));
-        if (ears.lobe > 0.4) d = Math.min(d, ell(L.x, L.y, L.z, 0, -0.066, 0.006, 0.022, 0.026 * ears.lobe, 0.019));
-        if (ears.point > 0) d = Math.min(d, ell(L.x, L.y, L.z, 0, 0.068 + 0.02 * ears.point, -0.012, 0.016, 0.03 * ears.point + 0.01, 0.018));
-        // the bowl (concha) carved into the outward face, leaving a rolled rim (helix) around it
-        const bowl = ell(L.x, L.y, L.z, s * 0.021, 0.006, 0.008, 0.014, 0.05, 0.032);
+        // lobe hangs below, blended (not a separate bead)
+        if (ears.lobe > 0.4) {
+          // free lobes hang straight down; attached ones run forward into the cheek
+          const att = ears.attached ? 1 : 0;
+          d = -smax(-d, -ell(L.x, L.y, L.z, -s * 0.006 * att, -0.058 + 0.008 * att, 0.006 + 0.01 * att, 0.023, 0.026 * ears.lobe + 0.006 - 0.008 * att, 0.02 + 0.008 * att), 0.012 + 0.008 * att);
+        }
+        // elfin point grows out of the top of the helix
+        if (ears.point > 0) d = -smax(-d, -ell(L.x, L.y, L.z, 0, 0.058 + 0.024 * ears.point, -0.016, 0.018, 0.03 * ears.point + 0.014, 0.02), 0.014);
+        // the bowl carved into the outward face, leaving a rolled rim (helix) around it
+        // a thicker rim leaves a smaller bowl
+        const bowl = ell(L.x, L.y, L.z, s * 0.024, 0.008 - 0.002 * top, 0.008, 0.016, 0.056 - 0.008 * rim + 0.004 * top, 0.038 - 0.006 * rim + 0.006 * top);
         d = smax(d, -bowl, 0.008);
+        // antihelix: the inner Y-shaped ridge rising inside the bowl
+        d = Math.min(d, ell(L.x, L.y, L.z, s * 0.012, 0.016, 0.004, 0.009, 0.034, 0.012));
+        // concha: the deep hollow by the ear canal
+        d = smax(d, -ell(L.x, L.y, L.z, s * 0.022, -0.014, 0.014, 0.012, 0.019, 0.014), 0.005);
+        // tragus: the small flap in front of the canal
+        d = Math.min(d, ell(L.x, L.y, L.z, s * 0.012, -0.02, 0.036, 0.009, 0.012, 0.008));
         return d * unit;
       },
     };

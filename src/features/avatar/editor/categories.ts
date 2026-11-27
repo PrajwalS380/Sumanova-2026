@@ -49,7 +49,7 @@ export const CATEGORIES: Category[] = [
   { id: 'brows', mode: 'face', label: 'Brows', icon: Wind, slot: 'brows', color: { key: 'brows', palette: BROWS }, thumb: 'face', stage: 'head' },
   { id: 'nose', mode: 'face', label: 'Nose', icon: CircleDot, slot: 'nose', thumb: 'face34', stage: 'head' },
   { id: 'mouth', mode: 'face', label: 'Mouth', icon: Laugh, slot: 'mouth', color: { key: 'lips', palette: LIPS, allowNone: true }, thumb: 'face', stage: 'head' },
-  { id: 'ears', mode: 'face', label: 'Ears', icon: Ear, slot: 'ears', thumb: 'head', stage: 'head' },
+  { id: 'ears', mode: 'face', label: 'Ears', icon: Ear, slot: 'ears', thumb: 'ear', stage: 'head' },
   { id: 'beard', mode: 'face', label: 'Facial hair', icon: Baby, slot: 'beard', color: { key: 'beard', palette: HAIR }, thumb: 'head', stage: 'head' },
   { id: 'earL', mode: 'face', label: 'Left ear', icon: Gem, slot: 'earL', thumb: 'head', stage: 'head' },
   { id: 'earR', mode: 'face', label: 'Right ear', icon: Gem, slot: 'earR', thumb: 'head', stage: 'head' },
