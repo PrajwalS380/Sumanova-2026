@@ -10,8 +10,10 @@ import { ToastProvider } from './providers/ToastProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { isNative } from './lib/platform';
 import { applyDisplay } from './lib/display';
+import { applyLang } from './lib/i18n';
 
 applyDisplay();
+applyLang();
 
 // The service worker is for the website/PWA only. Inside the native app the
 // files ship in the APK/IPA, so a SW cache would only risk serving stale code.

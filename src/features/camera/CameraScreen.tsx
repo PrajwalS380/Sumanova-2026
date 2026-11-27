@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useT } from '@/lib/i18n';
 import { MeButton } from '@/components/MeButton';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -33,6 +34,7 @@ export default function CameraScreen() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const cam = useCamera(videoRef);
+  const tr = useT();
   const [lensId, setLensId] = useState<string | null>(null);
   const [lensTray, setLensTray] = useState(false);
   const [browser, setBrowser] = useState(false);
@@ -401,7 +403,7 @@ export default function CameraScreen() {
         </button>
         <input ref={gallery} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => { onPick(e.target.files?.[0]); e.target.value = ''; }} />
       </div>
-      <p className="pointer-events-none absolute inset-x-0 bottom-[calc(84px+var(--safe-bottom)+0.25rem)] z-10 text-center text-xs font-bold text-white/80">Tap for photo · hold for video</p>
+      <p className="pointer-events-none absolute inset-x-0 bottom-[calc(84px+var(--safe-bottom)+0.25rem)] z-10 text-center text-xs font-bold text-white/80">{tr('Tap for photo · hold for video')}</p>
 
       {recorder.paused && (
         <div className="absolute inset-x-0 bottom-[calc(84px+var(--safe-bottom)+7.5rem)] z-20 flex justify-center gap-2" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>

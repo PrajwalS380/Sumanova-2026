@@ -151,6 +151,28 @@ reels + shared albums, Avatar Cam, map mood + safety check-in, canvas themes `--
 activity-aliases + `AppIconPlugin`). Only open item: closed-app Android push (owner Firebase) — see
 `docs/PENDING_OWNER_ACTIONS.md`.
 
+## 33-feature build (owner: "Implement all", 2026-11-27) — batches A–F done
+- A privacy/look: `lib/display.ts` (Light/Dark/Phone via `html.dark` + CSS vars `--ink*`/`--surface*`/`--cream`; index.css
+  remaps `.bg-white`/`.bg-ink`/`#111111`/`#F1F1F4` in dark; inline head script in index.html avoids a flash), text size
+  (root font-size), data saver (`saveData()`), app lock `lib/appLock.ts` + `components/AppLockGate.tsx` (PBKDF2 PIN,
+  Android `BiometricPlugin.java` / web passkey), hidden chats `lib/hiddenChats.ts`, block screenshots
+  (`screenProtection.setAlways`, FLAG_SECURE refcount), new-device approval (`device_ok()` restrictive RLS on
+  messages/memories/snap_recipients/location_shares, `components/DeviceGate.tsx`, approve in Settings → Security).
+- B chat: voice 1/1.5/2×, seek, listen-before-send; pins (`message_pins`, soft unpin), reminders (`message_reminders` +
+  cron `sumanova-message-reminders`), to-do kind `todo` (`todo_items`), Edge Function `link-preview` (public IPs only,
+  cache `link_previews`), on-device translation (browser Translator API only; hidden elsewhere — no free server
+  translator connected, owner approval needed for one), per-chat wallpapers on the phone (Cache Storage).
+- C camera: collage (`camera/collage.ts`), dual camera (sequential), "My photo behind me" + Touch-up lenses, 4×/8×
+  time-lapse and ¼× slow-mo, text-to-sticker (`chat/more/textSticker.tsx`).
+- D social: question of the day (`daily_answers`, list in `lib/social/fun.ts`), quizzes (`quizzes` + unreadable
+  `quiz_keys`), chat puzzles kind `puzzle` (only via `start_puzzle`; `puzzle_secrets` unreadable), countdown sticker
+  (`media_meta.countdown`), `/recap` (`my_year_recap`), anniversaries cron `sumanova-friend-anniversaries`.
+- E map: `MyMap.tsx` (trip mode `trips`/`trip_points`, favourite places, memories with `media_meta.place`).
+- F: offline runtime caching (public media + OSM tiles), idle-deferred startup work + tab prefetch, settings
+  backup/restore (`lib/backup.ts`, never secrets), languages en/hi/kn/ta/te (`lib/i18n.ts`, nav/titles/Settings only so far).
+- plpgsql gotcha: wrap `case … then … end` in parentheses inside `if … then`; avoid the `?` jsonb operator in MCP
+  migrations; never count the same table inside its own RLS policy (use a trigger).
+
 ## Sandbox limits (this cloud environment)
 Outbound network to supabase.co / vercel.app is blocked from the shell; use Supabase MCP (`execute_sql`) and Vercel
 MCP (`web_fetch_vercel_url`) to verify. No Android SDK locally — Android builds run on GitHub Actions.

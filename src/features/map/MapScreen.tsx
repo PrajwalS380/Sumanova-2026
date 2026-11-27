@@ -1,4 +1,5 @@
 import { MeButton } from '@/components/MeButton';
+import { useT } from '@/lib/i18n';
 import { MyMap } from './MyMap';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -60,6 +61,7 @@ export default function MapScreen() {
   const { privacy, setPrivacy, profile, setProfile } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const tr = useT();
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef(new Map<string, L.Marker>());
@@ -393,7 +395,7 @@ export default function MapScreen() {
         <button onClick={() => setFinder(true)} aria-label="Find a friend on the map" className={cn(WHITE, 'pointer-events-auto')}><Search className="h-5 w-5" /></button>
         <div className="flex flex-1 justify-center">
           <span className="pointer-events-auto whitespace-nowrap rounded-2xl bg-white px-3 py-[11px] text-sm font-extrabold shadow-[0_8px_20px_-12px_rgba(17,17,17,0.5)]">
-            {sharing ? `Sharing · ${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : 'Ghost mode'}
+            {sharing ? `Sharing · ${left >= 60 ? `${Math.round(left / 60)}h` : `${left}m`} left` : tr('Ghost mode')}
           </span>
         </div>
         <span className="pointer-events-auto"><MyMap map={map} buttonClass={WHITE} onOpenMemory={() => navigate('/memories')} /></span>

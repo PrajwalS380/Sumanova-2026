@@ -4,11 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#ECECEF" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="description" content="SUMANOVA — moments, friends and real-time chat." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>SUMANOVA</title>
+    <script>
+      // Paint in the right theme / language before the app loads (no white flash in dark mode).
+      try {
+        var th = localStorage.getItem('snv-theme');
+        if (th === 'dark' || (th === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
+        var lg = localStorage.getItem('snv-lang');
+        if (lg) document.documentElement.lang = lg;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root">

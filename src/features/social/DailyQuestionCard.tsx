@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useT } from '@/lib/i18n';
 import { Link } from 'react-router-dom';
 import { Loader2, MessageCircleQuestion, Trophy } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
@@ -12,6 +13,7 @@ export function DailyQuestionCard() {
   const me = session?.user.id ?? '';
   const toast = useToast();
   const q = questionOfToday();
+  const tr = useT();
   const [mine, setMine] = useState<string | null | undefined>(undefined);
   const [text, setText] = useState('');
   const [feed, setFeed] = useState<DailyAnswer[]>([]);
@@ -44,8 +46,8 @@ export function DailyQuestionCard() {
   return (
     <section className="mt-3 rounded-tile bg-[#111111] p-4 text-white">
       <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/60"><MessageCircleQuestion className="h-3.5 w-3.5" /> Question of the day</p>
-        <Link to="/quizzes" className="flex items-center gap-1 rounded-xl bg-white/10 px-2.5 py-1 text-xs font-bold"><Trophy className="h-3.5 w-3.5" /> Quizzes</Link>
+        <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/60"><MessageCircleQuestion className="h-3.5 w-3.5" /> {tr('Question of the day')}</p>
+        <Link to="/quizzes" className="flex items-center gap-1 rounded-xl bg-white/10 px-2.5 py-1 text-xs font-bold"><Trophy className="h-3.5 w-3.5" /> {tr('Quizzes')}</Link>
       </div>
       <p className="mt-2 font-display text-xl leading-tight">{q.text}</p>
       {mine === undefined ? (
@@ -67,7 +69,7 @@ export function DailyQuestionCard() {
       ) : (
         <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); void send(); }}>
           <input value={text} onChange={(e) => setText(e.target.value)} maxLength={200} placeholder="Answer to see your friends’" aria-label="Your answer" className="h-11 min-w-0 flex-1 rounded-2xl bg-white/10 px-3.5 text-[15px] font-semibold outline-none placeholder:text-white/40" />
-          <button type="submit" disabled={!text.trim() || busy} className="h-11 rounded-2xl bg-white px-4 text-sm font-extrabold text-ink disabled:opacity-40">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Answer'}</button>
+          <button type="submit" disabled={!text.trim() || busy} className="h-11 rounded-2xl bg-white px-4 text-sm font-extrabold text-ink disabled:opacity-40">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : tr('Answer')}</button>
         </form>
       )}
     </section>

@@ -39,6 +39,20 @@ export default defineConfig({
         // Never cache Supabase API / auth / realtime traffic.
         navigateFallbackDenylist: [/^\/auth\/v1/, /^\/rest\/v1/],
         cleanupOutdatedCaches: true,
+        // Offline mode: keep pictures people already saw (avatars, public images) and map tiles
+        // around so the app still looks right without a connection. API traffic is never cached.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/storage/v1/object/public/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'snv-public-media', expiration: { maxEntries: 400, maxAgeSeconds: 14 * 86400 }, cacheableResponse: { statuses: [0, 200] } },
+          },
+          {
+            urlPattern: ({ url }) => url.hostname === 'tile.openstreetmap.org',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'snv-map-tiles', expiration: { maxEntries: 600, maxAgeSeconds: 7 * 86400 }, cacheableResponse: { statuses: [0, 200] } },
+          },
+        ],
         importScripts: ['/push-sw.js'],
       },
     }),

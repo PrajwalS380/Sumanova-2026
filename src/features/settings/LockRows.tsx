@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useT } from '@/lib/i18n';
 import { biometricAvailable, enableBiometric, lockConfig, removeLock, setPin, updateLock, type LockAfter } from '@/lib/appLock';
 import { screenProtection } from '@/lib/privacy';
 import { Toggle } from '@/components/ui/Toggle';
@@ -49,6 +50,7 @@ export function PinSetupSheet({ open, onClose, onSet }: { open: boolean; onClose
 export function LockRows() {
   const toast = useToast();
   const [cfg, setCfg] = useState(lockConfig);
+  const tr = useT();
   const [setup, setSetup] = useState(false);
   const [bioOk, setBioOk] = useState(false);
   const [secure, setSecure] = useState(() => screenProtection.always);
@@ -60,7 +62,7 @@ export function LockRows() {
   return (
     <>
       <Toggle
-        label="App lock"
+        label={tr('App lock')}
         description="Ask for a PIN when SUMANOVA opens"
         checked={!!cfg}
         onChange={(v) => {

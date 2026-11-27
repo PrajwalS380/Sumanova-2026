@@ -56,6 +56,20 @@ const QuizzesScreen = lazy(() => import('@/features/social/QuizScreens').then((m
 const QuizNewScreen = lazy(() => import('@/features/social/QuizScreens').then((m) => ({ default: m.QuizNewScreen })));
 const QuizScreen = lazy(() => import('@/features/social/QuizScreens').then((m) => ({ default: m.QuizScreen })));
 
+/** Runs work when the browser is idle (or after a short delay); returns a cancel function. */
+function whenIdle(fn: () => void, minDelay = 0): () => void {
+  let id: number | undefined;
+  const t = setTimeout(() => {
+    const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+    if (ric) id = ric(fn, { timeout: 3000 });
+    else fn();
+  }, minDelay);
+  return () => {
+    clearTimeout(t);
+    if (id !== undefined) (window as Window & { cancelIdleCallback?: (n: number) => void }).cancelIdleCallback?.(id);
+  };
+}
+
 /** Hooks the native shell (status bar, splash, Android back button) into routing. */
 function NativeBridge() {
   const navigate = useNavigate();
@@ -76,7 +90,25 @@ function NativeBridge() {
   // Contacts (when the person turned it on): re-match on start and every return to the app.
   const { session } = useAuth();
   const uid = session?.user.id;
-  useEffect(() => (uid ? startContactAutoSync(uid) : undefined), [uid]);
+  useEffect(() => {
+    if (!uid) return;
+    // Faster start: background work waits until the first screen is up.
+    let stop: (() => void) | undefined;
+    const c = whenIdle(() => (stop = startContactAutoSync(uid)));
+    return () => {
+      c();
+      stop?.();
+    };
+  }, [uid]);
+  // Warm the other tabs in idle time so switching feels instant.
+  useEffect(() => {
+    if (!uid) return;
+    return whenIdle(() => {
+      void import('@/features/chat/ChatListScreen');
+      void import('@/features/stories/StoriesScreen');
+      void import('@/features/map/MapScreen');
+    }, 2500);
+  }, [uid]);
   // Live locations shared in chats keep following me while the app is open.
   useEffect(() => {
     if (uid) liveShare.resume(uid);
@@ -90,7 +122,7 @@ function NativeBridge() {
   }, [uid]);
   // Publish this device's secret-chat key (end-to-end encryption) once.
   useEffect(() => {
-    if (uid) void import('@/lib/e2e').then((m) => m.ensureMyKey(uid)).catch(() => undefined);
+    if (uid) return whenIdle(() => void import('@/lib/e2e').then((m) => m.ensureMyKey(uid)).catch(() => undefined));
   }, [uid]);
   return null;
 }

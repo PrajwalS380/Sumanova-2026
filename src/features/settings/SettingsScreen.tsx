@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { t, useT } from '@/lib/i18n';
 import { Bell } from 'lucide-react';
 import { currentSubscription, disablePush, enablePush, pushSupported } from '@/lib/push';
 import { isNative } from '@/lib/platform';
@@ -23,12 +24,13 @@ import { SecuritySection } from './SecuritySection';
 import { KeyRound } from 'lucide-react';
 import { DisplayRows } from './DisplayRows';
 import { LockRows } from './LockRows';
+import { BackupRows } from './BackupRows';
 
 function AccentPicker() {
   const [cur, setCur] = useState(() => getAccent().id);
   return (
     <div className="flex items-center gap-3 px-3.5 py-[13px]">
-      <span className="flex-1 text-[15px] font-semibold">Theme colour</span>
+      <span className="flex-1 text-[15px] font-semibold">{t('Theme colour')}</span>
       <span className="flex gap-1.5">
         {ACCENTS.map((a) => (
           <button
@@ -58,7 +60,7 @@ function CanvasPicker() {
   }
   return (
     <div className="flex items-center gap-3 px-3.5 py-[13px]">
-      <span className="flex-1 text-[15px] font-semibold">Background</span>
+      <span className="flex-1 text-[15px] font-semibold">{t('Background')}</span>
       <span className="flex gap-1.5">
         {CANVASES.map((c) => (
           <button
@@ -119,11 +121,12 @@ function AppIconPicker() {
 }
 
 function Section({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
+  const tr = useT();
   return (
     <section>
       <h2 className="px-1 pb-1.5 pt-4 text-[13px] font-extrabold uppercase tracking-[0.08em] text-ink-mute">
         <span className="sr-only">{icon}</span>
-        {title}
+        {tr(title)}
       </h2>
       <div className="relative isolate divide-y divide-[#F1F1F4] overflow-hidden rounded-tile bg-white">
         <Ghost size={120} opacity={0.06} className="-right-4 -top-6 [&>svg]:h-full [&>svg]:w-full">{icon}</Ghost>
@@ -185,7 +188,7 @@ export default function SettingsScreen() {
     <div className="min-h-full bg-noir pb-16">
       <header className="flex items-center gap-2 px-3.5 pt-safe">
         <button onClick={() => navigate(-1)} aria-label="Back" className="grid h-10 w-10 place-items-center rounded-2xl bg-white text-ink active:scale-90"><ChevronLeft className="h-5 w-5" /></button>
-        <h1 className="flex-1 text-center text-lg font-extrabold">Settings</h1>
+        <h1 className="flex-1 text-center text-lg font-extrabold">{t('Settings')}</h1>
         <span className="w-10" aria-hidden />
       </header>
       <div className="mx-auto max-w-md px-4">
@@ -245,6 +248,10 @@ export default function SettingsScreen() {
             <Toggle label="Haptic feedback" description="Subtle vibrations on supported Android phones" checked={settings.haptics} onChange={(v) => updateSettings({ haptics: v })} />
           </Section>
         )}
+
+        <Section title="Backup & restore" icon={<MonitorSmartphone className="h-3.5 w-3.5" />}>
+          <BackupRows />
+        </Section>
 
         <Section title="Account" icon={<MonitorSmartphone className="h-3.5 w-3.5" />}>
           <div className="px-4 py-3.5">

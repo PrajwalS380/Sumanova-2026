@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useState } from 'react';
+import { useT } from '@/lib/i18n';
 import { streaksApi, type StreakInfo } from '@/lib/social/api';
 import { rowBadges, topFriendIds } from '@/lib/badges';
 import { NovaEmoji } from '@/components/emoji/NovaEmoji';
@@ -30,6 +31,7 @@ export default function ChatListScreen() {
   const me = session!.user.id;
   const { conversations, loading, error, pendingRequests, online, patch, refresh } = useInbox();
   const [query, setQuery] = useState('');
+  const tr = useT();
   const [searching, setSearching] = useState(false);
   const [chip, setChip] = useState<'all' | 'unread' | 'groups' | 'streaks' | 'hidden'>('all');
   const [hidden, setHidden] = useState(() => (lockEnabled() ? hiddenChats(me) : new Set<string>()));
@@ -108,7 +110,7 @@ export default function ChatListScreen() {
   return (
     <div className="min-h-full bg-noir pb-28">
       <TopBar
-        title="Chat"
+        title={tr('Chat')}
         onSearch={() => setSearching((v) => !v)}
         friendBadge={pendingRequests}
         right={
@@ -121,19 +123,19 @@ export default function ChatListScreen() {
         {searching && (
           <label className="mb-2 flex h-11 items-center gap-2 rounded-2xl bg-white px-4">
             <Search className="h-4 w-4 text-ink-mute" />
-            <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search chats" className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search chats" />
+            <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr('Search chats')} className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-faint" aria-label="Search chats" />
             <button onClick={() => { setQuery(''); setSearching(false); }} aria-label="Close search" className="text-ink-mute"><X className="h-4 w-4" /></button>
           </label>
         )}
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 pt-1" role="tablist" aria-label="Filter chats">
-          {([['all', 'All'], ['unread', unreadCount ? `Unread · ${unreadCount}` : 'Unread'], ['groups', 'Groups'], ['streaks', 'Streaks']] as const).map(([id, label]) => (
+          {([['all', tr('All')], ['unread', unreadCount ? `${tr('Unread')} · ${unreadCount}` : tr('Unread')], ['groups', tr('Groups')], ['streaks', tr('Streaks')]] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={chip === id} onClick={() => setChip(id)} className={cn('shrink-0 rounded-xl px-3.5 py-1.5 text-[13px] font-bold', chip === id ? 'bg-ink text-white' : 'bg-white text-ink')}>
               {label}
             </button>
           ))}
           {hidden.size > 0 && (
             <button role="tab" aria-selected={chip === 'hidden'} onClick={() => void openHidden()} className={cn('flex shrink-0 items-center gap-1 rounded-xl px-3.5 py-1.5 text-[13px] font-bold', chip === 'hidden' ? 'bg-ink text-white' : 'bg-white text-ink')}>
-              <Lock className="h-3 w-3" /> Hidden
+              <Lock className="h-3 w-3" /> {tr('Hidden')}
             </button>
           )}
         </div>
@@ -154,10 +156,10 @@ export default function ChatListScreen() {
 
         {!loading && conversations.length === 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass mt-6 rounded-4xl p-8 text-center">
-            <p className="font-display text-lg">Your chats live here</p>
+            <p className="font-display text-lg">{tr('Your chats live here')}</p>
             <p className="mt-2 text-sm text-ink-mute">Add friends by username, then start a conversation.</p>
             <Link to="/friends" className="mt-5 inline-flex h-11 items-center gap-2 rounded-2xl bg-ember-gradient text-noir px-5 text-sm font-semibold shadow-glow">
-              <UserPlus className="h-4 w-4" /> Find friends
+              <UserPlus className="h-4 w-4" /> {tr('Find friends')}
             </Link>
           </motion.div>
         )}

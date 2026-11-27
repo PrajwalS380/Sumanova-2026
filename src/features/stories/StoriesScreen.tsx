@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import { useT } from '@/lib/i18n';
 import { DailyQuestionCard } from '@/features/social/DailyQuestionCard';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -54,11 +55,12 @@ export default function StoriesScreen() {
   const mine = rings?.find((r) => r.is_me);
   const friends = (rings ?? []).filter((r) => !r.is_me && r.is_friend);
   const discover = (rings ?? []).filter((r) => !r.is_me && !r.is_friend);
+  const tr = useT();
 
   return (
     <div className="min-h-full bg-noir pb-28">
       <TopBar
-        title="Stories"
+        title={tr('Stories')}
         right={
           <BarButton label="Story archive" to="/stories/archive">
             <Archive className="h-5 w-5" />
@@ -69,8 +71,8 @@ export default function StoriesScreen() {
         <section className="relative isolate mt-1 overflow-hidden rounded-tile bg-white pt-3.5">
           <Ghost url={friends[0]?.avatar_url ?? profile?.avatar_url} size={150} className="-right-8 -top-10" />
           <div className="flex items-center justify-between px-4">
-            <h2 className="text-[17px] font-extrabold">Friends</h2>
-            <button onClick={() => setComposer(true)} className="flex items-center gap-1 rounded-xl bg-ink/[0.06] px-3 py-1.5 text-[13px] font-bold"><Type className="h-3.5 w-3.5" /> Text story</button>
+            <h2 className="text-[17px] font-extrabold">{tr('Friends')}</h2>
+            <button onClick={() => setComposer(true)} className="flex items-center gap-1 rounded-xl bg-ink/[0.06] px-3 py-1.5 text-[13px] font-bold"><Type className="h-3.5 w-3.5" /> {tr('Text story')}</button>
           </div>
           <div className="no-scrollbar flex gap-3.5 overflow-x-auto px-4 pb-2 pt-3">
             <div className="flex w-[68px] shrink-0 flex-col items-center gap-1.5">
@@ -80,7 +82,7 @@ export default function StoriesScreen() {
                 </button>
                 <Link to="/" aria-label="Add a snap to my story" className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full bg-ember-flame text-white ring-[3px] ring-white"><Plus className="h-4 w-4" /></Link>
               </span>
-              <span className="text-xs font-bold">My story</span>
+              <span className="text-xs font-bold">{tr('My story')}</span>
             </div>
             {rings === null
               ? [0, 1, 2, 3].map((i) => <span key={i} className="h-[68px] w-[68px] shrink-0 animate-pulse rounded-full bg-ink/[0.06]" />)
@@ -97,7 +99,7 @@ export default function StoriesScreen() {
         <DailyQuestionCard />
 
         <section className="pt-5">
-          <h2 className="px-1 text-[17px] font-extrabold">For you</h2>
+          <h2 className="px-1 text-[17px] font-extrabold">{tr('For you')}</h2>
           {rings === null ? (
             <Skeleton />
           ) : discover.length === 0 ? (
