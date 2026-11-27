@@ -23,7 +23,14 @@ export interface EyeP {
   /** extra width (almond / feline stretch) */
   long?: number;
 }
-export interface LashP { len: number; density: number; liner: number; wing: number; wingUp: number; bottom: number }
+export interface LashP {
+  len: number; density: number; liner: number; wing: number; wingUp: number; bottom: number;
+  /** upward curl of each lash (0 straight … 1 strong curl) */ curl?: number;
+  /** 0 even along the lid … 1 longest at the outer corner (fox) */ outer?: number;
+  /** lashes gathered into spiky clumps */ clump?: number;
+  /** uneven, mixed lengths */ wisp?: number;
+  /** lash thickness multiplier */ thick?: number;
+}
 export interface BrowP { thick: number; arch: number; archPos: number; len: number; tail: number; inner: number; slits: number; feather: number }
 export interface NoseP {
   tipW: number; tipS: number; bridge: number; bridgeW: number; nostril: number; up: number; len: number;
@@ -157,13 +164,34 @@ export const EYE_SHAPES = build<EyeP>('eyes', EYE_FAM.map(([name, b]) => ({
   },
 })));
 
-export const LASHES = build<LashP>('lashes', [
-  { name: 'Natural', n: 20, make: (i) => ({ len: step(i % 5, 5, 0.25, 0.55), density: 0.6, liner: i < 10 ? 0.3 : 0.6, wing: 0, wingUp: 0, bottom: i % 2 ? 0.3 : 0 }) },
-  { name: 'Full', n: 20, make: (i) => ({ len: step(i % 5, 5, 0.55, 0.85), density: 1, liner: step(Math.floor(i / 5), 4, 0.4, 1), wing: 0, wingUp: 0, bottom: i % 2 ? 0.5 : 0.2 }) },
-  { name: 'Winged', n: 20, make: (i) => ({ len: step(i % 4, 4, 0.3, 0.7), density: 0.8, liner: 1, wing: step(Math.floor(i / 4), 5, 0.25, 0.75), wingUp: 0.45, bottom: 0 }) },
-  { name: 'Cat liner', n: 20, make: (i) => ({ len: step(i % 4, 4, 0.4, 0.8), density: 0.9, liner: 1.4, wing: step(Math.floor(i / 4), 5, 0.5, 1), wingUp: 0.65, bottom: i % 2 ? 0.4 : 0 }) },
-  { name: 'Dramatic', n: 20, make: (i) => ({ len: step(i % 5, 5, 0.85, 1.25), density: 1.3, liner: step(Math.floor(i / 5), 4, 0.8, 1.6), wing: i % 2 ? 0.4 : 0, wingUp: 0.5, bottom: 0.6 }) },
-]);
+/** Ten lash families × ten steps: steps 1–5 grow longer, 6–10 repeat them with lower lashes and a stronger line. */
+const LASH_FAM: [string, Omit<LashP, 'len' | 'bottom'> & { lo: number; hi: number; bot: number }][] = [
+  ['Natural', { lo: 0.2, hi: 0.5, density: 0.55, liner: 0.2, wing: 0, wingUp: 0, curl: 0.35, outer: 0.35, bot: 0.25 }],
+  ['Soft curl', { lo: 0.35, hi: 0.65, density: 0.7, liner: 0.3, wing: 0, wingUp: 0, curl: 1, outer: 0.3, bot: 0.3 }],
+  ['Wispy', { lo: 0.45, hi: 0.85, density: 0.85, liner: 0.4, wing: 0, wingUp: 0, curl: 0.6, outer: 0.5, wisp: 1, clump: 0.35, bot: 0.35 }],
+  ['Full', { lo: 0.5, hi: 0.85, density: 1.15, liner: 0.6, wing: 0, wingUp: 0, curl: 0.6, outer: 0.4, thick: 1.15, bot: 0.4 }],
+  ['Doll', { lo: 0.6, hi: 1, density: 1, liner: 0.5, wing: 0, wingUp: 0, curl: 0.85, outer: 0, thick: 1.05, bot: 0.8 }],
+  ['Fox', { lo: 0.45, hi: 0.9, density: 0.9, liner: 0.7, wing: 0.15, wingUp: 0.5, curl: 0.5, outer: 1, bot: 0.2 }],
+  ['Spiky', { lo: 0.5, hi: 0.95, density: 1.1, liner: 0.5, wing: 0, wingUp: 0, curl: 0.55, outer: 0.4, clump: 1, thick: 1.2, bot: 0.6 }],
+  ['Winged', { lo: 0.3, hi: 0.7, density: 0.8, liner: 1, wing: 0.45, wingUp: 0.45, curl: 0.5, outer: 0.6, bot: 0 }],
+  ['Cat liner', { lo: 0.4, hi: 0.8, density: 0.9, liner: 1.4, wing: 0.8, wingUp: 0.65, curl: 0.5, outer: 0.75, bot: 0.3 }],
+  ['Dramatic', { lo: 0.85, hi: 1.3, density: 1.4, liner: 1.2, wing: 0.3, wingUp: 0.5, curl: 0.75, outer: 0.55, thick: 1.35, bot: 0.65 }],
+];
+export const LASHES = build<LashP>('lashes', LASH_FAM.map(([name, f]) => ({
+  name,
+  n: 10,
+  make: (i) => {
+    const k = i % 5, more = i >= 5;
+    const { lo, hi, bot, ...rest } = f;
+    return {
+      ...rest,
+      len: step(k, 5, lo, hi),
+      bottom: more ? Math.max(bot, 0.35) + 0.15 : bot * 0.5,
+      liner: rest.liner * (more ? 1.3 : 1),
+      wing: rest.wing ? rest.wing * (more ? 1.25 : 1) : 0,
+    };
+  },
+})));
 
 const BROW_FAM: [string, Partial<BrowP>][] = [
   ['Straight', { arch: 0.002, archPos: 0.5, tail: 0.004 }],

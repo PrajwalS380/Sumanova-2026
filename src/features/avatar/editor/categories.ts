@@ -45,7 +45,7 @@ export const CATEGORIES: Category[] = [
   { id: 'skin', mode: 'face', label: 'Skin', icon: Hand, swatches: { key: 'skin', palette: SKIN }, thumb: 'head', stage: 'head' },
   { id: 'head', mode: 'face', label: 'Face', icon: Smile, slot: 'head', sliders: [{ key: 'face', label: 'Face size' }], thumb: 'head', stage: 'head' },
   { id: 'eyes', mode: 'face', label: 'Eyes', icon: Eye, slot: 'eyes', color: { key: 'eyes', palette: EYES }, sliders: [{ key: 'eyeSize', label: 'Eye size' }, { key: 'eyeGap', label: 'Eye spacing' }], thumb: 'face', stage: 'head' },
-  { id: 'lashes', mode: 'face', label: 'Lashes', icon: Sparkles, slot: 'lashes', color: { key: 'liner', palette: ['#1a1110', '#3a2620', '#5a3a2a', '#1f3f8a', '#4a2a6e', '#2f5d3a', '#7a1424'], allowNone: true, label: 'Liner' }, thumb: 'face', stage: 'head' },
+  { id: 'lashes', mode: 'face', label: 'Lashes', icon: Sparkles, slot: 'lashes', color: { key: 'liner', palette: ['#1a1110', '#3a2620', '#5a3a2a', '#1f3f8a', '#4a2a6e', '#2f5d3a', '#7a1424'], allowNone: true, label: 'Liner' }, thumb: 'eyes', stage: 'head' },
   { id: 'brows', mode: 'face', label: 'Brows', icon: Wind, slot: 'brows', color: { key: 'brows', palette: BROWS }, thumb: 'face', stage: 'head' },
   { id: 'nose', mode: 'face', label: 'Nose', icon: CircleDot, slot: 'nose', thumb: 'face34', stage: 'head' },
   { id: 'mouth', mode: 'face', label: 'Mouth', icon: Laugh, slot: 'mouth', color: { key: 'lips', palette: LIPS, allowNone: true }, thumb: 'face', stage: 'head' },

@@ -94,7 +94,7 @@ export async function showThumbs(slot: Slot, frame: ThumbFrame, ids: number[], c
     const face = ['head', 'eyes', 'lashes', 'brows', 'nose', 'mouth', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce'].includes(slot);
     if (slot === 'eyes') l.color.eyes = color ?? '#5a3a22';
     if (slot === 'brows') l.color.brows = color ?? '#2a1d16';
-    if (slot === 'mouth') l.color.lips = color ?? '#b8676a';
+    if (slot === 'mouth') l.color.lips = color ?? (skin ? null : '#b8676a');
     if (slot === 'beard') l.color.beard = color ?? '#3b2618';
     const size = Number(new URLSearchParams(location.search).get('size') ?? 192);
     const url = await renderThumb(`show:${slot}:${id}:${color}:${frame}:${size}:${skin}`, l, frame, slot !== 'hair' && !face, size);

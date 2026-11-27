@@ -5,10 +5,10 @@ export const SKIN: string[] = (() => {
   const out: string[] = [];
   // [lightness, hue] pairs per band, warm→neutral→rosy within each band
   for (let band = 0; band < 10; band++) {
-    const L = 84 - band * 6.6;
+    const L = 82 - band * 6.4;
     for (let k = 0; k < 10; k++) {
       const hue = 22 + (k - 5) * 2.2 + (band > 6 ? 2 : 0);
-      const sat = 36 + band * 1.8 + (k % 3) * 4 - (band > 7 ? 8 : 0); // natural, not orange
+      const sat = 46 - band * 0.6 + (k % 3) * 4 - (band > 7 ? 6 : 0); // natural, not orange; light tones warm, never ashen
       const l = L - k * 0.55;
       out.push(hsl(hue, sat, l));
     }

@@ -11,13 +11,14 @@ import { DEFAULT_LOOK, type Look } from '../look/config';
  * a time on a warm clay mannequin, and results are cached as image URLs, so
  * scrolling a 100-item grid never creates 100 GL contexts.
  */
-export type ThumbFrame = 'head' | 'face' | 'face34' | 'ear' | 'upper' | 'lower' | 'feet' | 'full' | 'fullroomy' | 'sticker' | 'seated' | 'bag' | 'dress';
+export type ThumbFrame = 'head' | 'face' | 'face34' | 'ear' | 'eyes' | 'upper' | 'lower' | 'feet' | 'full' | 'fullroomy' | 'sticker' | 'seated' | 'bag' | 'dress';
 
 const SIZE = 192;
 // (framed for the longer-legged figure: the head sits ~0.06 higher)
 const CAMS: Record<ThumbFrame, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
   head: { pos: [0.36, 2.1, 1.98], target: [0, 2.03, 0], fov: 30 },
   face: { pos: [0, 1.99, 1.3], target: [0, 1.955, 0], fov: 30 },
+  eyes: { pos: [0.3, 2.01, 1.25], target: [0.075, 1.985, 0], fov: 12.5 },
   /** side of the head, so ear shapes read */
   ear: { pos: [1.5, 1.97, 0.3], target: [0.24, 1.955, -0.02], fov: 13 },
   /** three-quarter face: shows a nose's profile (hump, hook, tip angle) */
@@ -59,7 +60,7 @@ const cache = new Map<string, string>();
  * opens instantly on later visits. Bump the version whenever the renderer
  * changes how variants look.
  */
-const STORE = 'snv-thumbs-v32';
+const STORE = 'snv-thumbs-v33';
 const storeKey = (key: string) => `/__thumb/${encodeURIComponent(key)}`;
 async function fromStore(key: string): Promise<string | null> {
   try {
@@ -139,7 +140,7 @@ async function pump() {
         root!.configure({ size: { width: job.size, height: job.size, top: 0, left: 0 } });
       }
       // every sculpted piece must be ready before the single still frame is taken
-      await prepareLook(job.look, ['head', 'face', 'face34', 'ear'].includes(job.frame) ? 'head' : undefined, job.faceless);
+      await prepareLook(job.look, ['head', 'face', 'face34', 'ear', 'eyes'].includes(job.frame) ? 'head' : undefined, job.faceless);
       const url = await new Promise<string>((resolve) => {
         const onReady = (gl: THREE.WebGLRenderer, scene: THREE.Scene, cam: THREE.Camera) => {
           gl.setClearColor(0x000000, 0);
@@ -154,7 +155,7 @@ async function pump() {
             0.85,
           );
         };
-        const headOnly = ['head', 'face', 'face34', 'ear'].includes(job.frame);
+        const headOnly = ['head', 'face', 'face34', 'ear', 'eyes'].includes(job.frame);
         root!.render(
           <>
             <hemisphereLight args={['#fff6ec', '#6a5446', 1.0]} />

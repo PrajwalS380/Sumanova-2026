@@ -11,9 +11,32 @@ import { Jewelry } from './Jewelry';
 
 export function SkinMat({ color, nail = false }: { color: string; /** glossier, for fingernails */ nail?: boolean }) {
   if (nail) return <meshPhysicalMaterial color={color} roughness={0.28} clearcoat={0.6} clearcoatRoughness={0.3} />;
-  // soft subsurface feel: a warm sheen at grazing angles, a touch of clearcoat for a healthy skin glow
-  return <meshPhysicalMaterial color={color} roughness={0.52} sheen={0.7} sheenRoughness={0.5} sheenColor={mix(color, '#ffb8a0', 0.55)} clearcoat={0.08} clearcoatRoughness={0.6} />;
+  // soft subsurface feel: a warm sheen at grazing angles, a touch of clearcoat for a healthy skin glow.
+  // Deeper tones get a richer, warmer sheen and a stronger soft highlight so they never look flat.
+  const d = skinDepth(color);
+  return (
+    <meshPhysicalMaterial
+      color={color}
+      roughness={0.52 - d * 0.1}
+      sheen={0.42 + d * 0.58}
+      sheenRoughness={0.5 - d * 0.1}
+      sheenColor={mix(color, d > 0.5 ? '#e0926a' : '#ffb8a0', 0.55)}
+      clearcoat={0.08 + d * 0.16}
+      clearcoatRoughness={0.6 - d * 0.15}
+    />
+  );
 }
+/** 0 for the lightest skin … 1 for the deepest */
+export function skinDepth(skin: string) {
+  const c = new THREE.Color(skin);
+  const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; // linear
+  return Math.min(1, Math.max(0, (0.6 - lum) / 0.55));
+}
+/** Natural lip tone for a skin: rosy on light skin, deeper berry-brown on deep skin. */
+export const lipTone = (skin: string) => {
+  const d = skinDepth(skin);
+  return mix(mix(skin, '#b04a56', 0.62), mix(skin, '#4f1f28', 0.5), d);
+};
 /** Fingernail tone: the skin lifted toward a pale pink. */
 export const nailTone = (skin: string) => mix(skin, '#f3cfc6', 0.35);
 function Flat({ color, rough = 0.6, layer = 0 }: { color: string; rough?: number; /** >0 wins depth ties against thin layers below it (no z-fighting) */ layer?: number }) {
@@ -48,7 +71,7 @@ export function Face(f: FaceProps) {
   const er = 0.071 * f.eyes.size * (1 + f.tune.eyeSize * 0.16);
   const noseY = ey - 0.12 * f.nose.len;
   const mouthY = -0.205 * (h.ry / 0.39);
-  const lipColor = f.colors.lips ?? mix(skin, '#b0525a', 0.45);
+  const lipColor = f.colors.lips ?? lipTone(skin);
   return (
     <group>
       {/* sculpted skull + nose + ears in one surface (the separate pieces are only a fallback while it's built) */}
@@ -306,23 +329,52 @@ function DeepSet({ h, ex, ey, er, amount }: { h: HeadShape; ex: number; ey: numb
   );
 }
 
+/** small stable hash for per-lash variation */
+const lashHash = (i: number) => {
+  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+
 function UpperLashes({ er, s, p, color }: { er: number; s: number; p: LashP; color: string }) {
   const geo = useMemo(() => {
-    const n = Math.round(5 + p.density * 8);
+    const n = Math.round(9 + p.density * 13);
+    const curl = p.curl ?? 0.5, outer = p.outer ?? 0.3, clump = p.clump ?? 0, wisp = p.wisp ?? 0, thick = p.thick ?? 1;
     const parts: THREE.BufferGeometry[] = [];
     const R = er * 1.075;
+    const up = new THREE.Vector3(0, 1, 0);
     for (let i = 0; i < n; i++) {
       const t = (i + 0.5) / n; // across the lid, 0 inner … 1 outer
-      const a = Math.PI * (0.15 + 0.7 * (s > 0 ? t : 1 - t));
+      const a = Math.PI * (0.13 + 0.74 * (s > 0 ? t : 1 - t));
       const base = new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R);
       const outward = base.clone().normalize();
-      const len = er * (0.22 + p.len * 0.45) * (0.6 + 0.6 * Math.sin(Math.PI * (0.3 + 0.7 * t)));
-      const tip = base.clone().addScaledVector(outward, len * 0.55).add(new THREE.Vector3(0, len * 0.9, 0));
-      const mid = base.clone().addScaledVector(outward, len * 0.55).add(new THREE.Vector3(0, len * 0.25, 0));
-      parts.push(taperTube([base, mid, tip], { radius: (k) => 0.0028 * (1 - k * 0.85), radial: 4, segments: 6 }));
+      // length profile: even arc (doll) ↔ rising toward the outer corner (fox)
+      const even = 0.5 + 0.5 * Math.sin(Math.PI * (0.15 + 0.85 * t));
+      const fox = 0.3 + 0.8 * Math.pow(t, 1.4);
+      let len = er * (0.26 + p.len * 0.6) * ((1 - outer) * even + outer * fox);
+      len *= 1 - wisp * 0.45 * lashHash(i) + wisp * 0.15;
+      // lashes fan toward their own corner
+      const side = new THREE.Vector3(s * (t - 0.45) * 0.55, 0, 0);
+      const dir = outward.clone().multiplyScalar(0.62).add(side).add(up.clone().multiplyScalar(0.55)).normalize();
+      let tip = base.clone().addScaledVector(dir, len);
+      // curl: the tip turns up and back toward the brow
+      tip.y += len * curl * 0.35;
+      tip.addScaledVector(outward, -len * curl * 0.18);
+      // clumps: tips gather in threes
+      if (clump > 0) {
+        const c = Math.floor(i / 3) * 3 + 1;
+        const tc = (Math.min(c, n - 1) + 0.5) / n;
+        const ac = Math.PI * (0.13 + 0.74 * (s > 0 ? tc : 1 - tc));
+        const cBase = new THREE.Vector3(Math.cos(ac) * R, 0, Math.sin(ac) * R);
+        const cTip = cBase.clone().addScaledVector(dir, len * 1.08);
+        cTip.y += len * curl * 0.35;
+        tip = tip.lerp(cTip, clump * 0.7);
+      }
+      const mid = base.clone().lerp(tip, 0.45).addScaledVector(outward, len * 0.12).add(new THREE.Vector3(0, -len * 0.05 * (1 - curl), 0));
+      const r0 = 0.0015 * thick * (0.75 + 0.5 * Math.sin(Math.PI * t));
+      parts.push(taperTube([base, mid, tip], { radius: (k) => r0 * Math.pow(1 - k, 0.7) + 0.0002, radial: 4, segments: 7 }));
     }
     if (p.wing > 0) {
-      const a = s > 0 ? Math.PI * 0.12 : Math.PI * 0.88;
+      const a = s > 0 ? Math.PI * 0.1 : Math.PI * 0.9;
       const base = new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R);
       const tip = base.clone().add(new THREE.Vector3(s * er * p.wing * 0.9, er * p.wing * p.wingUp, -er * 0.15));
       parts.push(taperTube([base, base.clone().lerp(tip, 0.5), tip], { radius: (k) => (0.005 + p.liner * 0.003) * (1 - k * 0.9), flat: 0.5, radial: 5, segments: 6 }));
@@ -331,7 +383,7 @@ function UpperLashes({ er, s, p, color }: { er: number; s: number; p: LashP; col
   }, [er, s, p]);
   return (
     <mesh geometry={geo}>
-      <meshStandardMaterial color={color} roughness={0.6} />
+      <meshStandardMaterial color={color} roughness={0.55} />
     </mesh>
   );
 }
@@ -340,18 +392,21 @@ function LowerLashes({ er, s, p, color, lower }: { er: number; s: number; p: Las
   const geo = useMemo(() => {
     const parts: THREE.BufferGeometry[] = [];
     const R = er * 1.06;
-    for (let i = 0; i < 6; i++) {
-      const t = (i + 0.5) / 6;
-      const a = Math.PI * (0.3 + 0.5 * (s > 0 ? t : 1 - t));
+    const n = Math.round(5 + p.bottom * 7);
+    const outer = p.outer ?? 0.3;
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n;
+      const a = Math.PI * (0.25 + 0.55 * (s > 0 ? t : 1 - t));
       const base = new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R);
-      const tip = base.clone().addScaledVector(base.clone().normalize(), er * 0.12 * p.bottom).add(new THREE.Vector3(0, -er * 0.18 * p.bottom, 0));
-      parts.push(taperTube([base, tip], { radius: (k) => 0.002 * (1 - k * 0.8), radial: 4, segments: 3 }));
+      const l = p.bottom * (0.6 + 0.6 * ((1 - outer) * Math.sin(Math.PI * t) + outer * t)) * (0.85 + 0.3 * lashHash(i + 50));
+      const tip = base.clone().addScaledVector(base.clone().normalize(), er * 0.12 * l).add(new THREE.Vector3(s * (t - 0.4) * er * 0.06, -er * 0.17 * l, 0));
+      parts.push(taperTube([base, tip], { radius: (k) => 0.0016 * (p.thick ?? 1) * (1 - k * 0.85), radial: 4, segments: 3 }));
     }
     return mergeGeo(parts);
   }, [er, s, p]);
   return (
-    <mesh geometry={geo} rotation={[lower - Math.PI / 2 + 0.15, 0, 0]}>
-      <meshStandardMaterial color={color} />
+    <mesh geometry={geo} rotation={[lower, 0, 0]}>
+      <meshStandardMaterial color={color} roughness={0.55} />
     </mesh>
   );
 }
