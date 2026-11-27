@@ -1,4 +1,5 @@
-import type * as THREE from 'three';
+import * as THREE from 'three';
+const BA = THREE.BufferAttribute;
 import type { BodyP } from '../look/face';
 import { B, REST_ARM, armBlend, bodyParts, bodyPrims, softenArmpits, type Joints, type Region } from './anatomy';
 import { Field, loft, type Part, type Prim, type V3 } from './sdf';
@@ -70,12 +71,42 @@ function bodyField(J: Joints) {
   }
   return f;
 }
-function meshMain(J: Joints, parts: Part[], skinTau = 0.025) {
+function meshMain(J: Joints, parts: Part[], skinTau = 0.025, bridges = false) {
   const f = new Field(parts, 0.03);
   // lofted skirts / coats and fold displacement change faster than a true distance: cull conservatively.
   // Cloth near the body moves exactly like the skin under it (borrowed weights): a lifted arm no longer
   // stretches the shirt's side into a web or lets the shoulder push through the neckline.
-  return dropLimbBridges(softenArmpits(meshField(f, { cell: CELL, skin: skinTau, uv: clothUV(J), lipschitz: 1.8, weightField: { field: bodyField(J), tau: 0.025, within: 0.12, limbs: LIMBS, limbTag: (t) => t >= 3 && t <= 6, limbOnlyBelow: 1.52, minY: 1.08 } }), J));
+  const geo = softenArmpits(meshField(f, { cell: CELL, skin: skinTau, uv: clothUV(J), lipschitz: 1.8, weightField: { field: bodyField(J), tau: 0.025, within: 0.12, limbs: LIMBS, byPart: true, limbOnlyBelow: 1.52, minY: 1.08 } }), J);
+  // single-layer tops only: on jackets / coats the opened seam would show the layer beneath
+  return bridges ? dropLimbBridges(geo) : geo;
+}
+/** Join closed meshes into one geometry (same attributes, indexed). */
+function concatGeos(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const out = geos[0].clone();
+  const names = Object.keys(out.attributes);
+  const arrays: Record<string, number[]> = {};
+  const sizes: Record<string, number> = {};
+  for (const n of names) { arrays[n] = []; sizes[n] = out.getAttribute(n).itemSize; }
+  const index: number[] = [];
+  let off = 0;
+  for (const g of geos) {
+    const cnt = g.getAttribute('position').count;
+    for (const n of names) {
+      const a = g.getAttribute(n);
+      const arr = arrays[n];
+      for (let i = 0; i < cnt * sizes[n]; i++) arr.push(a ? (a.array as ArrayLike<number>)[i] : 0);
+    }
+    const ix = g.getIndex()!;
+    for (let i = 0; i < ix.count; i++) index.push(ix.getX(i) + off);
+    off += cnt;
+  }
+  for (const n of names) {
+    const src = out.getAttribute(n).array;
+    const Ctor = (src as unknown as { constructor: new (a: number[]) => ArrayLike<number> }).constructor;
+    out.setAttribute(n, new BA(new Ctor(arrays[n]) as never, sizes[n]));
+  }
+  out.setIndex(index);
+  return out;
 }
 const LIMBS: number[] = [B.upperArmL, B.foreArmL, B.handL, B.upperArmR, B.foreArmR, B.handR];
 /**
@@ -219,6 +250,7 @@ function buildTop(J: Joints, cut: string, layer: 0 | 1, under?: string): Garment
   }
 
   // --- sleeves
+  const setIn: Part[] = [];
   if (sp.sleeve !== 'none') {
     const end = SLEEVE_END[sp.sleeve];
     for (const side of [-1, 1] as const) {
@@ -227,7 +259,15 @@ function buildTop(J: Joints, cut: string, layer: 0 | 1, under?: string): Garment
       const prims = bodyPrims(J, sEase, regions).filter((p) => bones.includes(p.bone as never));
       // looser sleeves open up toward the cuff on boxy cuts
       const elbowFold = (_x: number, y: number) => -0.003 * Math.sin(y * 95) * Math.exp(-(((y - 1.33) / 0.05) ** 2));
-      parts.push({ prims, clips: [plane([0, end, 0], [0, -1, 0], 0.008)], kAt: (_x, y) => armBlend(y), disp: quilt ?? fur ?? elbowFold });
+      const sleeve: Part = { prims, clips: [plane([0, end, 0], [0, -1, 0], 0.008)], kAt: (_x, y) => armBlend(y), disp: quilt ?? fur ?? elbowFold, limb: true };
+      // jackets / coats: each sleeve is its own closed piece, set into the body at the shoulder like a
+      // real jacket sleeve (fused, the thick sleeve and side panel bridge under the arm and web when it lifts)
+      if (layer) {
+        setIn.push(sleeve);
+        // the sleeve's cap stays fused into the body (so the shoulder keeps the same full shape as
+        // the top underneath and never lets it show through)
+        parts.push({ ...sleeve, clips: [plane([0, 1.5, 0], [0, -1, 0], 0.02)] });
+      } else parts.push(sleeve);
       // (no separate cuff rings: sleeves end cleanly at the wrist)
     }
   }
@@ -239,7 +279,7 @@ function buildTop(J: Joints, cut: string, layer: 0 | 1, under?: string): Garment
   }
   if (sp.neck === 'v') parts.push({ prims: [{ t: 'box', c: [0, 1.7, 0.16], s: [0.05, 0.09, 0.08], round: 0.002, rot: [0, 0, Math.PI / 4], bone: B.chest }], subtract: true, k: 0.006 });
 
-  const main = meshMain(J, parts);
+  const main = setIn.length ? concatGeos([meshMain(J, parts), ...setIn.map((p) => meshMain(J, [p]))]) : meshMain(J, parts, 0.025, !!sp.boxy);
 
   // --- trims
   const fz = (y: number, o = 0) => frontZ(J, y, ease + o);
@@ -423,7 +463,7 @@ function buildDress(J: Joints, cut: string): GarmentGeo {
     for (const side of [-1, 1] as const) {
       const bones = side < 0 ? [B.upperArmL, B.foreArmL] : [B.upperArmR, B.foreArmR];
       const prims = bodyPrims(J, 0.012, sp.sleeve === 'long' || sp.sleeve === 'elbow' ? ['upperArm', 'foreArm'] : ['upperArm']).filter((p) => bones.includes(p.bone as never));
-      parts.push({ prims, clips: [plane([0, end, 0], [0, -1, 0], 0.008)], kAt: (_x, y) => armBlend(y) });
+      parts.push({ prims, clips: [plane([0, end, 0], [0, -1, 0], 0.008)], kAt: (_x, y) => armBlend(y), limb: true });
     }
   }
   if (sp.neck === 'v') parts.push({ prims: [{ t: 'box', c: [0, 1.7, 0.16], s: [0.05, 0.09, 0.08], round: 0.002, rot: [0, 0, Math.PI / 4], bone: B.chest }], subtract: true, k: 0.006 });

@@ -18,7 +18,7 @@ export interface MeshOptions {
    */
   lipschitz?: number;
   /** take skin weights from another field (e.g. clothing borrows the body's) where it lies within `within` of it */
-  weightField?: { field: Field; tau: number; within: number; /** limb bones a vertex may only borrow if its own surface belongs to a limb (by volume tag) */ limbs?: number[]; limbTag?: (tag: number) => boolean; /** below this height a limb surface follows only limb bones */ limbOnlyBelow?: number; /** only borrow above this height */ minY?: number };
+  weightField?: { field: Field; tau: number; within: number; /** limb bones a vertex may only borrow if its own surface belongs to a limb (by volume tag) */ limbs?: number[]; limbTag?: (tag: number) => boolean; /** decide limb surfaces by the field's limb parts (Part.limb) */ byPart?: boolean; /** below this height a limb surface follows only limb bones */ limbOnlyBelow?: number; /** only borrow above this height */ minY?: number };
   /** per-vertex colour (x, y, z, tag, normal) — e.g. hair root→tip */
   color?: (x: number, y: number, z: number, tag: number, n: V3) => [number, number, number];
 }
@@ -162,7 +162,7 @@ export function meshField(f: Field, o: MeshOptions): THREE.BufferGeometry {
       const wf = o.weightField;
       f.weights(o.skin!, bi, bw);
       if (wf && y > (wf.minY ?? -Infinity) && wf.field.eval(x, y, z) < wf.within) {
-        const ownLimb = !wf.limbs || (wf.limbTag ? wf.limbTag(f.tagAt()) : bi.some((b, q) => bw[q] > 0.05 && wf.limbs!.includes(b)));
+        const ownLimb = !wf.limbs || (wf.byPart ? f.limbAt() : wf.limbTag ? wf.limbTag(f.tagAt()) : bi.some((b, q) => bw[q] > 0.05 && wf.limbs!.includes(b)));
         const bi2: number[] = [], bw2: number[] = [];
         wf.field.weights(wf.tau, bi2, bw2);
         // a garment's body panel (e.g. a boxy sweatshirt hanging beside the arm) never follows the arm

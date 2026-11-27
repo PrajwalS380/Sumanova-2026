@@ -42,6 +42,8 @@ export interface Part {
   subtract?: boolean;
   /** surface displacement (folds, curls, texture) — keep it small (≪ cell size × 3) */
   disp?: (x: number, y: number, z: number) => number;
+  /** this part is a limb piece (a sleeve): see Field.limbAt */
+  limb?: boolean;
 }
 
 // ---------------------------------------------------------------------------- compiled prims
@@ -408,6 +410,19 @@ export class Field {
   }
 
   /** Tag of the closest (non-subtracting) volume at the last evaluated point. */
+  /** Does the closest (non-subtracting) part at the last evaluated point belong to a limb? (by its own surface, not the blend) */
+  limbAt(): boolean {
+    let best = Infinity, limb = false;
+    for (let p = 0; p < this.parts.length; p++) {
+      if (!this.partSeen[p] || this.parts[p].subtract) continue;
+      if (this.partD[p] < best) {
+        best = this.partD[p];
+        limb = !!this.parts[p].limb;
+      }
+    }
+    return limb;
+  }
+
   tagAt(): number {
     let best = Infinity, tag = 0;
     for (let i = 0; i < this.lastCount; i++) {
