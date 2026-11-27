@@ -48,7 +48,7 @@ function QuizRowLink({ q }: { q: Quiz }) {
     <li>
       <Link to={`/quiz/${q.id}`} className="flex items-center gap-3 rounded-2xl bg-white p-3.5">
         <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#FF4F9A]/15 text-[#E0408A]"><Trophy className="h-5 w-5" /></span>
-        <span className="min-w-0 flex-1"><span className="block truncate font-extrabold">{q.title}</span><span className="block text-xs text-ink-mute">{q.questions.length} questions</span></span>
+        <span className="min-w-0 flex-1"><span className="block truncate font-extrabold" translate="no">{q.title}</span><span className="block text-xs text-ink-mute">{q.questions.length} questions</span></span>
       </Link>
     </li>
   );
@@ -153,14 +153,14 @@ export function QuizScreen() {
 
   return (
     <div className="min-h-full bg-noir px-4 pb-32 pt-safe">
-      <div className="flex items-center gap-3 py-3"><Back to="/quizzes" /><h1 className="min-w-0 truncate font-display text-2xl">{quiz.title}</h1></div>
+      <div className="flex items-center gap-3 py-3"><Back to="/quizzes" /><h1 className="min-w-0 truncate font-display text-2xl" translate="no">{quiz.title}</h1></div>
       {done && (
         <div className="rounded-tile bg-[#111111] p-5 text-center text-white">
           <p className="text-sm font-bold text-white/70">You got</p>
           <p className="font-display text-5xl">{result!.score}/{result!.total}</p>
         </div>
       )}
-      <ol className="mt-3 space-y-3">
+      <ol className="mt-3 space-y-3" translate="no">
         {quiz.questions.map((x, i) => (
           <li key={i} className="rounded-tile bg-white p-3.5">
             <p className="font-extrabold">{i + 1}. {x.q}</p>
@@ -193,7 +193,7 @@ export function QuizScreen() {
               <li key={b.user_id} className="flex items-center gap-3 rounded-2xl bg-white px-3 py-2.5">
                 <span className="w-5 text-center text-sm font-extrabold text-ink-mute">{i + 1}</span>
                 <Avatar name={b.display_name} url={b.avatar_url} size={34} ring={false} />
-                <span className="flex-1 truncate font-bold">{b.display_name}</span>
+                <span className="flex-1 truncate font-bold" translate="no">{b.display_name}</span>
                 <span className="font-display text-lg">{b.score}/{quiz.questions.length}</span>
               </li>
             ))}

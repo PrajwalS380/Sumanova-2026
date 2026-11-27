@@ -225,7 +225,7 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
           <button onClick={() => { onClose(); if (!ring.is_me) navigate(`/u/${ring.username}`); }} className="flex items-center gap-2.5">
             <Avatar name={ring.display_name} url={ring.avatar_url} aura={ring.aura_color} size={36} ring={false} />
             <span className="text-left">
-              <span className="block text-sm font-semibold text-white">{ring.is_me ? 'My story' : ring.display_name}</span>
+              <span className="block text-sm font-semibold text-white" translate={ring.is_me ? undefined : 'no'}>{ring.is_me ? 'My story' : ring.display_name}</span>
               <span className="block text-[11px] text-white/70">{story ? shortTime(story.created_at) : ''}{story?.audience === 'everyone' ? ' · Public' : story?.audience === 'custom' ? ' · Private' : story?.audience === 'group' ? ' · Group' : ''}</span>
             </span>
           </button>
@@ -286,7 +286,7 @@ export function StoryViewer({ rings, startIndex, onClose, preloaded }: { rings: 
           {viewers?.map((v) => (
             <li key={v.viewer_id} className="flex items-center gap-3 py-2">
               <Avatar name={v.display_name} url={v.avatar_url} aura={v.aura_color} size={40} />
-              <span className="flex-1"><span className="block text-sm font-semibold">{v.display_name}</span><span className="block text-xs text-ink-mute">{shortTime(v.viewed_at)} ago</span></span>
+              <span className="flex-1"><span className="block text-sm font-semibold" translate="no">{v.display_name}</span><span className="block text-xs text-ink-mute">{shortTime(v.viewed_at)} ago</span></span>
               {v.reaction && <span className="text-xl">{v.reaction}</span>}
             </li>
           ))}

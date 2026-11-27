@@ -169,7 +169,11 @@ activity-aliases + `AppIconPlugin`). Only open item: closed-app Android push (ow
   (`media_meta.countdown`), `/recap` (`my_year_recap`), anniversaries cron `sumanova-friend-anniversaries`.
 - E map: `MyMap.tsx` (trip mode `trips`/`trip_points`, favourite places, memories with `media_meta.place`).
 - F: offline runtime caching (public media + OSM tiles), idle-deferred startup work + tab prefetch, settings
-  backup/restore (`lib/backup.ts`, never secrets), languages en/hi/kn/ta/te (`lib/i18n.ts`, nav/titles/Settings only so far).
+  backup/restore (`lib/backup.ts`, never secrets), languages en/hi/kn/ta/te: `lib/i18n.ts` (`t()`/`useT()` for nav) +
+  `lib/i18nDom.ts` whole-screen translator (MutationObserver swaps exact English UI strings, placeholders, aria-labels,
+  titles; `{n}` number patterns) from `src/i18n/<lang>.json`, built by `node tools/i18n/build.cjs` from `tools/i18n/*.tsv`
+  (English, hi, kn, ta, te). Mark user content (messages, names, captions, answers) `translate="no"`. New UI text →
+  add a TSV line and rebuild. Name-like single words (Leo, Sky…) are deliberately left English.
 - plpgsql gotcha: wrap `case … then … end` in parentheses inside `if … then`; avoid the `?` jsonb operator in MCP
   migrations; never count the same table inside its own RLS policy (use a trigger).
 

@@ -251,7 +251,7 @@ export default function ChatThreadScreen() {
             </span>
           )}
           <span className="min-w-0">
-            <span className="block truncate text-base font-extrabold">{title}</span>
+            <span className="block truncate text-base font-extrabold" translate="no">{title}</span>
             <AnimatePresence mode="wait" initial={false}>
               <motion.span key={typingNames.length ? 'typing' : 'status'} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="block truncate text-xs" style={{ color: typingNames.length ? theme.accent : undefined }}>
                 {typingNames.length ? (

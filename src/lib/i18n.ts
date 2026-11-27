@@ -58,6 +58,16 @@ const D = {
   "You're offline": { hi: 'आप ऑफ़लाइन हैं', kn: 'ನೀವು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿದ್ದೀರಿ', ta: 'நீங்கள் ஆஃப்லைனில் உள்ளீர்கள்', te: 'మీరు ఆఫ్‌లైన్‌లో ఉన్నారు' },
 } satisfies Record<string, Partial<Record<Exclude<Lang, 'en'>, string>>>;
 export type I18nKey = keyof typeof D;
+/** Built-in words for one language (merged into the screen dictionary). */
+export function builtinWords(lang: Lang): Record<string, string> {
+  const o: Record<string, string> = {};
+  if (lang === 'en') return o;
+  for (const [k, v] of Object.entries(D)) {
+    const w = (v as Partial<Record<string, string>>)[lang];
+    if (w) o[k] = w;
+  }
+  return o;
+}
 
 const KEY = 'snv-lang';
 export function getLang(): Lang {

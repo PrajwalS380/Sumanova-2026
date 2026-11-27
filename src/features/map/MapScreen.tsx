@@ -42,7 +42,7 @@ function pin(f: { display_name: string; avatar_url: string | null; avatar_body_u
     className: '',
     iconSize: [110, h],
     iconAnchor: [55, h],
-    html: `<div class="snv-fig">${mood && (NOVA_EMOJI_IDS as string[]).includes(mood) ? `<img class="snv-mood" src="${novaEmojiUrl(mood as NovaEmojiId)}" alt=""/>` : ''}${figure}<span class="snv-tag${me ? ' me' : ''}">${escape(tag)}</span></div>`,
+    html: `<div class="snv-fig" translate="no">${mood && (NOVA_EMOJI_IDS as string[]).includes(mood) ? `<img class="snv-mood" src="${novaEmojiUrl(mood as NovaEmojiId)}" alt=""/>` : ''}${figure}<span class="snv-tag${me ? ' me' : ''}">${escape(tag)}</span></div>`,
   });
 }
 

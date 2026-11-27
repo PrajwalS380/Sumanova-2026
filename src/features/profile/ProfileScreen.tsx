@@ -96,7 +96,7 @@ export default function ProfileScreen() {
               <Camera className="h-[15px] w-[15px] text-white" />
             </span>
           </Link>
-          <h1 className="mt-2 font-display text-[32px] leading-none" style={{ textShadow: '0 2px 10px rgba(17,17,17,.35)' }}>{profile.display_name}</h1>
+          <h1 className="mt-2 font-display text-[32px] leading-none" style={{ textShadow: '0 2px 10px rgba(17,17,17,.35)' }} translate="no">{profile.display_name}</h1>
           <p className="text-[13px] font-bold opacity-90">@{profile.username}</p>
         </div>
       </div>

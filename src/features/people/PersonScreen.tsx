@@ -116,7 +116,7 @@ export default function PersonScreen() {
         </div>
         <div className="absolute bottom-[18px] left-[18px] text-white">
           <span className="inline-block rounded-full border-4 border-white"><Avatar name={c.display_name} url={c.avatar_url} aura={c.aura_color} size={80} /></span>
-          <h1 className="mt-2 font-display text-[32px] leading-none" style={{ textShadow: '0 2px 10px rgba(17,17,17,.35)' }}>{c.display_name}</h1>
+          <h1 className="mt-2 font-display text-[32px] leading-none" style={{ textShadow: '0 2px 10px rgba(17,17,17,.35)' }} translate="no">{c.display_name}</h1>
           <p className="text-[13px] font-bold opacity-90">@{c.username}{c.is_friend ? ` · ${fp?.is_best_friend ? 'Best friends' : 'Friends'}` : ''}</p>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function PersonScreen() {
             {bday && <button onClick={() => navigate('/birthdays?tab=zodiac')} className={cn(CHIP, 'bg-[#111111] text-white')}>{bday.sign.glyph} {bday.sign.name}</button>}
           </div>
         )}
-        {c.bio && <p className="mt-2 px-1 text-sm text-ink-soft">{c.bio}</p>}
+        {c.bio && <p className="mt-2 px-1 text-sm text-ink-soft" translate="no">{c.bio}</p>}
 
         {c.is_friend ? (
           <div className="flex gap-2 py-4">

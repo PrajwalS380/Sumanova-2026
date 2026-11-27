@@ -54,12 +54,12 @@ export function DailyQuestionCard() {
         <Loader2 className="mt-3 h-5 w-5 animate-spin text-white/50" />
       ) : mine ? (
         <div className="mt-3 space-y-2">
-          <p className="rounded-2xl bg-white/10 px-3 py-2 text-sm"><span className="font-extrabold">You:</span> {mine}</p>
+          <p className="rounded-2xl bg-white/10 px-3 py-2 text-sm"><span className="font-extrabold">You:</span> <span translate="no">{mine}</span></p>
           {others.length ? (
             others.slice(0, 6).map((f) => (
               <p key={f.user_id} className="flex items-start gap-2 text-sm">
                 <Avatar name={f.display_name} url={f.avatar_url} size={26} ring={false} />
-                <span className="min-w-0 [overflow-wrap:anywhere]"><span className="font-extrabold">{f.display_name.split(' ')[0]}:</span> {f.answer}</span>
+                <span className="min-w-0 [overflow-wrap:anywhere]" translate="no"><span className="font-extrabold">{f.display_name.split(' ')[0]}:</span> {f.answer}</span>
               </p>
             ))
           ) : (

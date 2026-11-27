@@ -277,7 +277,7 @@ function PersonRow({ person, children, onClick, sub }: { person: PublicProfile; 
       <button onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left" disabled={!onClick}>
         <Avatar name={person.display_name} url={person.avatar_url} aura={person.aura_color} size={50} />
         <span className="min-w-0">
-          <span className="block truncate font-extrabold">{person.display_name}</span>
+          <span className="block truncate font-extrabold" translate="no">{person.display_name}</span>
           <span className="block truncate text-xs text-ink-mute">{sub ?? `@${person.username}`}</span>
         </span>
       </button>

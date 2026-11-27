@@ -235,7 +235,7 @@ const ChatRow = memo(function ChatRow({ c, me, index, online, streak, top, onOpe
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className={cn('truncate text-base', unread ? 'font-extrabold text-ink' : 'font-semibold')}>{name}</span>
+            <span className={cn('truncate text-base', unread ? 'font-extrabold text-ink' : 'font-semibold')} translate="no">{name}</span>
             {rowBadges(streak, !!top).map((b) => <NovaEmoji key={b.id} id={b.id} size={17} label={b.label} />)}
             {c.pinned && <Pin className="h-3 w-3 shrink-0 text-ink-faint" />}
             {c.muted && <BellOff className="h-3 w-3 shrink-0 text-ink-faint" />}

@@ -380,7 +380,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
           )}
         </div>
         {v.caption && (
-          <p className="mt-2 line-clamp-3 text-sm font-semibold">
+          <p className="mt-2 line-clamp-3 text-sm font-semibold" translate="no">
             {v.caption.split(/(#[A-Za-z0-9_]{2,30})/g).map((part, k) => (part.startsWith('#') ? <button key={k} onClick={() => onTag(part.slice(1).toLowerCase())} className="font-extrabold text-ember-gold">{part}</button> : part))}
           </p>
         )}

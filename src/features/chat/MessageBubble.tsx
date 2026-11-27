@@ -59,7 +59,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
   if (m.kind === 'system') {
     return (
       <div className="my-3 flex justify-center px-6">
-        <span className="max-w-[90%] rounded-xl bg-white px-3 py-1 text-center text-xs font-semibold text-ink-mute [overflow-wrap:anywhere]">{m.body}</span>
+        <span className="max-w-[90%] rounded-xl bg-white px-3 py-1 text-center text-xs font-semibold text-ink-mute [overflow-wrap:anywhere]" translate="no">{m.body}</span>
       </div>
     );
   }
@@ -84,7 +84,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
     >
       {!mine && p.showSender && <span className="w-7 shrink-0">{!p.groupedWithNext && p.sender && <Avatar name={p.sender.display_name} url={p.sender.avatar_url} aura={p.sender.aura_color} size={28} ring={false} />}</span>}
       <div className={cn('flex min-w-0 max-w-[78%] flex-col', mine ? 'items-end' : 'items-start')}>
-        {p.showSender && !mine && !p.groupedWithPrev && p.sender && <span className="mb-1 ml-3 text-[11px] font-semibold text-ink-mute">{p.sender.display_name}</span>}
+        {p.showSender && !mine && !p.groupedWithPrev && p.sender && <span className="mb-1 ml-3 text-[11px] font-semibold text-ink-mute" translate="no">{p.sender.display_name}</span>}
         <div
           {...press}
           onDoubleClick={() => !m.local && !deleted && p.onQuickReact(m)}
@@ -104,15 +104,15 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           )}
           {p.reply && !deleted && (
             <button onClick={() => p.onReplyTap(p.reply!.id)} className={cn('mb-1.5 block w-full rounded-xl border-l-2 px-2.5 py-1.5 text-left text-xs', mine ? 'border-ink/70 bg-black/15' : 'border-ember-amber bg-ink/5')}>
-              <span className="block font-semibold opacity-90">{p.replySender}</span>
-              <span className="line-clamp-2 opacity-75">{p.reply.deleted_at ? 'Deleted message' : p.reply.body?.startsWith('e2e:') ? 'Encrypted message' : p.reply.body ?? (p.reply.kind === 'image' ? '📷 Photo' : p.reply.kind === 'video' ? '🎬 Video' : p.reply.kind === 'voice' ? '🎙️ Voice note' : '')}</span>
+              <span className="block font-semibold opacity-90" translate="no">{p.replySender}</span>
+              <span className="line-clamp-2 opacity-75" translate={p.reply.body && !p.reply.deleted_at ? 'no' : undefined}>{p.reply.deleted_at ? 'Deleted message' : p.reply.body?.startsWith('e2e:') ? 'Encrypted message' : p.reply.body ?? (p.reply.kind === 'image' ? '📷 Photo' : p.reply.kind === 'video' ? '🎬 Video' : p.reply.kind === 'voice' ? '🎙️ Voice note' : '')}</span>
             </button>
           )}
           {deleted ? (
             <span className="text-sm">Message deleted</span>
           ) : m.kind === 'text' ? (
             m.body?.startsWith('e2e:') ? <E2EText body={m.body} mine={mine} senderId={m.sender_id} conversationId={m.conversation_id} /> : <>
-              <p className="whitespace-pre-wrap text-[15px] leading-snug [overflow-wrap:anywhere]">{m.body}</p>
+              <p className="whitespace-pre-wrap text-[15px] leading-snug [overflow-wrap:anywhere]" translate="no">{m.body}</p>
               {p.translation && <p className="mt-1 whitespace-pre-wrap border-t border-current/20 pt-1 text-[14px] italic leading-snug opacity-90 [overflow-wrap:anywhere]">{p.translation}</p>}
               {!m.local && <LinkCard body={m.body} mine={mine} />}
             </>
@@ -128,7 +128,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
             ) : m.body?.startsWith('nova:') ? (
               <span className="text-sm text-ink-mute">Sticker</span>
             ) : (
-              <span className="block max-w-full pb-1 text-[64px] leading-none [overflow-wrap:anywhere] drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker">{m.body}</span>
+              <span className="block max-w-full pb-1 text-[64px] leading-none [overflow-wrap:anywhere] drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)]" role="img" aria-label="Sticker" translate="no">{m.body}</span>
             )
           ) : m.kind === 'hangout' && m.media_meta?.hangout_id ? (
             <HangoutCard hangoutId={m.media_meta.hangout_id} />
@@ -147,7 +147,7 @@ export const MessageBubble = memo(function MessageBubble(p: Props) {
           ) : m.kind === 'voice' ? (
             <VoiceView path={m.media_path} localUrl={m.localUrl} meta={m.media_meta} mine={mine} />
           ) : null}
-          {isMedia && m.body && <p className="px-2 pb-1 pt-1.5 text-[14px] [overflow-wrap:anywhere]">{m.body}</p>}
+          {isMedia && m.body && <p className="px-2 pb-1 pt-1.5 text-[14px] [overflow-wrap:anywhere]" translate="no">{m.body}</p>}
         </div>
 
         {p.reactions.length > 0 && (

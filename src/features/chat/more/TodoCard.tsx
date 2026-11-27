@@ -49,7 +49,7 @@ export function TodoCard({ messageId, title, local, people }: { messageId: strin
     <div className="w-[270px] max-w-full rounded-[22px] bg-white p-3.5 text-ink shadow-[0_1px_0_rgba(17,17,17,.06)]" onPointerDown={(e) => e.stopPropagation()}>
       <div className="flex items-center gap-2">
         <span className="grid h-8 w-8 place-items-center rounded-xl bg-ember-sage/15 text-ember-jade"><ListChecks className="h-4.5 w-4.5" /></span>
-        <p className="flex-1 text-[15px] font-extrabold leading-snug">{title}</p>
+        <p className="flex-1 text-[15px] font-extrabold leading-snug" translate="no">{title}</p>
         <span className="text-xs font-bold text-ink-mute">{done}/{items.length}</span>
       </div>
       <ul className="mt-2.5 space-y-1">
@@ -64,7 +64,7 @@ export function TodoCard({ messageId, title, local, people }: { messageId: strin
             >
               {i.done_at && <Check className="h-3.5 w-3.5" />}
             </button>
-            <span className={cn('min-w-0 flex-1 text-sm font-semibold [overflow-wrap:anywhere]', i.done_at && 'text-ink-mute line-through')}>
+            <span translate="no" className={cn('min-w-0 flex-1 text-sm font-semibold [overflow-wrap:anywhere]', i.done_at && 'text-ink-mute line-through')}>
               {i.text}
               {i.done_at && i.done_by && people[i.done_by] && <span className="ml-1 text-[11px] font-normal no-underline">· {people[i.done_by].display_name.split(' ')[0]}</span>}
             </span>

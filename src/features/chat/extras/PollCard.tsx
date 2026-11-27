@@ -49,9 +49,9 @@ export function PollCard({ messageId, question, options, local }: { messageId: s
     <div className="w-[260px] max-w-full rounded-[22px] bg-white p-3.5 text-ink shadow-[0_1px_0_rgba(17,17,17,.06)]">
       <div className="flex items-start gap-2">
         <NovaEmoji id="chat" size={26} />
-        <p className="flex-1 text-[15px] font-extrabold leading-snug">{question}</p>
+        <p className="flex-1 text-[15px] font-extrabold leading-snug" translate="no">{question}</p>
       </div>
-      <ul className="mt-2.5 space-y-1.5">
+      <ul className="mt-2.5 space-y-1.5" translate="no">
         {options.map((o, i) => {
           const pct = t.total ? Math.round((t.counts[i] / t.total) * 100) : 0;
           return (

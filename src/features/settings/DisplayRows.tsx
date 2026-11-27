@@ -30,10 +30,9 @@ export function DisplayRows() {
         <p className="eyebrow mb-2">{tr('Language')}</p>
         <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Language">
           {LANGS.map((l) => (
-            <button key={l.id} role="radio" aria-checked={lang === l.id} onClick={() => { setL(l.id); setLang(l.id); }} className={lang === l.id ? 'rounded-xl bg-ink px-3.5 py-2 text-sm font-extrabold text-white' : 'rounded-xl bg-ink/[0.05] px-3.5 py-2 text-sm font-bold'}>{l.label}</button>
+            <button key={l.id} role="radio" aria-checked={lang === l.id} onClick={() => { if (l.id === lang) return; setL(l.id); setLang(l.id); setTimeout(() => location.reload(), 150); }} className={lang === l.id ? 'rounded-xl bg-ink px-3.5 py-2 text-sm font-extrabold text-white' : 'rounded-xl bg-ink/[0.05] px-3.5 py-2 text-sm font-bold'}>{l.label}</button>
           ))}
         </div>
-        {lang !== 'en' && <p className="mt-1.5 text-xs text-ink-mute">Menus, titles and Settings are translated; other screens are being added and show in English for now.</p>}
       </div>
       <Segmented<ThemeMode>
         label={tr('Appearance')}

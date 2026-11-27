@@ -10,7 +10,7 @@ import { ToastProvider } from './providers/ToastProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { isNative } from './lib/platform';
 import { applyDisplay } from './lib/display';
-import { applyLang } from './lib/i18n';
+import { applyLang, getLang } from './lib/i18n';
 
 applyDisplay();
 applyLang();
@@ -36,3 +36,6 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// Other languages: translate the screens once the app has rendered (dictionary loads on demand).
+if (getLang() !== 'en') void import('./lib/i18nDom').then((m) => m.startScreenTranslation());
