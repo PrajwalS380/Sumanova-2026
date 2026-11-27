@@ -10,11 +10,12 @@ import type { Config } from 'tailwindcss';
  * (black primary by default, pink, green, violet, blue, orange …).
  */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        noir: { DEFAULT: 'rgb(var(--canvas) / <alpha-value>)', 950: '#FFFFFF', 900: 'rgb(var(--canvas) / <alpha-value>)', 800: '#FFFFFF', 700: '#F1F1F4', 600: '#E6E6EB', 500: '#D6D6DC' },
+        noir: { DEFAULT: 'rgb(var(--canvas) / <alpha-value>)', 950: 'rgb(var(--surface) / <alpha-value>)', 900: 'rgb(var(--canvas) / <alpha-value>)', 800: 'rgb(var(--surface) / <alpha-value>)', 700: 'rgb(var(--surface-2) / <alpha-value>)', 600: 'rgb(var(--surface-3) / <alpha-value>)', 500: 'rgb(var(--surface-4) / <alpha-value>)' },
         ember: {
           flame: 'rgb(var(--accent) / <alpha-value>)',
           amber: 'rgb(var(--accent) / <alpha-value>)',
@@ -25,10 +26,15 @@ export default {
           jade: '#12A577',
           plum: '#8C6BFF',
           sky: '#3D7BFF',
-          cream: '#111111',
+          cream: 'rgb(var(--cream) / <alpha-value>)',
         },
         pearl: { blue: '#DDE8FF', pink: '#FFD6E8', mint: '#D8F5EA', lilac: '#ECE5FF' },
-        ink: { DEFAULT: '#111111', soft: '#333333', mute: '#6F6F78', faint: '#9A9AA3' },
+        ink: {
+          DEFAULT: 'rgb(var(--ink) / <alpha-value>)',
+          soft: 'rgb(var(--ink-soft) / <alpha-value>)',
+          mute: 'rgb(var(--ink-mute) / <alpha-value>)',
+          faint: 'rgb(var(--ink-faint) / <alpha-value>)',
+        },
       },
       fontFamily: {
         sans: ['"Inter Variable"', 'system-ui', 'sans-serif'],

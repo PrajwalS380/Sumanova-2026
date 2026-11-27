@@ -40,7 +40,10 @@ export function getAccent(): Accent {
 }
 
 export function applyAccent(a: Accent = getAccent()) {
-  const s = document.documentElement.style;
+  const root = document.documentElement;
+  const s = root.style;
+  // black "Ink" accent would vanish on the dark canvas: use a raised grey there
+  if (a.id === 'ink' && root.classList.contains('dark')) a = { ...a, main: '#3A3A42', from: '#3A3A42', to: '#3A3A42' };
   s.setProperty('--accent', rgb(a.main));
   s.setProperty('--accent-from', rgb(a.from));
   s.setProperty('--accent-to', rgb(a.to));
@@ -79,6 +82,8 @@ export function getCanvas(): Canvas {
 }
 
 export function applyCanvas(c: Canvas = getCanvas()) {
+  // dark mode owns the canvas (lib/display.ts); the choice applies again in light mode
+  if (document.documentElement.classList.contains('dark')) return;
   document.documentElement.style.setProperty('--canvas', rgb(c.hex));
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', c.hex);
 }

@@ -21,6 +21,8 @@ import { platform } from '@/lib/platform';
 import { ContactSyncToggle, PhoneRow } from './PhoneRows';
 import { SecuritySection } from './SecuritySection';
 import { KeyRound } from 'lucide-react';
+import { DisplayRows } from './DisplayRows';
+import { LockRows } from './LockRows';
 
 function AccentPicker() {
   const [cur, setCur] = useState(() => getAccent().id);
@@ -219,6 +221,7 @@ export default function SettingsScreen() {
         )}
 
         <Section title="Security" icon={<KeyRound className="h-3.5 w-3.5" />}>
+          <LockRows />
           <SecuritySection />
         </Section>
 
@@ -234,6 +237,7 @@ export default function SettingsScreen() {
 
         {settings && (
           <Section title="Look & feel" icon={<Palette className="h-3.5 w-3.5" />}>
+            <DisplayRows />
             <AccentPicker />
             <CanvasPicker />
             <AppIconPicker />

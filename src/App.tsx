@@ -12,6 +12,9 @@ import { ScreenLoader } from '@/components/ScreenLoader';
 import { NetworkBanner } from '@/components/NetworkBanner';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { ROOTS } from '@/components/nav';
+import { AppLockGate } from '@/components/AppLockGate';
+import { DeviceGate } from '@/components/DeviceGate';
+import { screenProtection } from '@/lib/privacy';
 
 // Every screen is code-split.
 const CameraScreen = lazy(() => import('@/features/camera/CameraScreen'));
@@ -65,6 +68,7 @@ function NativeBridge() {
       return true;
     });
   }, [navigate]);
+  useEffect(() => screenProtection.init(), []);
   // Contacts (when the person turned it on): re-match on start and every return to the app.
   const { session } = useAuth();
   const uid = session?.user.id;
@@ -118,6 +122,8 @@ export default function App() {
   return (
     <>
       <NativeBridge />
+      <DeviceGate />
+      <AppLockGate />
       <NetworkBanner />
       <Suspense fallback={<ScreenLoader />}>
         <Routes>

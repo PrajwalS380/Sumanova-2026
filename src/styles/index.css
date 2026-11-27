@@ -14,7 +14,38 @@
     --accent: 17 17 17;
     --accent-from: 17 17 17;
     --accent-to: 17 17 17;
+    /* Text & surface tones (light). html.dark swaps them — see lib/display.ts. */
+    --ink: 17 17 17;
+    --ink-soft: 51 51 51;
+    --ink-mute: 111 111 120;
+    --ink-faint: 154 154 163;
+    --cream: 17 17 17;
+    --surface: 255 255 255;
+    --surface-2: 241 241 244;
+    --surface-3: 230 230 235;
+    --surface-4: 214 214 220;
   }
+  html.dark {
+    color-scheme: dark;
+    --ink: 242 242 246;
+    --ink-soft: 214 214 222;
+    --ink-mute: 152 152 162;
+    --ink-faint: 112 112 122;
+    --cream: 58 58 66;
+    --surface: 30 30 36;
+    --surface-2: 42 42 50;
+    --surface-3: 54 54 62;
+    --surface-4: 70 70 80;
+  }
+  /* Dark mode: re-map the hard-coded Bento whites/blacks once, here, instead of in 600 class lists.
+     Media screens keep their own white-on-dark overlays (bg-black/…, bg-white/…, text-white). */
+  html.dark .bg-white { background-color: rgb(var(--surface)); }
+  html.dark .bg-ink, html.dark .bg-\[\#111111\] { background-color: rgb(var(--cream)); }
+  html.dark .bg-\[\#F1F1F4\] { background-color: rgb(var(--surface-2)); }
+  html.dark .text-noir { color: #fff; }
+  html.dark .divide-\[\#F1F1F4\] > * + * { border-color: rgb(255 255 255 / 0.07); }
+  html.dark .hairline { border-color: rgb(255 255 255 / 0.08); }
+  html.dark img.invert-dark { filter: invert(1); }
   html, body, #root { height: 100%; }
   /* Never let one wide element push the whole page sideways (curved / narrow phones). */
   html, body, #root { max-width: 100%; overflow-x: hidden; overflow-x: clip; }
@@ -42,13 +73,13 @@
 @layer components {
   /* Bento tile: solid white, no border, soft drop. (Class name kept from Pearl.) */
   .glass {
-    background: #FFFFFF;
+    background: rgb(var(--surface));
     border: 0;
     @apply shadow-card;
   }
   /* Sheets / top bars: solid white, no live blur. */
   .glass-strong {
-    background: #FFFFFF;
+    background: rgb(var(--surface));
     border: 0;
     @apply shadow-glass;
   }
@@ -115,3 +146,6 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .snv-place .nm { max-width: 118px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 7px; border-radius: 8px; background: rgba(255,255,255,.92); color: #111; font: 800 10.5px 'Inter Variable', system-ui, sans-serif; }
 .snv-fig { position: relative; }
 .snv-mood { position: absolute; top: -6px; right: 14px; width: 30px; height: 30px; filter: drop-shadow(0 2px 4px rgba(17,17,17,.3)); }
+
+@keyframes pin-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.pin-shake { animation: pin-shake 0.25s ease-in-out 2; }

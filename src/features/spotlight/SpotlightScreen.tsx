@@ -1,4 +1,5 @@
 import { MeButton } from '@/components/MeButton';
+import { saveData } from '@/lib/display';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -292,7 +293,8 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
   onTag: (tag: string) => void; onSound: (id: string) => void; onRemix: () => void;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const [paused, setPaused] = useState(false);
+  // data saver on mobile data: clips wait for a tap instead of autoplaying
+  const [paused, setPaused] = useState(saveData);
   const [heart, setHeart] = useState(0);
   const watched = useRef(0);
   const lastTap = useRef(0);
@@ -319,7 +321,7 @@ const Card = memo(function Card({ v, me, active, near, muted, onMute, onLike, on
           loop
           playsInline
           muted={muted}
-          preload={active ? 'auto' : 'metadata'}
+          preload={active ? (paused ? 'metadata' : 'auto') : saveData() ? 'none' : 'metadata'}
           onTimeUpdate={(e) => (watched.current = Math.max(watched.current, e.currentTarget.currentTime))}
           className="h-full w-full object-cover"
           style={{ filter: f.css }}

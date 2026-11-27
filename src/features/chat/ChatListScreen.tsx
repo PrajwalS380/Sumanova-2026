@@ -4,7 +4,7 @@ import { rowBadges, topFriendIds } from '@/lib/badges';
 import { NovaEmoji } from '@/components/emoji/NovaEmoji';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BellOff, Clock3, Eye, MessageSquarePlus, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info, X } from 'lucide-react';
+import { BellOff, Clock3, Eye, EyeOff, Lock, MessageSquarePlus, Pin, PinOff, Search, Star, StarOff, Users, UserPlus, Bell, Info, X } from 'lucide-react';
 import { TopBar, BarButton } from '@/components/TopBar';
 import { Avatar } from '@/components/Avatar';
 import { Ghost, GHOST_HOST } from '@/components/ui/Ghost';
@@ -20,6 +20,10 @@ import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
 import { NewGroupSheet } from './NewGroupSheet';
 import { useLongPress } from './useLongPress';
+import { hiddenChats, setChatHidden } from '@/lib/hiddenChats';
+import { checkPin, lockEnabled, unlockWithBiometric, lockConfig } from '@/lib/appLock';
+import { PinPad } from '@/components/AppLockGate';
+import { PinSetupSheet } from '@/features/settings/LockRows';
 
 export default function ChatListScreen() {
   const { session } = useAuth();
@@ -27,7 +31,33 @@ export default function ChatListScreen() {
   const { conversations, loading, error, pendingRequests, online, patch, refresh } = useInbox();
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const [chip, setChip] = useState<'all' | 'unread' | 'groups' | 'streaks'>('all');
+  const [chip, setChip] = useState<'all' | 'unread' | 'groups' | 'streaks' | 'hidden'>('all');
+  const [hidden, setHidden] = useState(() => (lockEnabled() ? hiddenChats(me) : new Set<string>()));
+  const [askPin, setAskPin] = useState(false);
+  const [pinErr, setPinErr] = useState('');
+  const [setupFor, setSetupFor] = useState<ConversationSummary | null>(null);
+  useEffect(() => {
+    const on = () => setHidden(lockEnabled() ? hiddenChats(me) : new Set());
+    window.addEventListener('snv-hidden-changed', on);
+    window.addEventListener('snv-lock-changed', on);
+    return () => {
+      window.removeEventListener('snv-hidden-changed', on);
+      window.removeEventListener('snv-lock-changed', on);
+    };
+  }, [me]);
+  function toggleHidden(c: ConversationSummary) {
+    setMenu(null);
+    if (!lockEnabled()) return setSetupFor(c);
+    const hide = !hidden.has(c.id);
+    setChatHidden(me, c.id, hide);
+    toast(hide ? 'Chat hidden — find it under Hidden with your PIN' : 'Chat is back in your list', 'success');
+  }
+  async function openHidden() {
+    if (chip === 'hidden') return setChip('all');
+    if (lockConfig()?.bio && (await unlockWithBiometric())) return setChip('hidden');
+    setPinErr('');
+    setAskPin(true);
+  }
   const [menu, setMenu] = useState<ConversationSummary | null>(null);
   const [newGroup, setNewGroup] = useState(false);
   const [streaks, setStreaks] = useState<Record<string, StreakInfo>>({});
@@ -53,12 +83,13 @@ export default function ChatListScreen() {
     let list = q
       ? conversations.filter((c) => conversationName(c).toLowerCase().includes(q) || (c.other_username ?? '').includes(q) || (c.last_body ?? '').toLowerCase().includes(q))
       : conversations;
+    list = chip === 'hidden' ? list.filter((c) => hidden.has(c.id)) : list.filter((c) => !hidden.has(c.id));
     if (chip === 'unread') list = list.filter((c) => c.unread_count > 0);
     if (chip === 'groups') list = list.filter((c) => c.kind === 'group');
     if (chip === 'streaks') list = list.filter((c) => !!c.other_user_id && (streaks[c.other_user_id]?.count ?? 0) > 0);
     return { rest: list };
-  }, [conversations, query, chip, streaks]);
-  const unreadCount = conversations.filter((c) => c.unread_count > 0).length;
+  }, [conversations, query, chip, streaks, hidden]);
+  const unreadCount = conversations.filter((c) => c.unread_count > 0 && !hidden.has(c.id)).length;
   const top = useMemo(() => topFriendIds(Object.values(streaks)), [streaks]);
 
   async function setPref(c: ConversationSummary, p: Partial<ConversationSummary>, msg: string) {
@@ -100,6 +131,11 @@ export default function ChatListScreen() {
               {label}
             </button>
           ))}
+          {hidden.size > 0 && (
+            <button role="tab" aria-selected={chip === 'hidden'} onClick={() => void openHidden()} className={cn('flex shrink-0 items-center gap-1 rounded-xl px-3.5 py-1.5 text-[13px] font-bold', chip === 'hidden' ? 'bg-ink text-white' : 'bg-white text-ink')}>
+              <Lock className="h-3 w-3" /> Hidden
+            </button>
+          )}
         </div>
 
         {error && (
@@ -133,11 +169,38 @@ export default function ChatListScreen() {
             <SheetItem icon={menu.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />} label={menu.pinned ? 'Unpin' : 'Pin to top'} onClick={() => setPref(menu, { pinned: !menu.pinned }, menu.pinned ? 'Unpinned' : 'Pinned')} />
             <SheetItem icon={menu.favourite ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />} label={menu.favourite ? 'Remove from favourites' : 'Add to favourites'} onClick={() => setPref(menu, { favourite: !menu.favourite }, menu.favourite ? 'Removed from favourites' : 'Added to favourites')} />
             <SheetItem icon={menu.muted ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />} label={menu.muted ? 'Unmute' : 'Mute notifications'} onClick={() => setPref(menu, { muted: !menu.muted }, menu.muted ? 'Unmuted' : 'Muted')} />
+            <SheetItem icon={hidden.has(menu.id) ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />} label={hidden.has(menu.id) ? 'Unhide chat' : 'Hide chat'} onClick={() => toggleHidden(menu)} />
             <SheetItem icon={<Info className="h-4 w-4" />} label="Chat details" onClick={() => { setMenu(null); navigate(`/chat/${menu.id}/info`); }} />
           </div>
         )}
       </Sheet>
       <NewGroupSheet open={newGroup} onClose={() => setNewGroup(false)} />
+      <Sheet open={askPin} onClose={() => setAskPin(false)} title="Hidden chats">
+        <div className="pb-6 pt-2">
+          <PinPad
+            title="Enter your PIN"
+            error={pinErr}
+            onDone={async (pin) => {
+              if (await checkPin(pin)) {
+                setAskPin(false);
+                setChip('hidden');
+              } else setPinErr('Wrong PIN');
+            }}
+          />
+        </div>
+      </Sheet>
+      <PinSetupSheet
+        open={!!setupFor}
+        onClose={() => setSetupFor(null)}
+        onSet={() => {
+          const c = setupFor;
+          setSetupFor(null);
+          if (c) {
+            setChatHidden(me, c.id, true);
+            toast('App lock is on and the chat is hidden', 'success');
+          }
+        }}
+      />
     </div>
   );
 }

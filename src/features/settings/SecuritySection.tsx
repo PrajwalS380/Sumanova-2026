@@ -7,6 +7,8 @@ import { useToast } from '@/providers/ToastProvider';
 import { deviceKey, exportMyData, securityApi, type DeviceRow } from '@/lib/security';
 import { saveMedia } from '@/lib/saveMedia';
 import { Sheet } from '@/components/ui/Sheet';
+import { Toggle } from '@/components/ui/Toggle';
+import { deviceApproval, type DeviceRequest } from '@/lib/deviceApproval';
 
 const ROW = 'flex w-full items-center gap-3 px-3.5 py-[13px] text-left text-[15px] font-semibold';
 
@@ -22,6 +24,36 @@ export function SecuritySection() {
   const [showDevices, setShowDevices] = useState(false);
   const load = () => void securityApi.mfa().then(setFactors).catch(() => setFactors([]));
   useEffect(load, []);
+  const [approve, setApprove] = useState(false);
+  const [requests, setRequests] = useState<DeviceRequest[]>([]);
+  const uid = session?.user.id;
+  useEffect(() => {
+    if (!uid) return;
+    void deviceApproval.enabled(uid).then(setApprove);
+    const pull = () => void deviceApproval.requests().then(setRequests).catch(() => undefined);
+    pull();
+    const t = setInterval(pull, 15000);
+    return () => clearInterval(t);
+  }, [uid]);
+  async function toggleApproval(v: boolean) {
+    try {
+      await deviceApproval.set(v);
+      setApprove(v);
+      toast(v ? 'New devices now need your approval' : 'Device approval is off', 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
+  async function decide(r: DeviceRequest, ok: boolean) {
+    try {
+      await deviceApproval.decide(r.id, ok);
+      setRequests((l) => l.filter((x) => x.id !== r.id));
+      if (!ok) await securityApi.signOutOthers().catch(() => undefined);
+      toast(ok ? `${r.device} approved` : 'Blocked. Change your password if you didn’t sign in.', ok ? 'success' : 'info');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }
 
   async function startEnroll() {
     setBusy('enroll');
@@ -87,6 +119,17 @@ export function SecuritySection() {
   const on = !!factors?.length;
   return (
     <>
+      {requests.map((r) => (
+        <div key={r.id} className="mx-3 my-2 rounded-2xl bg-ember-gold/15 p-3.5">
+          <p className="text-[15px] font-extrabold">Sign-in waiting: {r.device}</p>
+          <p className="text-xs text-ink-mute">{new Date(r.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} — was this you?</p>
+          <div className="mt-2.5 flex gap-2">
+            <button onClick={() => void decide(r, true)} className="h-10 flex-1 rounded-xl bg-ink text-sm font-extrabold text-white">Approve</button>
+            <button onClick={() => void decide(r, false)} className="h-10 flex-1 rounded-xl bg-white text-sm font-extrabold text-ember-rose">Not me</button>
+          </div>
+        </div>
+      ))}
+      <Toggle label="Approve new devices" description="A new phone or browser can’t open your chats, snaps or memories until you approve it here" checked={approve} onChange={(v) => void toggleApproval(v)} />
       <button onClick={() => (on ? void disable() : void startEnroll())} disabled={factors === null || !!busy} className={ROW}>
         <KeyRound className="h-5 w-5" />
         <span className="flex-1">Two-step login<span className="block text-xs font-normal text-ink-mute">{on ? 'On — a code from your authenticator app is needed to sign in' : 'Add a code from an authenticator app when signing in'}</span></span>
