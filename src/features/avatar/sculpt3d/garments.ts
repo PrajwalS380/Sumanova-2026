@@ -186,7 +186,7 @@ function buildTop(J: Joints, cut: string, layer: 0 | 1, under?: string): Garment
       // looser sleeves open up toward the cuff on boxy cuts
       const elbowFold = (_x: number, y: number) => -0.003 * Math.sin(y * 95) * Math.exp(-(((y - 1.33) / 0.05) ** 2));
       parts.push({ prims, clips: [plane([0, end, 0], [0, -1, 0], 0.008)], kAt: (_x, y) => armBlend(y), disp: quilt ?? fur ?? elbowFold });
-      if (sp.rib && sp.sleeve === 'long') trims.push({ geo: meshTrim(band([side * (J.sx + 0.008), end + 0.02, -0.006], J.r.wrist + sEase + 0.006, J.r.wrist + sEase + 0.006, 0.035, 0.006, bones[1])), tone: sp.rib });
+      // (no separate cuff rings: sleeves end cleanly at the wrist)
     }
   }
 
