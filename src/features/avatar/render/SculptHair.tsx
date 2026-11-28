@@ -25,7 +25,7 @@ const bakeHead = () => (refHead ??= headFromParams(HEADS[BAKE_HEAD_ID].p as neve
 const PAINT: Record<PaintT, number> = { none: 0, twotone: 1, ombre: 2, highlights: 3, streaks: 4, split: 5, lowlights: 6 };
 
 const HAIR_HEAD = `
-uniform vec3 uRoot; uniform vec3 uTip; uniform vec3 uHi; uniform float uPaint; uniform float uGloss; uniform float uBaked;
+uniform vec3 uRoot; uniform vec3 uTip; uniform vec3 uHi; uniform float uPaint; uniform float uGloss; uniform float uBaked; uniform float uCard;
 varying vec3 vHairT; varying vec3 vHairPos; varying vec2 vHUv;
 float hHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float hNoise(vec2 p) {
@@ -47,10 +47,12 @@ vec3 hairBase(float t, float rnd, vec3 pos) {
 }
 `;
 
-function useHairMaterial(root: string, tip: string | null, hi: string | null, paint: PaintT, gloss: number, sway: React.MutableRefObject<{ value: THREE.Vector3 }>, normalMap: THREE.Texture | null = null) {
+function useHairMaterial(root: string, tip: string | null, hi: string | null, paint: PaintT, gloss: number, sway: React.MutableRefObject<{ value: THREE.Vector3 }>, normalMap: THREE.Texture | null = null, card = false) {
   const mat = useMemo(() => {
     const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0, envMapIntensity: 0.3 });
-    const uniforms = { uRoot: { value: new THREE.Color(root) }, uTip: { value: new THREE.Color(tip ?? root) }, uHi: { value: new THREE.Color(hi ?? '#e8c9a0') }, uPaint: { value: 0 }, uGloss: { value: 0.6 }, uBaked: { value: 0 }, uSway: sway.current };
+    // strand cards: fine strands cut out of thin strips (alpha test keeps them crisp, no sorting)
+    if (card) { m.alphaTest = 0.45; m.side = THREE.DoubleSide; }
+    const uniforms = { uRoot: { value: new THREE.Color(root) }, uTip: { value: new THREE.Color(tip ?? root) }, uHi: { value: new THREE.Color(hi ?? '#e8c9a0') }, uPaint: { value: 0 }, uGloss: { value: 0.6 }, uBaked: { value: 0 }, uCard: { value: card ? 1 : 0 }, uSway: sway.current };
     m.userData.uniforms = uniforms;
     m.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, uniforms);
@@ -87,7 +89,24 @@ vHairT = normalize(normalMatrix * hairT);`,
   float side = mix(1.0, 0.7 + 0.3 * smoothstep(-0.35, 0.75, sin(vHUv.x * 6.2832)), mix(0.25, 1.0, smoothstep(0.15, 0.7, vColor.g)));
   // baked sculpts carry their grooves in the normal map and occlusion in vColor.r
   if (uBaked > 0.5) { side = 1.0; st = 0.6; }
-  diffuseColor.rgb = hc * vColor.r * side * (0.9 + 0.14 * st);
+  // each lock its own very slightly different tint (no two locks the same flat colour)
+  hc *= mix(vec3(1.03, 0.99, 0.95), vec3(0.96, 0.99, 1.04), hR) * (0.95 + 0.1 * hHash(vec2(hR * 91.0, 3.1)));
+  // roots sit in the shade of the hair above them
+  float rootShade = mix(0.72, 1.0, smoothstep(0.0, 0.22, hT));
+  // fine strand striations, strong enough to read in a small thumbnail
+  float fine = hNoise(vec2(vHUv.x * 38.0 + hR * 17.0, hT * 2.0)) * 0.55 + hNoise(vec2(vHUv.x * 85.0 + hR * 5.0, hT * 4.0 + hR)) * 0.45;
+  diffuseColor.rgb = hc * vColor.r * side * rootShade * (0.8 + 0.18 * st + 0.22 * fine);
+  if (uCard > 0.5) {
+    // strand cards: 5–7 thin tapered strands across the strip, fading in from the root and thinning at the tip
+    float across = vHUv.x * (3.0 + floor(hR * 2.0));
+    float k = fract(across + hHash(vec2(floor(across), hR * 31.0)) * 0.25);
+    float wid = 0.42 * (1.0 - 0.7 * smoothstep(0.55, 1.05, hT)) * (0.75 + 0.5 * hHash(vec2(floor(across), hR * 7.0)));
+    float strand = 1.0 - smoothstep(wid * 0.45, wid, abs(k - 0.5));
+    float len = 1.0 - smoothstep(0.98 - 0.12 * hHash(vec2(floor(across), hR * 13.0)), 1.06, hT);
+    diffuseColor.a = strand * len * smoothstep(0.02, 0.12, hT) * smoothstep(0.0, 0.12, vHUv.x) * smoothstep(1.0, 0.88, vHUv.x);
+    // a strand lying on top of the lock catches a little more light than the lock under it
+    diffuseColor.rgb = hc * rootShade * (1.04 + 0.12 * fine);
+  }
 #endif`,
         )
         .replace(
@@ -135,7 +154,7 @@ if (uBaked < 0.5) {
     };
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [card]);
   useEffect(() => {
     const u = mat.userData.uniforms as { uRoot: { value: THREE.Color }; uTip: { value: THREE.Color }; uHi: { value: THREE.Color }; uPaint: { value: number }; uGloss: { value: number } };
     u.uRoot.value.set(root);
@@ -195,6 +214,7 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
   const sway = useRef({ value: new THREE.Vector3() });
   const mat = useHairMaterial(color, tip, hi, p.paint, gloss, sway);
   const bakedMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, baked?.normalMap ?? null);
+  const cardMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, null, true);
   // the asset was sculpted on the reference head: fit it to this head's proportions
   const fit = useMemo(() => {
     const r = bakeHead();
@@ -225,7 +245,7 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
   });
 
   if (!res) return null;
-  const g = { geo: res.find((x) => x.role === 'main')?.geo, base: res.find((x) => x.role === 'base')?.geo, fade: res.find((x) => x.role === 'fade')?.geo, band: res.find((x) => x.role === 'band')?.geo };
+  const g = { cards: res.find((x) => x.role === 'cards')?.geo, geo: res.find((x) => x.role === 'main')?.geo, base: res.find((x) => x.role === 'base')?.geo, fade: res.find((x) => x.role === 'fade')?.geo, band: res.find((x) => x.role === 'band')?.geo };
   return (
     <group ref={group}>
       {baked ? (
@@ -234,6 +254,7 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
         <>
           {g.base && <mesh geometry={g.base} material={mat} />}
           {g.geo && <mesh geometry={g.geo} material={mat} castShadow />}
+          {g.cards && <mesh geometry={g.cards} material={cardMat} />}
         </>
       )}
       {g.fade && <mesh geometry={g.fade} material={stubble} />}

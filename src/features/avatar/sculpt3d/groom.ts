@@ -26,6 +26,8 @@ import { GeoCache, meshField } from './mesh';
 
 export interface GroomOut {
   strands: THREE.BufferGeometry | null;
+  /** thin alpha-cut strand cards riding on the locks (fine strands + flyaways, sumanova-us-106) */
+  cards?: THREE.BufferGeometry | null;
   base: THREE.BufferGeometry | null;
   fade: THREE.BufferGeometry | null;
   band: THREE.BufferGeometry | null;
@@ -124,10 +126,59 @@ class StrandMesh {
   }
 }
 
+/**
+ * Strand cards: flat strips laid on a lock's outer face (and a few loose flyaways off the
+ * silhouette). Their fragment shader cuts fine tapered strands out of them (alpha test), so the
+ * broad sculpted locks keep the silhouette while the surface reads as groomed, fine hair.
+ */
+class CardMesh {
+  pos: number[] = [];
+  nor: number[] = [];
+  tan: number[] = [];
+  uv: number[] = [];
+  col: number[] = [];
+  idx: number[] = [];
+  get count() { return this.pos.length / 3; }
+  /** a strip through `centres` (one per path point), `across` = half-width direction × width */
+  strip(centres: V[], across: V[], nrm: V[], tan: V[], shade: number[], t0: number, t1: number, rand: number) {
+    const base = this.count;
+    const n = centres.length;
+    for (let i = 0; i < n; i++) {
+      const t = t0 + ((t1 - t0) * i) / (n - 1);
+      for (const s of [-1, 1]) {
+        const c = centres[i], a = across[i];
+        this.pos.push(c.x + a.x * s, c.y + a.y * s, c.z + a.z * s);
+        this.nor.push(nrm[i].x, nrm[i].y, nrm[i].z);
+        this.tan.push(tan[i].x, tan[i].y, tan[i].z);
+        this.uv.push(s < 0 ? 0 : 1, t);
+        this.col.push(shade[i], t, rand);
+      }
+    }
+    for (let i = 0; i < n - 1; i++) {
+      const a = base + i * 2, b = a + 1, c = a + 2, d = a + 3;
+      // wound so the front face looks outward (away from the head)
+      this.idx.push(a, b, c, b, d, c);
+    }
+  }
+  geometry() {
+    if (!this.count) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(this.nor, 3));
+    g.setAttribute('hairT', new THREE.Float32BufferAttribute(this.tan, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
+    g.setIndex(this.count > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
+    g.computeBoundingSphere();
+    return g;
+  }
+}
+
 export class Groomer {
   R: number;
   r: () => number;
   m = new StrandMesh();
+  cards = new CardMesh();
   band: Prim[] = [];
   /** thickness of the scalp layer (strands start just above it) */
   cap: number;
@@ -229,11 +280,50 @@ export class Groomer {
       else if (p.braid === 'box') this.boxBraids();
       else if (p.loc !== 'none') this.locs();
       // tied and braided styles gather their own scalp hair (see ties / gatherTo)
-      else if (p.tie === 'none' && p.braid === 'none') this.scalpStrands();
+      else if (p.tie === 'none' && p.braid === 'none') {
+        this.scalpStrands();
+        this.shellCards();
+      }
       if (p.tie !== 'none' && p.braid !== 'cornrows') this.ties();
       if (p.braid !== 'none' && p.braid !== 'box' && p.braid !== 'cornrows') this.braids();
     }
-    return { strands: this.m.geometry(), base: this.baseCap(), fade: this.fadeShell(), band: this.bandGeo() };
+    return { strands: this.m.geometry(), cards: this.cards.geometry(), base: this.baseCap(), fade: this.fadeShell(), band: this.bandGeo() };
+  }
+
+  /**
+   * Barbered sides and back (short cuts): the smooth shell gets a dense coat of short combed strand
+   * cards lying on it, so it reads as close-cut hair from every angle — never a bare helmet.
+   */
+  shellCards() {
+    const { p, R, r } = this;
+    const longest = Math.max(p.top, p.side, p.back);
+    const cutShort = longest < 0.75 && p.tex !== 'coily' && p.tex !== 'curly';
+    if (!cutShort || this.hatOn) return;
+    const N = 700;
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    const u = v3();
+    for (let k = 0; k < N; k++) {
+      const y = 1 - (k / (N - 1)) * 2;
+      const rad = Math.sqrt(1 - y * y);
+      const th = golden * k;
+      u.set(Math.cos(th) * rad, y, Math.sin(th) * rad);
+      const az = Math.atan2(u.x, u.z);
+      const line = this.lineAt(az);
+      const a = Math.abs(az) / Math.PI;
+      const frontness = Math.max(0, 1 - a * 2.4) * smooth(0.95, 0.5, u.y);
+      if (u.y < line + 0.02 || u.y > 0.62 || frontness > 0.45 || this.faded(u.y, az)) continue;
+      const fb = this.fadeBlend(u.y, az);
+      if (fb < 0.3) continue;
+      const pts = this.grow(u, (0.16 + r() * 0.06) * fb, { fringe: false, layer: 0, liftK: 0.05 });
+      // the shell surface here (see baseCap): cap + the barbered shell thickness
+      const shellAt = (q: V) => {
+        const uy = q.y / (q.length() || 1);
+        return this.cap + 0.035 * R * smooth(line, line + 0.25, uy) * (1 - smooth(0.35, 0.7, uy));
+      };
+      for (const q of pts) this.keepOff(q, shellAt(q) - 0.002 * R);
+      if (pts.length < 3) continue;
+      this.addCards(pts, 0.05 * R * (0.85 + r() * 0.3), 0.25, 0.4, r(), 0, 1);
+    }
   }
 
   /** the scalp layer under the strands (no gaps where the scalp could show) */
@@ -281,6 +371,20 @@ export class Groomer {
       tan.set([d.x, d.y, d.z], i * 3);
     }
     geo.setAttribute('hairT', new THREE.BufferAttribute(tan, 3));
+    // uv: around the head (fine strand striations run down the scalp layer, like combed hair) and
+    // colour.g = height from the crown to the hairline (darker at the roots, as on the locks)
+    const uv = new Float32Array(P.count * 2);
+    const C = geo.getAttribute('color');
+    for (let i = 0; i < P.count; i++) {
+      q.set(P.getX(i), P.getY(i), P.getZ(i)).normalize();
+      const az = Math.atan2(q.x, q.z);
+      uv[i * 2] = (az / (Math.PI * 2) + 0.5) * 9;
+      const line = this.lineAt(az);
+      const t = Math.min(1, Math.max(0, (1 - q.y) / Math.max(0.2, 1 - line)));
+      uv[i * 2 + 1] = t;
+      if (C && afro === 0) C.setY(i, 0.25 + 0.6 * t);
+    }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     return geo;
   }
 
@@ -491,8 +595,9 @@ export class Groomer {
   }
 
   /** emit a hair clump along a grown path */
-  emit(pts: V[], w0: number, o: { flat?: number; tip?: number; rand?: number; radial?: number; shade?: number; tStart?: number; tEnd?: number }) {
+  emit(pts: V[], w0: number, o: { flat?: number; tip?: number; rand?: number; radial?: number; shade?: number; tStart?: number; tEnd?: number; /** strand cards on this lock (default: main locks) */ cards?: boolean }) {
     const { R } = this;
+    const rand = o.rand ?? this.r();
     const flat = o.flat ?? 0.34;
     const tipK = o.tip ?? 0.2; // width left at the tip (0 = pointed)
     this.m.add(pts, {
@@ -503,10 +608,71 @@ export class Groomer {
       // below the head centre locks face outward horizontally (no twisting under the jaw)
       out: (q, out) => out.set(q.x, q.y > 0 ? q.y : q.y * 0.15, q.z).normalize(),
       shadeAt: (t, q) => Math.min(1, (o.shade ?? 1) * (0.62 + 0.38 * smooth(this.cap, this.cap + 0.05 * R, this.sd(q)) * (0.85 + 0.15 * t))),
-      rand: o.rand ?? this.r(),
+      rand: rand,
       tStart: o.tStart,
       tEnd: o.tEnd,
     });
+    // fine strand cards on the lock's outer face (main locks only; sub-locks / flyaways are already fine)
+    if (o.cards !== false && this.p.tex !== 'coily' && w0 > 0.03 * R && pts.length >= 3) this.addCards(pts, w0, flat, tipK, rand, o.tStart ?? 0, o.tEnd ?? 1);
+  }
+
+  /** two strand cards along the outer face of a lock, running a little past its tip; sometimes a flyaway */
+  addCards(all: V[], w0: number, flat: number, tipK: number, rand: number, t0: number, t1: number) {
+    const { R, r } = this;
+    // a thin strip needs far fewer segments than the lock under it (≤ 12 points)
+    const stride = Math.max(1, Math.ceil(all.length / 12));
+    const pts = all.filter((_, i) => i % stride === 0 || i === all.length - 1);
+    const n = pts.length;
+    const wAt = (t: number) => w0 * (1.15 - 0.15 * smooth(0, 0.35, t)) * (1 - (1 - tipK) * Math.pow(smooth(0.25, 1, t), 1.3));
+    const T = v3(), N = v3(), B = v3();
+    const frames: { T: V; N: V; B: V; w: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+      T.subVectors(b, a);
+      if (T.lengthSq() < 1e-12) T.set(0, -1, 0);
+      T.normalize();
+      const q = pts[i];
+      N.set(q.x, q.y > 0 ? q.y : q.y * 0.15, q.z).normalize();
+      N.addScaledVector(T, -N.dot(T));
+      if (N.lengthSq() < 1e-8) N.set(T.y, -T.x, 0.3);
+      N.normalize();
+      B.crossVectors(T, N).normalize();
+      frames.push({ T: T.clone(), N: N.clone(), B: B.clone(), w: Math.max(1e-4, wAt(i / (n - 1))) });
+    }
+    // run the cards a little past the tip: the ends of the hair break up into fine strands
+    const ext = pts[n - 1].clone().addScaledVector(frames[n - 1].T, pts[n - 1].distanceTo(pts[0]) * 0.06);
+    const path = [...pts, ext];
+    const fr = [...frames, { ...frames[n - 1], w: frames[n - 1].w * 0.6 }];
+    const m = path.length;
+    for (const side of [-0.45, 0.45]) {
+      const c: V[] = [], acr: V[] = [], nr: V[] = [], tn: V[] = [], sh: number[] = [];
+      for (let i = 0; i < m; i++) {
+        const f = fr[i];
+        // on the outer face (just above the lock's flattened surface), toward one edge
+        const lift = f.w * flat * 0.96 + 0.0025 * R;
+        c.push(path[i].clone().addScaledVector(f.B, side * f.w * 0.9).addScaledVector(f.N, lift * Math.sqrt(1 - side * side)));
+        acr.push(f.B.clone().multiplyScalar(f.w * 0.5));
+        nr.push(f.N);
+        tn.push(f.T);
+        sh.push(1);
+      }
+      this.cards.strip(c, acr, nr, tn, sh, t0, Math.min(1.06, t1 + 0.06), (rand + (side > 0 ? 0.37 : 0.71)) % 1);
+    }
+    // a loose flyaway off the silhouette on some locks (outer half only, never over the face)
+    if (r() < 0.16 + this.p.messy * 0.2 && pts[0].z < 0.4 * R) {
+      const c: V[] = [], acr: V[] = [], nr: V[] = [], tn: V[] = [], sh: number[] = [];
+      const start = Math.floor(m * 0.35);
+      const drift = (r() - 0.5) * 2;
+      for (let i = start; i < m; i++) {
+        const f = fr[i], k = (i - start) / Math.max(1, m - 1 - start);
+        c.push(path[i].clone().addScaledVector(f.N, f.w * flat + 0.004 * R + k * k * 0.05 * R).addScaledVector(f.B, drift * k * f.w));
+        acr.push(f.B.clone().multiplyScalar(f.w * 0.35 * (1 - 0.5 * k)));
+        nr.push(f.N);
+        tn.push(f.T);
+        sh.push(1);
+      }
+      if (c.length >= 3) this.cards.strip(c, acr, nr, tn, sh, 0.35, 1.04, (rand + 0.13) % 1);
+    }
   }
 
   // ------------------------------------------------------------------ styles
@@ -565,10 +731,13 @@ export class Groomer {
       const shortCut = L < 0.75 && !standUp && !coily && !curly;
       const tight = cutShort && !topZone;
       // the smooth shell carries the sides; only every third lock is drawn there (combed texture)
-      if (tight && r() < 0.66) continue;
+      if (tight && r() < 0.25) continue;
       // about half of the hair in front of the ears falls forward over the shoulders (long styles)
       const front = L > 1.0 && !fringe && u.z > -0.05 && Math.abs(u.x) > 0.45 && r() < 0.6;
       let pts = this.grow(u, front ? L * 1.3 : L, { fringe, layer, liftK: tight ? 0.08 : shortCut ? 0.3 : 1, front });
+      // barbered sides / back: the short locks lie ON the smooth shell (not inside it), so the back of
+      // the head shows combed hair texture instead of a bare helmet
+      if (tight) for (let i = 1; i < pts.length; i++) this.keepOff(pts[i], this.cap + 0.03 * R * smooth(line, line + 0.25, pts[i].y / (pts[i].length() || 1)));
       // roots by the hairline rise out of the scalp layer (no stepped edge)
       if (!fringe) this.bury(pts, u);
       const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
@@ -601,7 +770,7 @@ export class Groomer {
         if (this.faded(u.y, az)) continue;
         let pts = this.grow(u, 0.16 + r() * 0.08, { fringe: false, layer: 0.9, liftK: 0.6 });
         pts = this.texture(this.resample(pts, 0.01 * R), r() * 6, coily ? 'coily' : 'curly', 1);
-        this.emit(pts, R * (coily ? 0.045 : 0.06) * p.clump, { flat: 0.95, tip: 0.5, radial: 5 });
+        this.emit(pts, R * (coily ? 0.045 : 0.06) * p.clump, { flat: 0.95, tip: 0.5, radial: 5, cards: false });
       }
     }
     void h;
@@ -659,7 +828,7 @@ export class Groomer {
       const L = (0.07 + 0.05 * r()) * R;
       const dir = u.clone().add(v3((r() - 0.5) * 0.6, (r() - 0.5) * 0.6, (r() - 0.5) * 0.6)).normalize();
       for (let i = 0; i < 6; i++) pts.push(root.clone().addScaledVector(dir, (L * i) / 5));
-      this.emit(this.texture(this.resample(pts, 0.012 * R), r() * 6, 'coily', 1), 0.045 * R, { flat: 1, tip: 0.8, radial: 4, shade: 1.1 });
+      this.emit(this.texture(this.resample(pts, 0.012 * R), r() * 6, 'coily', 1), 0.045 * R, { flat: 1, tip: 0.8, radial: 4, shade: 1.1, cards: false });
     }
     // defined coil clusters: bigger springy tufts over the surface, catching light on their tops
     const M = 150;
@@ -683,7 +852,7 @@ export class Groomer {
         const t2 = v3().crossVectors(u, t1);
         pts.push(root.clone().addScaledVector(t1, (t - 0.5) * 0.09 * R + Math.cos(th) * 0.032 * R).addScaledVector(t2, Math.sin(th) * 0.032 * R).addScaledVector(u, (Math.sin(th) * 0.5 + 0.5) * 0.03 * R));
       }
-      this.emit(pts, 0.026 * R, { flat: 1, tip: 0.7, radial: 5, shade: 1.15 });
+      this.emit(pts, 0.026 * R, { flat: 1, tip: 0.7, radial: 5, shade: 1.15, cards: false });
     }
   }
 
@@ -714,7 +883,7 @@ export class Groomer {
             const th = t * 14 + ph;
             return v.clone().addScaledVector(B, Math.cos(th) * w * 0.55).addScaledVector(N, Math.sin(th) * w * 0.55);
           });
-          this.emit(q, w * 0.62, { flat: 0.95, tip: 0.55, radial: 5 });
+          this.emit(q, w * 0.62, { flat: 0.95, tip: 0.55, radial: 5, cards: false });
         }
         continue;
       }
@@ -883,7 +1052,7 @@ export class Groomer {
         // side to side across the plait, over (out) when crossing the middle, under at the edges
         return v.clone().addScaledVector(B, Math.sin(th) * ww * 0.85).addScaledVector(N, Math.cos(2 * th) * ww * 0.35 + (o.raised ?? 0) * ww);
       });
-      this.emit(q, w * (o.fishtail ? 0.42 : 0.55), { flat: 0.6, tip: 0.6, radial: 5, rand: k / strands });
+      this.emit(q, w * (o.fishtail ? 0.42 : 0.55), { flat: 0.6, tip: 0.6, radial: 5, rand: k / strands, cards: false });
     }
     // the ends below the tie
     const end = pts[pts.length - 1];
