@@ -181,7 +181,8 @@ activity-aliases + `AppIconPlugin`). Only open item: closed-app Android push (ow
 From build-106 on, work follows the avatar user stories in `docs/user-stories/sumanova-us-NNN.txt` (one file per story,
 index in README.txt), in order. Put the story id (`sumanova-us-NNN`) in the commit message: the release workflow names
 each download after the newest story id in non-docs commits ("SUMANOVA us-NNN · build-N"). Docs-only pushes don't build.
-Use `[skip ci]` for in-progress pushes. Hair edges/parting (us-107): `HairP.edges`, `HairTune.line/edges`; hairline
+Use `[skip ci]` for in-progress pushes — but the final story commit must change at least one non-docs file (an
+empty commit changes no paths, so `paths-ignore` skips the build; then run the workflow by hand). Hair edges/parting (us-107): `HairP.edges`, `HairTune.line/edges`; hairline
 regions are found in head space with `skullDir`/`skullDistDir` (x/|p| is centimetres off on the forehead).
 Harness: `&htune=<json>` / `&htunes=<json>|<json>` / `&skin=<hex>` / `&hc=<hex>`.
 Hair motion (us-108): groom writes per-vertex `hairPivot` (swing point) + `hairGrp` (0 fringe, 1/2 sides, 3 back,
