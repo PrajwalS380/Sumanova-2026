@@ -1,0 +1,227 @@
+SUMANOVA — AVATAR USER STORY (detailed prompt)
+PART 1 — HAIR (5/5)
+Baseline: build-103 (code as of SUM-202601 @ ec7ebfb: SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (hair): us-106 → us-107 → us-108 → us-109 → us-110 (this story is last).
+  Depends on: us-107 (fringe / edges; harness &htune/&skin/&hc), us-108 (hairGrp motion
+  groups — accessories on a tie or braid follow that group's swing), us-109 (decoration
+  builders for gajra / ribbon / beads + 'hairDeco' colour key, and the new styles in the
+  accessory test set).
+  If us-109 is not built yet: create the gajra / ribbon / beads builders here as standalone,
+  reusable functions in one module (e.g. sculpt3d/hairDeco.ts) with the same names and
+  signatures us-109 describes, so us-109 then imports them instead of writing its own —
+  never two copies. If us-108 is not built yet: accessories simply follow the head (no
+  swing); us-108 adds the swing later.
+
+=========================================================================================
+sumanova-us-110 · Total hair control — a hair salon: shape per region, colour placement,
+                  and hair accessories
+=========================================================================================
+
+USER STORY
+  As a SUMANOVA user, I want to fine-tune my chosen hairstyle like a real salon visit —
+  trim the top, sides, back and fringe separately, make it neater or messier, colour it
+  with roots, lengths and tips, add a money-piece, a peekaboo under-layer or face-framing
+  streaks — and finish it with clips, a scrunchie, a headband, flowers or beads, so that
+  nobody else has exactly my hair and my avatar beats Bitmoji's fixed styles + one colour.
+
+WHY (what build-103 has today)
+  - Shape: one Length slider (scales top/side/back/tail together) and one Volume slider
+    (look/hair.ts HairTune.length / volume). You can't keep a long back with a short top,
+    shorten only the fringe, or tidy a messy style.
+  - Colour: hair + hairTip (root → tip) + hairHi for highlights / streaks / lowlights, and
+    7 fixed "paint" effects (render/SculptHair.tsx hairBase()). No mid-length colour, no
+    control over WHERE colour goes (money-piece, under-layer, face-framing), no amount.
+  - Accessories: none. Hair ties are a hard-coded coral elastic ('band' geometry,
+    '#ff6f61'). Story us-109 adds style-specific decorations (paranda, gajra, ribbons,
+    beads); there is no general slot to add a clip or flower to ANY style.
+  - Colour changes already update on the GPU (uniforms); shape changes regrow the groom in
+    the worker — this split must stay.
+
+-----------------------------------------------------------------------------------------
+PROMPT (paste this to Claude)
+-----------------------------------------------------------------------------------------
+Implement sumanova-us-110 in the SUMANOVA repo (branch SUM-202601). Read CLAUDE.md first.
+Scope: src/features/avatar/look/hair.ts, look/config.ts, sculpt3d/groom.ts,
+sculpt3d/jobs.ts (only if new attributes), render/SculptHair.tsx, a new
+render/HairAccessories.tsx, editor/HairControls.tsx, editor/categories.ts,
+AvatarStudio.tsx (hair panel only), the harness, tests, i18n.
+Never change hairstyle ids or existing recipes; old saved looks must render exactly as today.
+
+1) SHAPE PER REGION — look/hair.ts + groom.ts
+   a. Extend HairTune (all optional, −1 … 1, normalised in normalizeHairTune):
+        top, sides, back, fringe   — length per region
+        messy                      — neater (−1) … messier (+1)
+        layers                     — blunt (−1) … heavily layered (+1)
+      Keep the existing `length` as a master that multiplies all regions (backward
+      compatible: a look with only `length` grows exactly as today).
+   b. tuneHair(): region factor k = max(0.35, 1 + v · (region long ? 0.35 : 0.5)) applied to
+      p.top / p.side / p.back / p.fringeLen respectively (and tail with `back`);
+      messy → p.messy = clamp(p.messy + 0.5·v, 0, 1) and p.tips accordingly;
+      layers → p.layers = clamp(p.layers + 0.5·v, 0, 1).
+   c. hairControls(p): region sliders only when they make sense —
+        top: !shaved && afro === 0; sides/back: !shaved && no cornrows/box/locs;
+        fringe: p.fringe !== 'none' (or the user turned a fringe on via us-107/existing
+        fringe chip); messy/layers: loose styles only (no braids/locs/afro/ties).
+   d. The editor sends shape changes with a 150 ms debounce; the worker regrows; the old
+      hair stays on screen until the new one is ready (no blank flash). Target: any shape
+      edit visible in < 1.5 s on a mid-range phone.
+
+2) COLOUR PLACEMENT — look/config.ts, look/hair.ts, render/SculptHair.tsx
+   a. Colours (COLOR_KEYS, all nullable, normalised): keep hair (roots), hairTip (tips),
+      hairHi (accent); ADD hairMid (lengths). With hairMid null the gradient is exactly
+      today's root → tip.
+   b. Add HairTune fields:
+        place?: 'none' | 'moneypiece' | 'peekaboo' | 'framing' | 'streak' | 'halo' | 'tips'
+        placeAmt?: 0 … 1   (how much / how wide)
+        blend?:   0 … 1    (hard line … soft melt between root, mid and tip)
+        rootLen?: 0 … 1    (how far the root colour reaches — "shadow root")
+      The existing `paint` effects stay (they are presets); `place` is an extra layer on top
+      painted with hairHi.
+   c. Shader (hairBase in SculptHair.tsx) — 3-stop gradient + placement masks, all on the
+      GPU via uniforms (uMid, uPlace, uPlaceAmt, uBlend, uRootLen), using data the groom
+      already writes (t root→tip in colour.g, lock random in colour.b, head-local position):
+        moneypiece = two front locks either side of the face (front, |x| small, z > 0, above
+                     the eyes) in hairHi, width by placeAmt
+        peekaboo   = under-layer at the back/sides below the ear line (y < −0.05·R, z < 0.2)
+        framing    = locks in front of the ears falling beside the face
+        streak     = one bold streak from the part / left front, width by placeAmt
+        halo       = a band of colour at mid-length all round
+        tips       = dip-dye on the last placeAmt of every lock (hard by default)
+      Masks must not depend on lock random alone (or they look patchy): base them on root
+      position, which needs the lock ROOT per vertex: add attribute hairRoot (vec3) =
+      the point where the lock grows out of the scalp, in groom.ts StrandMesh and to ATTRS
+      in jobs.ts. Do NOT reuse us-108's hairPivot for this: hairPivot is the swing point
+      (the tie / plait top for tails and braids), so placements would land wrongly on
+      ponytails and braids. For locks gathered into a tie, hairRoot is still their scalp
+      root (so a money-piece on a ponytail style stays at the front hairline).
+   d. Every colour/placement change is uniforms only: no worker job, applied in the same
+      frame (< 16 ms).
+   e. Studio UI — a "Colour" sub-panel in HairControls.tsx:
+        - three swatch buttons Roots / Lengths / Tips (tap one → the existing HAIR colour
+          rail edits it; Lengths and Tips have "Same as roots");
+        - Blend and Shadow-root sliders;
+        - Placement chips (None, Money-piece, Peekaboo, Face-framing, Streak, Halo, Dip-dye)
+          + Amount slider + accent colour rail (hairHi);
+        - "Natural colours / Fun colours" toggle on the rail (first 19 HAIR entries vs the
+          rest) and a "Grey blend" slider (mixes silver into roots + lengths for salt &
+          pepper looks).
+
+3) HAIR ACCESSORIES SLOT — `hairAcc`
+   a. Data: add optional slots hairAcc1 and hairAcc2 (two accessories can be worn at once)
+      to SLOTS / OPTIONAL in look/config.ts, catalogue in a new look/hairAcc.ts with ids
+      that never shift, 10 kinds × 10 colourways = 100 items:
+        claw clip, snap clips (pair), barrettes (pearl), scrunchie, headband (plain/knotted),
+        bow, fresh flower (rose / hibiscus), gajra string, hair pins (gold/silver), braid
+        beads & cuffs
+      Colours: colour keys hairAcc1 / hairAcc2 (nullable → item default). Reuse the
+      decoration builders made for us-109 (gajra, ribbon, beads) — no duplicate code.
+   b. Placement uses ANCHORS produced by the groom (new GroomOut.anchors, head-local,
+      serialised with the hair job):
+        tie (pony/bun base), bunTop, braidEnd[], partFront, sideLeft, sideRight, crownBack,
+        overEarL/R, headbandArc (points along the scalp from ear to ear)
+      Each accessory kind declares which anchors it accepts (scrunchie → tie; claw clip →
+      crownBack or tie; snap clips → sideLeft/sideRight or partFront; headband →
+      headbandArc; flower → overEarL/R or bunTop; gajra → bunTop / tie / braidEnd;
+      beads → braidEnd[]). If the current style has no fitting anchor the item is shown
+      disabled with a hint ("Needs a ponytail or bun").
+   c. Rendering: render/HairAccessories.tsx draws sculpted, original pieces (no brands)
+      oriented by the anchor's surface normal and comb direction, sitting ON the hair
+      surface (offset by the local hair thickness: sample the groom/base cap distance at
+      the anchor) and inside the head group so they follow the head and the us-108 motion
+      group of their anchor (tie/braid accessories swing with the tail).
+   d. With a hat on (hatOn) only accessories outside the hat volume are drawn
+      (scrunchie on a low pony, braid beads); others are hidden, not deleted.
+   e. Editor: a "Hair accessories" category in the Face & body tab (editor/categories.ts,
+      thumb frame 'head', back/side camera for back anchors), grid with thumbnails, colour
+      rail, and an anchor picker (L / R / back) where the kind allows more than one.
+
+4) STATE, SAVING, SHARING
+   - All new fields in normalizeLook()/normalizeHairTune(): unknown values dropped,
+     ranges clamped; looks without them unchanged.
+   - Saved outfits (avatarApi.saveOutfit / FASHION_SLOTS) do not include hair; leave as is.
+   - Undo/redo covers every new control; "Reset" in HairControls clears shape + colour
+     placement (keeps the chosen style and root colour) and asks nothing.
+   - Random look: may add a hair accessory with low probability (≤ 15 %) and never
+     unnatural colours unless the "Fun colours" toggle was used.
+
+5) I18N — tools/i18n/*.tsv → node tools/i18n/build.cjs
+   New labels (Top, Sides, Back, Fringe length, Messy, Layers, Roots, Lengths, Tips,
+   Same as roots, Blend, Shadow root, Placement, Money-piece, Peekaboo, Face-framing,
+   Streak, Halo, Dip-dye, Amount, Natural colours, Fun colours, Grey blend,
+   Hair accessories, the 10 accessory names, "Needs a ponytail or bun" and the other
+   anchor hints) in en, hi, kn, ta, te.
+
+6) CACHES & ASSETS
+   - Bump SCULPT_VERSION by one from its CURRENT value (was 80 when this story was
+     written) — the groom output changes (anchors + hairRoot attribute).
+   - Bump the snv-thumbs-vN store by one from its CURRENT value (was v37) for the new
+     hair / accessory thumbnails. Never reuse a number another story used.
+   - Starter pictures must stay identical (no starter uses the new fields).
+   - Run the duplicate checker for the new slot: ?dupes=hairAcc1&frame=head.
+
+7) HARNESS & REVIEW SHEETS — e2e/avatar-harness
+   - Reuse &htune=<json>, &skin and &hc from us-107 (add them only if missing); add
+     &hmid / &htip / &hhi (colours) and &acc=<id>[,<id>] to set
+     accessories, &turns= for back views.
+   - Sheets to attach: (a) one style with all 7 placements; (b) region sliders at −1 / 0 /
+     +1 on 4 styles; (c) every accessory kind on 2 fitting styles, front + back;
+     (d) grey blend 0 / 0.5 / 1 on dark and blonde hair.
+
+-----------------------------------------------------------------------------------------
+ACCEPTANCE CRITERIA (attach review sheets + timings)
+-----------------------------------------------------------------------------------------
+ A1 Region shaping: top, sides, back and fringe sliders each change only their region,
+    visibly at ±1, on Classic short, Curtains, Long layered and Wolf cut; master Length
+    still works; no holes, no hair through the face.
+ A2 Messy / Layers sliders visibly change a loose style from sleek to tousled and from
+    blunt to layered.
+ A3 Colour: Roots / Lengths / Tips with Blend and Shadow-root give a smooth 3-stop
+    gradient; all 7 placements land in the right place on 6 different styles (short,
+    medium, long, curly, ponytail, bob) and do not look patchy; Grey blend gives
+    believable salt & pepper.
+ A4 Speed: every colour/placement edit updates in the same frame (no worker job, no
+    flicker); every shape edit completes in < 1.5 s and keeps the old hair visible until
+    then.
+ A5 Accessories: all 10 kinds sit on the hair surface — no floating, no sinking — on 20
+    test styles (incl. High ponytail, Messy bun, Single braid, Box braids, Long straight,
+    Curtains, Pixie cut, Natural afro, and the us-109 styles if present); two accessories
+    at once work; unsupported combinations are disabled with a clear hint; accessories
+    follow head turns and tail swing.
+ A6 Old avatars: every saved look and all 12 starters render pixel-identical to before.
+ A7 Performance: hair material stays one draw call for strands; accessories add ≤ 2 draw
+    calls and ≤ 6k triangles; studio stays smooth on a mid-range phone.
+ A8 Quality gates: npm run typecheck, npm test, npm run build green; all new text
+    translated in 5 languages.
+
+-----------------------------------------------------------------------------------------
+TESTS TO ADD
+-----------------------------------------------------------------------------------------
+ - look/hair: region tune multiplies only its region; `length`-only looks unchanged;
+   normalizeHairTune clamps/drops new fields; hairControls hides invalid sliders.
+ - look/config: hairMid / hairAcc colour keys and hairAcc1/2 slots normalised; ids stable
+   (100 items, unique names).
+ - groom: anchors exist for pony / bun / braid styles and are on the hair surface
+   (distance to scalp ≥ cap thickness); anchors are deterministic for a seed.
+ - hairAcc: every kind lists ≥ 1 anchor; a style without that anchor reports
+   "unsupported".
+
+-----------------------------------------------------------------------------------------
+OUT OF SCOPE (other stories)
+-----------------------------------------------------------------------------------------
+ - Strand look (us-106), hairline / partings / edges (us-107), motion (us-108), new hair
+   types and style-specific decorations (us-109), hats and head coverings (us-176, us-180),
+   face jewellery like maang tikka (us-179).
+
+-----------------------------------------------------------------------------------------
+RULES
+-----------------------------------------------------------------------------------------
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: procedural only, no paid assets or services.
+ - Smooth on a mid-range Android phone; geometry built in the worker (sculpt3d/async.ts);
+   colour work on the GPU; ≤ 8 canvases per harness page.
+ - Never shift ids (hair styles, new accessory catalogue); old looks must keep working.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   before claiming done; restart the harness if a change doesn't show.
+ - Commit as PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com> on SUM-202601,
+   no model names in commits; after pushing, share the Android SUMANOVA.apk and iPhone
+   SUMANOVA-unsigned.ipa links from the new build-N release.

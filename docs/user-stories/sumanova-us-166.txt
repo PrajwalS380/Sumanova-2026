@@ -1,0 +1,28 @@
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 13 — DRESSES & ETHNIC WEAR
+Baseline: build-103
+
+sumanova-us-166 · DRESSES 1/5 · A real saree
+STORY:  As a user, I want a beautiful saree with pleats, a pallu over the shoulder and a
+        blouse — in Nivi, Bengali, Gujarati and Nauvari drapes.
+TODAY:  The saree sash is a flat strip across the body (build-103 character 8).
+PROMPT: Rebuild the saree: fitted blouse (sleeve options), front pleats (fan displacement),
+        pallu as a lofted cloth ribbon from the waist over the left shoulder, falling behind
+        with border band (c2) and pallu motif (c3); drape style option; border patterns.
+ACCEPT: - Recognisable drapes from front and back; border visible; no clipping when waving.
+WIN:    The best saree in any avatar app.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).

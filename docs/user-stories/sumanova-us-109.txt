@@ -1,0 +1,242 @@
+SUMANOVA — AVATAR USER STORY (detailed prompt)
+PART 1 — HAIR (4/5)
+Baseline: build-103 (code as of SUM-202601 @ a21060a: 110 hairstyles, ids 0–109,
+SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (hair): us-106 → us-107 → us-108 → us-109 → us-110.
+  Depends on: us-107 (new styles get the default soft edges; Pineapple puff uses edges
+  'laid'), us-108 (every new tail / braid / loc must get a motion group: tails 5/6,
+  braids and the side plait 7, knots / buns / bantu knots / flat twists / cornrows −1).
+  If an earlier story is not built yet: skip only the part that needs it (e.g. leave the
+  laid edges to us-107, the groups to us-108) and note it in the commit message — do not
+  build those features here.
+  Provides for later stories: the decoration builders (paranda, gajra, ribbon, beads) as
+  reusable functions + the 'hairDeco' colour key (us-110 reuses them for accessories).
+
+=========================================================================================
+sumanova-us-109 · Every hair type, done right — curl patterns 1–4C + 30 new styles
+=========================================================================================
+
+USER STORY
+  As a SUMANOVA user of any background — Indian, African, South-East Asian, European,
+  Latin, mixed — I want my exact hair texture (from straight to tight 4C coils) and the
+  styles I actually wear (a long plait with a paranda, a jooda with gajra, bantu knots,
+  twists, a silk press, a man bun with a fade…), so my avatar truly looks like me and no
+  avatar app (including Bitmoji) represents my hair better.
+
+WHY (what build-103 has today)
+  - Texture is one of 5 words (straight / wavy / curly / coily / textured) plus one curl
+    strength (HairP.curl). There is no way to say "my curls are 3B" or "my hair is 4C";
+    curly and coily each look the same size on everyone.
+  - Real curl shrinkage is missing: coily hair is as long as straight hair of the same style.
+  - South-Asian everyday styles are thin: no paranda plait, no jooda with gajra, no oiled
+    sleek plait, no plait over the shoulder, no school double plaits with ribbons.
+  - Textured styles are limited: no bantu knots, finger coils, flat twists, short twists,
+    TWA, pineapple puff, knotless / goddess / beaded braids, sisterlocks, frohawk.
+  - The hair grid only filters by 6 categories; there is no quick "Textured" or
+    "Indian" filter, and the search box says "Search 110 hairstyles" (hard-coded).
+
+-----------------------------------------------------------------------------------------
+PROMPT (paste this to Claude)
+-----------------------------------------------------------------------------------------
+Implement sumanova-us-109 in the SUMANOVA repo (branch SUM-202601). Read CLAUDE.md first.
+Scope: src/features/avatar/look/hair.ts, src/features/avatar/sculpt3d/groom.ts,
+src/features/avatar/render/SculptHair.tsx, src/features/avatar/look/config.ts (one new
+colour key), src/features/avatar/editor/HairControls.tsx, src/features/avatar/AvatarStudio.tsx
+(hair grid filters only), src/features/avatar/editor/categories.ts, the harness, tests, i18n.
+Never change or reorder the existing 110 recipes (ids 0–109 are saved in avatars).
+
+1) CURL-PATTERN SCALE — look/hair.ts + groom.ts texture()
+   a. Add `export type CurlPattern = '1' | '2A' | '2B' | '2C' | '3A' | '3B' | '3C' | '4A' | '4B' | '4C';`
+      and an optional `pattern?: CurlPattern` on HairP (recipes) and on HairTune (user).
+   b. One table drives the groom (head-radius units R; tune by eye, keep in one place):
+        pattern  tex      shape        radius   pitch    shrink  vol+   clump  notes
+        1        straight none         —        —        1.00    0      1.00
+        2A       wavy     S-wave       0.030    0.100    0.97    0.05   1.00   loose, mostly straight at root
+        2B       wavy     S-wave       0.045    0.080    0.94    0.10   0.95   defined S from mid-length
+        2C       wavy     S-wave+frizz 0.060    0.065    0.90    0.20   0.90   some loose spirals
+        3A       curly    spiral       0.050    0.120    0.88    0.25   0.90   big loose loops
+        3B       curly    spiral       0.035    0.080    0.80    0.35   0.80   springy ringlets
+        3C       curly    spiral       0.025    0.055    0.70    0.45   0.75   tight corkscrews, dense
+        4A       coily    spiral       0.018    0.035    0.60    0.55   0.70   defined coils
+        4B       coily    zigzag       0.015    0.025    0.50    0.65   0.65   Z-pattern (triangle wave)
+        4C       coily    zigzag       0.012    0.020    0.40    0.75   0.60   tight, less defined, max volume
+      - radius = curl amplitude, pitch = length per turn; shrink multiplies the lock length
+        (so a 4C style is visibly shorter than the same style in 1); vol+ adds to p.vol;
+        clump multiplies p.clump.
+      - 'zigzag' = triangle wave instead of sine in texture(); '+frizz' = a few extra
+        fly-aways (reuse the existing fly-away code).
+      - Keep the current height-based "coherent" waves for long 2x/3x hair (neighbouring
+        locks in phase) — do not break the last commit's look for wavy long styles.
+   c. Mapping when no pattern is set (old looks stay as they are): straight → 1,
+      wavy → 2B, curly → 3B, coily → 4A, textured → unchanged (its own code path).
+      With no pattern field the groom output must be byte-identical to today for ids 0–109
+      (assert in a test by comparing vertex counts / hashes for a few styles).
+   d. tuneHair(): t.pattern sets q.tex + q.curl + the table effects (only when
+      hairControls(p).tex is allowed). normalizeHairTune() accepts only valid patterns.
+
+2) 30 NEW STYLES — ids 110–139, appended to LIB in this order (names are final; each is
+   an original recipe; categories stay the existing 6)
+   South-Asian (tag 'indian'):
+     110 Long plait with paranda   (Updos & braids) single braid tail 2.4, middle part,
+                                    deco 'paranda' (3 tassels with pom-poms at the braid end)
+     111 Jooda with gajra           (Updos & braids) sleek low bun, middle part, deco 'gajra'
+                                    (ring of small jasmine buds round the bun)
+     112 Oiled middle-part plait    (Updos & braids) single braid, sleek 1.0, vol 0.05
+     113 Twin plaits with ribbons   (Updos & braids) double braids looped up behind the ears,
+                                    deco 'ribbon' bows at the loops
+     114 Side plait over shoulder   (Updos & braids) single braid that falls over the left
+                                    shoulder onto the chest
+     115 Joora top knot             (Updos & braids) tight high knot on the crown, sleek
+                                    (a covered patka/turban version belongs to us-180)
+     116 Puff and plait             (Updos & braids) lifted front puff + single braid
+     117 Waist-length straight      (Long) side 2.6 / back 2.9, middle part, sleek 0.6
+   Afro & textured (tag 'textured'):
+     118 Bantu knots                (Curly & coily) 9–12 coiled knots on a parted grid
+     119 Finger coils               (Curly & coily) short, defined 4A coils
+     120 Short two-strand twists    (Curly & coily) loc 'twists' at length 0.5
+     121 Flat twists                (Updos & braids) 5–7 raised twists front-to-back
+     122 Pineapple puff             (Curly & coily) high puff on the crown, 4C, laid edges
+     123 Tapered TWA                (Curly & coily) short 4C, taper fade, afro 0.25
+     124 Wash-and-go curls          (Curly & coily) medium 3C, defined, middle part
+     125 Sisterlocks                (Curly & coily) 160–200 micro locs, shoulder length
+     126 Knotless braids            (Updos & braids) box braids with no root knot,
+                                    roots taper out of the scalp
+     127 Goddess braids             (Updos & braids) knotless braids with curly loose ends
+     128 Fulani-inspired braids     (Updos & braids) front cornrows + braids hanging,
+                                    deco 'beads' (metal / wood beads on the ends)
+     129 Coily frohawk              (Creative) 4B, flow hawk, tapered sides
+   Waves & curls:
+     130 Wavy lob                   (Medium) pattern 2B, collarbone length
+     131 Beach waves                (Long) pattern 2C, messy 0.3
+     132 Curly shag                 (Medium) pattern 3A, layers 0.9, curly fringe
+     133 Spiral curls               (Long) pattern 3B, mid-back length
+     134 Silk press                 (Long) pattern 1, sleek 0.8, ends curve under ('bevel')
+   Everyday & trendy:
+     135 Bob with baby bangs        (Updos & braids) blunt chin bob, very short straight fringe
+     136 Man bun with fade          (Updos & braids) bun on the crown, skin fade sides
+     137 Slick-back bun             (Updos & braids) sleek low bun, no part
+     138 Bubble ponytail            (Updos & braids) high pony tied every ~0.35 R into bubbles
+     139 Half-up space buns         (Updos & braids) two small buns + long loose hair
+   Each recipe sets pattern where relevant and `tags` (see 4).
+
+3) NEW GROOM FEATURES NEEDED — sculpt3d/groom.ts (only what the 30 styles require)
+   a. HairP.sleek (0…1): flattens locks to the scalp (low lift, wide flat locks, little
+      messy), feeds a higher default gloss in SculptHair (oiled / pressed look).
+   b. HairP.bevel (0…1): long straight ends curve slightly under (silk press).
+   c. Ties: 'topknot' (tight high knot), 'bantu' (sectioned grid of small knots: draw
+      shallow scalp partings between sections like cornrows do, each knot = a coiled lock
+      wound into a cone), 'puff' (front lift section gathered back), 'pineapple' (crown puff
+      of coils), 'bubble' (pony with periodic bands, the tail bulging between them).
+   d. Braids: 'sideplait' (single plait path routed over one shoulder to the front, kept off
+      the body with keepOffBody(preferFront = true)), 'looped' option for double braids
+      (each plait folds back up and is tied behind the ear), 'knotless' flag for box braids
+      (no root knot, root width ramps from 0), 'goddess' flag (each braid ends in a 3A curl
+      lock), 'flattwist' (two-strand twist laid flat on the scalp like cornrows).
+   e. Locs: 'micro' locs (sisterlocks) — many thin locs; keep the mesh light (≤ 4 radial
+      segments, merged into one draw call, total ≤ the triangle count of 'Box braids').
+   f. Decorations — HairP.deco: 'none' | 'paranda' | 'gajra' | 'ribbon' | 'beads', built as
+      extra sculpted pieces in the 'band' geometry with a per-piece colour role:
+        paranda = 3 tassels + pom-poms (colour hairDeco), gajra = jasmine buds (white with a
+        cream centre, ignores hairDeco unless set), ribbon = bow loops + tails (hairDeco),
+        beads = cylinder beads on braid ends (hairDeco, metallic option).
+      Add 'hairDeco' to COLOR_KEYS (config.ts, nullable, default null → style default), and
+      render the band pieces in SculptHair.tsx with that colour instead of the hard-coded
+      '#ff6f61' (the plain hair-tie elastic keeps its current default when hairDeco is null).
+      These decorations are part of the style; the general hair-accessory slot is us-110 —
+      build the deco pieces so us-110 can reuse them.
+
+4) DISCOVERY IN THE EDITOR
+   a. HairP.tags?: ('indian' | 'textured' | 'braids' | 'short' | 'long')[] — set on the 30
+      new styles AND add tags to fitting existing recipes (tags don't change geometry, so
+      ids/looks are unaffected).
+   b. AvatarStudio.tsx hair grid: add filter chips "Textured" and "Indian" next to the
+      family chips and ♥; search also matches tags and pattern names ("4c", "3b").
+   c. HairControls.tsx: under "Texture", add a "Curl pattern" chip row showing only the
+      patterns of the chosen texture family (Wavy → 2A 2B 2C, Curly → 3A 3B 3C,
+      Coily → 4A 4B 4C); Straight hides it. Show a 1-line hint ("4C: tight zig-zag coils,
+      most shrinkage").
+   d. Search placeholder: `Search ${HAIRSTYLES.length} hairstyles` (TSV line uses the
+      numbered pattern "Search {n} hairstyles").
+   e. Optional: selfie/generate.ts may suggest the new textured styles when the selfie
+      detects voluminous short hair — only if trivial; otherwise leave for later.
+
+5) I18N — tools/i18n/*.tsv → node tools/i18n/build.cjs
+   All 30 style names, "Curl pattern", "Textured", "Indian", the 10 pattern hints and
+   "Search {n} hairstyles" in en, hi, kn, ta, te. Style names that are proper nouns
+   (Bantu, Fulani) stay as they are; describe-words get translated.
+
+6) CACHES, ASSETS, DUPLICATES
+   - Bump SCULPT_VERSION by one from its CURRENT value (was 80 when this story was
+     written; HairP gains keys → hair job keys change anyway).
+   - Bump the snv-thumbs-vN store by one from its CURRENT value (was v37) for the new
+     thumbnails. Never reuse a number another story used. Starter pictures must stay identical
+     (none of the 12 starters changes); re-render only if a test shows a difference.
+   - Run the duplicate checker `?dupes=hair&frame=head` (and with &color=0f0b0a for dark
+     hair). Any look-alike among the new 30 is fixed in its recipe (not hidden).
+
+7) HARNESS & REVIEW SHEETS — e2e/avatar-harness
+   - Reuse &htune=<json> / &skin / &hc from us-107 (add them only if missing) so patterns
+     can be reviewed: e.g.
+     ?slot=hair&frame=head&ids=37,37,37,37,37,37,37,37&htune=... — or add a mode
+     ?patterns=<hairId> that renders one style in all 10 patterns (2 pages of ≤ 8 canvases).
+   - Review sheets to attach: (1) 10 patterns on 'Loose curls' and 'Long curly';
+     (2) the 8 South-Asian styles front + back; (3) the 12 textured styles front + 3/4;
+     (4) the 10 other new styles; each on a light (#f1d3bf) and a deep (#5a3826) skin.
+
+-----------------------------------------------------------------------------------------
+ACCEPTANCE CRITERIA (attach review sheets)
+-----------------------------------------------------------------------------------------
+ A1 Curl patterns: all 10 patterns on the same style are visibly different in curl size,
+    shape (S-wave / spiral / zig-zag), shrinkage (length) and volume at the 160 px head
+    thumbnail; 4C is the shortest and fullest, 1 is straight.
+ A2 New styles: ids 110–139 exist with the exact names above, in the stated category,
+    each recognisable from its name (owner review of the sheets); no duplicates reported
+    by the checker; every style renders from front, 3/4 and back without holes
+    (watertight test extended with Bantu knots, Sisterlocks and Bubble ponytail).
+ A3 Decorations: paranda, gajra, ribbons and beads sit exactly on the braid / bun (no
+    floating, no clipping), recolour with the new "Decoration" colour where applicable,
+    and stay attached when the head turns.
+ A4 Side plait lies over the shoulder on the chest without passing through the body in
+    standing, waving, walking and sitting poses.
+ A5 Old avatars: every saved look with ids 0–109 renders exactly as before (no pattern
+    field → identical groom); presets unchanged.
+ A6 Editor: "Textured" and "Indian" filters work with search and ♥; Curl pattern chips
+    appear only for wavy / curly / coily; all new text is translated in 5 languages.
+ A7 Performance: no new style exceeds the triangle count of the heaviest existing style
+    (Box braids) by more than 10 %; groom build for any style < 1.5 s on a mid-range
+    phone in the worker.
+ A8 Cultural care: names and looks reviewed by the owner (and, ideally, friends who wear
+    these styles); no style is mocked or stereotyped; no brand or other app's assets.
+ A9 Quality gates: npm run typecheck, npm test, npm run build green.
+
+-----------------------------------------------------------------------------------------
+TESTS TO ADD
+-----------------------------------------------------------------------------------------
+ - look/hair: 140 styles, ids == index, unique names; ids 0–109 names unchanged (snapshot
+   of the old name list); tags/pattern only from the allowed sets; tuneHair pattern
+   mapping; normalizeHairTune drops invalid patterns; 'hairDeco' normalised in
+   normalizeLook.
+ - groom: for 3 old styles the strand vertex count is unchanged with no pattern; a 4C
+   variant of a style is shorter (max |y| extent) than its pattern-1 variant; Bantu knots
+   produce 9–12 knot clusters; watertight checks for the new structures.
+
+-----------------------------------------------------------------------------------------
+OUT OF SCOPE (other stories)
+-----------------------------------------------------------------------------------------
+ - Strand shading look (us-106), hairline / partings / edges (us-107), motion (us-108),
+   colour placements and the general hair-accessory slot (us-110), turbans / patka /
+   hijab head coverings (us-180).
+
+-----------------------------------------------------------------------------------------
+RULES
+-----------------------------------------------------------------------------------------
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: procedural only, no paid assets or services.
+ - Smooth on a mid-range Android phone; geometry built in the worker (sculpt3d/async.ts);
+   ≤ 8 canvases per harness page.
+ - Never shift or rename hairstyle ids 0–109; append only; old looks must keep working.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   before claiming done; restart the harness if a change doesn't show.
+ - Commit as PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com> on SUM-202601,
+   no model names in commits; after pushing, share the Android SUMANOVA.apk and iPhone
+   SUMANOVA-unsigned.ipa links from the new build-N release.

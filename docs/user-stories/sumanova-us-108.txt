@@ -1,0 +1,205 @@
+SUMANOVA — AVATAR USER STORY (detailed prompt)
+PART 1 — HAIR (3/5)
+Baseline: build-103 (code as of SUM-202601 @ 1410918: SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (hair): us-106 → us-107 → us-108 → us-109 → us-110.
+  Depends on: us-107 (baby hairs / laid edges go in motion group 0, harness &htune/&skin/
+  &hc). If us-107 is not built yet: still assign fringe locks to group 0 and add the harness
+  params yourself (if missing); us-107 will then put its baby hairs in group 0.
+  Provides for later stories: per-vertex hairPivot (the SWING point — the lock root for
+  loose hair, the tie / plait top for tails and braids) and hairGrp. Later stories must not
+  use hairPivot as "where the lock grows from" (us-110 adds its own hairRoot for that).
+  New locks added by us-109 (new ties/braids) and us-110 (accessories) must be assigned a
+  group here-style: tails 5/6, braids 7, static −1.
+
+=========================================================================================
+sumanova-us-108 · Hair that moves — per-lock secondary motion for hair, ponytails & braids
+=========================================================================================
+
+USER STORY
+  As a SUMANOVA user, I want my avatar's hair to react to every movement — long hair
+  swaying when I walk, a ponytail swinging when I dance, braids swinging slowly and heavily,
+  fringe bouncing when I turn my head, and a gentle breeze when I'm just standing — so my
+  avatar feels alive, while short cuts stay neat and the hair never cuts through my face,
+  neck or shoulders.
+
+WHY (what build-103 does today)
+  - render/SculptHair.tsx has ONE damped spring for the whole hairstyle. Its offset
+    (uniform uSway) is added to every vertex as pow(t, 1.6) · smoothstep(0.05, −0.35, y), so
+    the whole lower hair slides sideways as one block: no swing, no rotation, no difference
+    between a fringe, side locks, a ponytail or a heavy braid.
+  - Only translation of the head is used; head turns, nods and tilts barely move the hair.
+  - Nothing stops a moved tip from going into the neck, shoulders or face.
+  - The spring allocates new Vector3/Quaternion objects every frame (GC churn on phones).
+  - Reduce-motion (Settings → html.reduce-motion / OS setting) is not respected by the hair.
+  - The groom stores no per-lock information (vertex colour = shade, t, random; uv =
+    across, t), so the shader cannot tell which lock or which group a vertex belongs to.
+
+-----------------------------------------------------------------------------------------
+PROMPT (paste this to Claude)
+-----------------------------------------------------------------------------------------
+Implement sumanova-us-108 in the SUMANOVA repo (branch SUM-202601). Read CLAUDE.md first.
+Scope: src/features/avatar/sculpt3d/groom.ts, src/features/avatar/sculpt3d/jobs.ts,
+src/features/avatar/render/SculptHair.tsx, a new src/features/avatar/render/hairMotion.ts,
+src/features/avatar/AvatarStage.tsx (capture freeze only), the avatar harness and tests.
+Do not change hairstyle shapes, colours or ids — the still image of every avatar must stay
+identical (thumbnails and starter pictures must not change).
+
+1) PER-LOCK DATA IN THE GROOM — sculpt3d/groom.ts
+   a. StrandMesh.add(): accept two new options and write them per vertex:
+        group: number   // which motion group the lock belongs to (see table)
+        pivot: V        // the point the lock swings about (its root, or the tie point)
+      Store them as new attributes:
+        hairPivot (vec3, float32)  — head-local pivot of the lock
+        hairGrp   (float32)        — group id; −1 = never moves
+   b. Motion groups (assign in emit()/callers, based on where the root is and what it is):
+        0 fringe / bangs          (fringe locks, baby hairs of us-107)   light, fast
+        1 left side locks          (root x < −0.25·R, below the crown)
+        2 right side locks         (root x >  0.25·R)
+        3 back locks               (root z < −0.2·rz)
+        4 top / crown locks        (everything else on the scalp)       stiffest
+        5 ponytail / tail 1        (tail(): pivot = tie point T)
+        6 tail 2 / second plait    (twin ponies, double braids, side pony)
+        7 single plait / braid     (plait() hanging part: pivot = top of the hanging part)
+       −1 static: scalp cap (baseCap), fade/edge shells, buns, cornrows, the band, the
+          over-the-head part of French/Dutch plaits, afro volume
+   c. Lock stiffness by length: store nothing extra — the shader derives it from
+      t (root → tip, vertex colour .g) and the group; short crops (all lock lengths
+      < 0.45 head radii) must end up visually still.
+   d. GroomOut stays the same shape; the strands geometry simply gains the two attributes.
+
+2) KEEP THE ATTRIBUTES THROUGH WORKER + CACHE — sculpt3d/jobs.ts
+   - Add ['hairPivot', 3, 'f'] and ['hairGrp', 1, 'f'] to ATTRS so pack()/unpack() carry
+     them through postMessage and Cache Storage (today unknown attributes are dropped).
+   - Bump SCULPT_VERSION by one from its CURRENT value (it was 80 when this story was
+     written; the hair job output changes). Never reuse a number another story used.
+   - Do NOT bump the snv-thumbs-vN store unless a still image changes (it must not).
+
+3) THE MOTION SOLVER — new render/hairMotion.ts (pure TypeScript, unit-testable)
+   a. export class HairMotion { step(dt, headPose): void; offsets: Float32Array }
+      One solver per SculptHair instance. 8 groups, each a 2-segment pendulum
+      (mid point + tip point) expressed as small angles (swing about x and z axes) plus
+      a little translation, in HEAD-LOCAL space.
+   b. Inputs every frame (read in useFrame from the hair group's world matrix):
+        - head linear acceleration (from position history)  → inertial push
+        - head angular velocity (from quaternion history)    → whip on turns/nods
+        - gravity direction in head space                    → hair falls when the head
+                                                               tilts / bows (sad, sleeping)
+        - optional breeze: low-frequency noise (2 octaves, 0.3–0.7 Hz), amplitude
+          0.015 rad, only when the figure is standing still
+   c. Per-group constants (tune by eye, keep in one table):
+                       freq(Hz)  damping  maxAngle  weight
+        fringe   0       2.6       0.35     0.25      0.6
+        sides    1,2     1.8       0.30     0.35      1.0
+        back     3       1.6       0.30     0.35      1.0
+        top      4       2.4       0.45     0.12      0.4
+        tail     5,6     1.2       0.18     0.70      1.0
+        braid    7       0.9       0.22     0.55      1.0   (heavy: slow, big arc)
+      Scale weight by the style's length: weight *= clamp((longest − 0.45) / 1.0, 0, 1)
+      for groups 0–4 (crops stay still); tails/braids always move.
+   d. Integrate with a FIXED sub-step (1/120 s, max 4 sub-steps per frame) so the motion is
+      identical at 30, 60 and 120 fps and never explodes after a long frame (clamp dt to
+      0.05 s; reset the state after > 0.25 s, e.g. tab switch).
+   e. No allocations inside step(): preallocate every vector/quaternion.
+   f. Output: per group a rotation (axis-angle packed as vec3) for the mid and the tip.
+
+4) SHADER — render/SculptHair.tsx (useHairMaterial vertex shader)
+   a. Add uniforms: uGrpRot[8] (vec3 axis·angle, mid), uGrpTip[8] (vec3, tip),
+      uMotion (0…1 master), uNeck (vec4: capsule centre/radius in head space),
+      uShoulder (vec4: ellipsoid), and keep uSway for the baked-hair fallback.
+   b. For vertices with hairGrp ≥ 0:
+        w   = pow(t, 1.4) (t = color.g, root → tip), weaker near the scalp
+        rot = mix(uGrpRot[g], uGrpTip[g], smoothstep(0.4, 1.0, t)) · w · uMotion
+        rotate (transformed − hairPivot) about hairPivot by rot (Rodrigues, small angle)
+      Rotate the normal and hairT the same way so lighting and the highlight band follow.
+   c. Collision (cheap, in the shader, after the rotation):
+        - push the vertex out of the neck capsule and the shoulder ellipsoid
+          (same shapes as Groomer.keepOffBody: neck cylinder under the jaw, sloping
+          shoulders) with a 0.01·R margin;
+        - fringe (group 0) and front side locks may never move toward the face: clamp any
+          +z motion of vertices in front of the ears when they are below the brow line.
+   d. Index the uniform arrays with a float→int cast; keep the shader WebGL1-safe
+      (unrolled if-chain if needed for older Android GPUs).
+   e. Baked hair (no hairGrp attribute) keeps today's uSway behaviour.
+
+5) DRIVING IT — render/SculptHair.tsx
+   - Replace the current spring in useFrame with HairMotion.step(dt, headPose) and copy
+     its output into the uniforms (no per-frame allocations: reuse objects in refs).
+   - The existing `swing` (how much a style can swing) feeds the per-group weights.
+   - animate === false (thumbnails, Avatar Cam head, captures) → uMotion = 0 and state reset.
+   - Reduce motion: if the html element has class `reduce-motion` or
+     matchMedia('(prefers-reduced-motion: reduce)') matches → uMotion = 0 (listen for
+     changes). Data saver keeps motion (it's GPU-cheap) but disables the breeze.
+   - Pause when the canvas is not visible (document.hidden) — no work in the background.
+
+6) STILL CAPTURES — AvatarStage.tsx
+   - capture('full' | 'bust') must render the hair at rest: set a "still" flag that makes
+     every SculptHair write uMotion = 0 for the captured frame, then restore it. Profile
+     pictures and published body images must not catch the hair mid-swing.
+
+7) HARNESS — e2e/avatar-harness/main.tsx
+   - Reuse &htune / &skin / &hc from us-107 (add them only if they are missing).
+   - &anim=1 keeps the figures animating (pose from &pose=walking|dancing|waving…).
+   - &shake=yaw|nod|tilt plays a scripted head motion (e.g. yaw ±0.6 rad over 0.6 s, then
+     hold 2 s) so the lag and settling can be filmed.
+   - Add e2e/hair-motion.e2e.cjs: opens the harness for 4 styles, grabs 8 frames
+     (every 120 ms) per style into one contact sheet PNG for review.
+
+-----------------------------------------------------------------------------------------
+ACCEPTANCE CRITERIA (attach the contact sheets + numbers)
+-----------------------------------------------------------------------------------------
+ A1 Walking & dancing: Long straight, Long wavy, High ponytail, Single braid, Double
+    braids, Box braids, Curtains and Wolf cut visibly swing with a lag behind the body;
+    the ponytail arcs ≥ 15° in the dance pose; braids swing slower and heavier than loose
+    hair.
+ A2 Head turn (&shake=yaw): hair tips lag 0.1–0.25 s behind the head and settle within
+    1.5 s, with no jitter or endless wobble.
+ A3 Head bow / tilt (sad, sleeping, &shake=nod): long hair falls with gravity.
+ A4 Short cuts (Buzz cut, Crew cut, Classic short, Textured crop, Mid fade, Caesar cut):
+    tips move < 2 mm; buns, cornrows, afros, scalp layer and fades never move.
+ A5 No penetration: in every pose and shake, no hair vertex enters the neck, shoulders
+    or face; fringes never swing into the eyes.
+ A6 Frame-rate independent: the same scripted motion looks the same at 30, 60 and 120 fps
+    (sub-stepping); no explosion after a 1 s frame hitch or a tab switch.
+ A7 Still images unchanged: thumbnails, starter pictures and studio captures are
+    pixel-identical to before (render 3× — no difference), because captures and
+    animate=false force the hair to rest.
+ A8 Reduce motion (Settings or OS) stops all hair motion immediately; turning it off
+    resumes it.
+ A9 Performance on a mid-range Android phone: solver ≤ 0.2 ms CPU per avatar per frame,
+    no garbage created per frame, studio stays ≥ 55 fps; Map/Profile screens with
+    several avatars stay smooth. Hair geometry grows by ≤ 16 bytes per vertex.
+ A10 Quality gates: npm run typecheck, npm test, npm run build green; worker + Cache
+    Storage round-trip keeps hairPivot/hairGrp (unit test on pack/unpack).
+
+-----------------------------------------------------------------------------------------
+TESTS TO ADD
+-----------------------------------------------------------------------------------------
+ - render/hairMotion.test.ts: settles to rest with no input; same result at dt 1/30,
+   1/60, 1/120 for a scripted input (within tolerance); never exceeds maxAngle; resets
+   after a long gap; step() allocates nothing (spy on Vector3 constructor or similar).
+ - sculpt3d/jobs: pack()/unpack() round-trip preserves hairPivot and hairGrp.
+ - groom: a ponytail style has group-5 vertices whose pivot equals the tie point; a buzz
+   cut has no moving vertices; scalp cap / buns / cornrows are group −1.
+
+-----------------------------------------------------------------------------------------
+OUT OF SCOPE (other stories)
+-----------------------------------------------------------------------------------------
+ - Hair look (us-106), hairline & partings (us-107), new hair types (us-109), colour and
+   accessories (us-110). Earring sway and clothing motion are separate stories.
+ - Real strand physics or cloth simulation (too heavy for phones) — this is stylised
+   secondary motion only.
+
+-----------------------------------------------------------------------------------------
+RULES
+-----------------------------------------------------------------------------------------
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: no paid physics engines or services; plain TypeScript + shader.
+ - Smooth on a mid-range Android phone: GPU-side deformation only, no per-vertex CPU work,
+   no per-frame allocations; reduce-motion respected; ≤ 8 canvases per harness page.
+ - Never shift hairstyle ids; old saved avatars must keep working.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after contact sheets before claiming done; restart the harness if a change
+   doesn't show.
+ - Commit as PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com> on SUM-202601,
+   no model names in commits; after pushing, share the Android SUMANOVA.apk and iPhone
+   SUMANOVA-unsigned.ipa links from the new build-N release.

@@ -1,0 +1,31 @@
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 2 — FACE SHAPE & BONE STRUCTURE
+Baseline: build-103
+
+sumanova-us-112 · FACE 2/5 · Face sliders
+STORY:  As a user, I want fine sliders for my face, so I can match my real face exactly.
+TODAY:  Only face size, eye size and eye spacing sliders.
+PROMPT: Add tune keys (−1…1, normalised in normalizeLook): face width, face length, jaw width,
+        jaw angle, chin length, chin width, cheekbone height, cheek fullness, forehead height,
+        eye height, eye tilt, nose height/width/length, mouth height/width, lip fullness,
+        ear height/size. Group them under each category (Face, Eyes, Nose, Mouth, Ears) as
+        sliders; add "symmetric / free" for eye tilt and brows. Head-mesh changes go through
+        the worker with a 120 ms debounce.
+ACCEPT: - Each slider makes a visible change at ±1 and nothing breaks at the extremes.
+        - Undo/redo covers slider moves; saved looks restore the exact values.
+WIN:    Slider-level precision that Bitmoji's pick-a-shape flow doesn't give.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).

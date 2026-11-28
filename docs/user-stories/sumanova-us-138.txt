@@ -1,0 +1,27 @@
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 7 — BODY & TORSO
+Baseline: build-103
+
+sumanova-us-138 · BODY 3/5 · Every body belongs
+STORY:  As a user, I want plus-size, very muscular, petite, tall and disability options
+        (wheelchair, prosthetic arm/leg, cane, hearing aids, vitiligo).
+PROMPT: Add body presets for plus-size and muscular builds; add a mobility slot: wheelchair
+        (sculpted, poses adapt), prosthetic arm/leg (left/right), cane, crutches; all poses
+        stay valid.
+ACCEPT: - Each option works with standing/sitting/waving poses; no clipping.
+WIN:    Representation Bitmoji doesn't fully cover.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).
