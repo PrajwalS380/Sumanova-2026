@@ -1,32 +1,202 @@
-SUMANOVA — AVATAR USER STORY (prompt-style)
-PART 1 — HAIR
-Baseline: build-103
+SUMANOVA — AVATAR USER STORY (detailed prompt)
+PART 1 — HAIR (2/5)
+Baseline: build-103 (code as of SUM-202601 @ 1cb657d: SCULPT_VERSION 80, snv-thumbs-v37)
 
-sumanova-us-107 · HAIR 2/5 · Natural hairline, partings and scalp
-STORY:  As a user, I want my hairline, temples and parting to look natural, so my avatar
-        doesn't look like it wears a wig.
-TODAY:  Hard hairline step on the forehead (teal crop), no visible scalp at the parting.
-PROMPT: In groom.ts baseCap()/lineAt(): fade density over the last 6–8 mm (shorter, thinner
-        locks + "baby hairs" at the front and temples), tint the scalp under partings with a
-        skin-mixed colour, add a visible part line (straight / side / zigzag) and a crown
-        whorl. Add HairTune.line (hairline height −1…1) and HairTune.edges (none / soft /
-        laid edges) in look/hair.ts and HairControls.tsx.
-ACCEPT: - Front close-up of 6 short and 6 long styles shows a soft gradient hairline.
-        - Middle/side/zigzag parts are visible from the top-front camera.
-        - Old looks without the new fields render exactly as before.
-WIN:    Natural hairlines and laid edges — detail Bitmoji does not model.
+=========================================================================================
+sumanova-us-107 · Natural hairline, visible partings, baby hairs & laid edges
+=========================================================================================
 
-RULES (apply to this story):
+USER STORY
+  As a SUMANOVA user, I want my avatar's hairline, temples and parting to look like real
+  hair growing out of real skin — soft at the edge, with fine baby hairs, a visible scalp
+  line where I part my hair, and the option of styled "laid" edges — so my avatar never
+  looks like it is wearing a wig or a helmet, and looks more natural than any Bitmoji.
+
+WHY (what build-103 shows)
+  - The hair ends in a hard, raised step on the forehead and temples (clearest on the teal
+    crop and the black short styles): the scalp layer is full thickness right up to the
+    hairline and is cut straight off.
+  - Partings (left / right / middle / zigzag) only change the comb direction; the locks
+    still cover the part, so no scalp line is ever visible.
+  - No fine baby hairs or styled edges; only curly/coily styles get a row of baby curls.
+  - The user cannot move the hairline up or down, or choose how the edges are styled.
+
+-----------------------------------------------------------------------------------------
+PROMPT (paste this to Claude)
+-----------------------------------------------------------------------------------------
+Implement sumanova-us-107 in the SUMANOVA repo (branch SUM-202601). Read CLAUDE.md first.
+Scope is the hair groom only: src/features/avatar/look/hair.ts,
+src/features/avatar/sculpt3d/groom.ts, src/features/avatar/render/SculptHair.tsx (only if
+needed), src/features/avatar/editor/HairControls.tsx, src/features/avatar/render/bakedHair.ts,
+the avatar harness, and i18n. Do not change faces, bodies, clothes or other parts.
+
+1) DATA MODEL — look/hair.ts
+   a. Add `export type EdgeT = 'clean' | 'soft' | 'laid';`
+        clean = crisp barber line-up, no baby hairs (still no hard step)
+        soft  = natural thinning edge + a few fine baby hairs (DEFAULT for every style)
+        laid  = soft edge + styled, swooped baby hairs flat on the forehead / temples
+   b. Add `edges: EdgeT` to HairP and `edges: 'soft'` to the defaults object D. Do NOT edit
+      the 110 recipes in LIB (ids must never shift); optionally set edges:'clean' on the
+      barbered recipes where a line-up is the point (e.g. 'Buzz with line-up', 'Caesar cut').
+   c. Extend HairTune with:
+        line?: number   // −1 … 1  (lower … higher / receding hairline)
+        edges?: EdgeT
+   d. hairControls(p): add `line: !shaved` and `edges: !shaved` (shaved = p.fade === 'buzz').
+      Edges must also be available for afros, puffs, coils and cornrows (laid edges are
+      very common there).
+   e. tuneHair(p, t): if c.line && t.line → q.line = clamp(p.line + t.line, −1, 1.2);
+      if c.edges && t.edges → q.edges = t.edges.
+   f. HAIR_OPTIONS.edges = ['clean', 'soft', 'laid'].
+   g. normalizeHairTune(): accept `line` via num(r.line, −1, 1) and `edges` via
+      pick(r.edges, EDGES). Unknown values are dropped (old saved looks stay valid).
+   h. render/bakedHair.ts bakedHairId(): treat `tune.line` and `tune.edges` like the other
+      shape changes (they force the live groom).
+
+2) SOFT HAIRLINE — sculpt3d/groom.ts
+   a. Scalp layer, baseCap() (~line 240): the cap is full thickness right at the hairline,
+      which makes the step. Multiply the hair part of `thick(uy, az)` (not the afro volume
+      term) by an edge taper:
+          e = smooth(lineAt(az), lineAt(az) + band, uy)
+          thick *= 0.2 + 0.8 * e
+      band ≈ 0.10 unit-height for 'soft'/'laid', ≈ 0.05 for 'clean'. Keep the existing
+      `below` clip so nothing grows under the hairline. Result: the cap thins smoothly to
+      ~20 % at the edge — no visible ledge from front, 3/4 or side.
+   b. Hairline density shell — new method edgeShell(), modelled on fadeShell() (~line 288):
+      a thin shell (skullDist − 0.004·R) covering a band just BELOW and AT the hairline,
+      uy ∈ [lineAt(az) − w, lineAt(az) + 0.03], all azimuths, skipping faded zones
+      (this.faded) and the mohawk sides. Vertex colour .r = density:
+          dens = smooth(lineAt(az) − w, lineAt(az), uy) * maxDens
+      soft: w 0.06, maxDens 0.7 · laid: w 0.05, maxDens 0.8 · clean: w 0.025, maxDens 0.9.
+      Render it with the existing clipper-stubble material (useStubbleMaterial in
+      SculptHair.tsx: hair-coloured fine dots whose density follows vColor.r), so the
+      hair thins into skin. Simplest wiring: in build(), merge edgeShell() into the 'fade'
+      geometry with mergeGeometries (same attributes: position, normal, color); create the
+      fade piece when only the edge shell exists. Skip the shell when hatOn and the hat
+      covers the hairline.
+   c. Hairline height: lineAt() already uses p.line (front lift = p.line * 0.1 and the
+      temple recesses scale with 1 + p.line). Make sure the tuned p.line moves the whole
+      front hairline (forehead + temple corners) visibly at ±1 without exposing the cap
+      edge or letting fringe locks start below the brows (browY).
+
+3) BABY HAIRS & LAID EDGES — groom.ts, new method edges(), called from build() after the
+   main strands (skip when fade === 'buzz', when hatOn, and when braid === 'cornrows' for
+   'soft'; cornrows still get 'laid').
+   a. soft (straight / wavy / textured hair): ~36–48 baby hairs along the front and temple
+      hairline, az from −1.25 to +1.25 rad, step ≈ 0.06 + jitter; root at
+      uy = lineAt(az) + 0.005…0.02. Grow with this.grow(u, L, { fringe:false, layer:0.9,
+      liftK:0.1 }) where L = 0.05…0.10 head radii; emit with w0 ≈ 0.012·R, flat 0.6,
+      tip 0.05, radial 3. Must lie flat (no spikes) and never reach the brows.
+      Curly / coily hair keeps the existing baby-curl row (scalpStrands ~line 596), but
+      move that row into edges() so it is controlled by the same setting ('clean' = none).
+   b. laid: 5–6 swoops per side at the temples and forehead corners
+      (az0 ≈ ±0.30, ±0.50, ±0.70, ±0.90, ±1.10) + optional centre swoop. Each swoop is
+      drawn directly on the skin, not grown: sample t ∈ [0,1] (12–16 points),
+          az(t) = az0 + side · 0.16 · t
+          uy(t) = lineAt(az0) + 0.01 − 0.05 · sin(0.9πt) + 0.02 · t²
+          point = this.scalp(unitDir(az(t), uy(t)), this.cap * 0.15)
+      and emit 4–6 parallel fine strands per swoop (offset 0.004·R, w0 ≈ 0.008·R,
+      flat 0.9, tip 0.1) so it reads as a sleek S-wave of gelled hair. Laid edges must not
+      overlap the eyebrows, eyes or ears.
+   c. clean: no baby hairs; crisp edge from step 2 with the narrow density band.
+
+4) VISIBLE PARTINGS — groom.ts
+   a. Helper inPart(u, halfW): true when the style has a part (partX(z) not NaN), the root
+      is on the top/front of the head (u.y > lineAt(az) + 0.02, u.y > 0.3, u.z > −0.3) and
+      |u.x · rx − partX(root.z)| < halfW · R. halfW ≈ 0.045 (zigzag: follow the zigzag).
+   b. scalpStrands() (~line 514): `continue` for roots where inPart(u, 0.045) — no lock
+      roots inside the part.
+   c. comb() (~line 326), flow 'side': today every root sweeps the same way, which buries
+      the part. Roots on the small side of the part (sign(root.x − px) opposite to the
+      sweep) and in the top zone (u.y > 0.2) must comb AWAY from the part
+      (out.set(away·0.9, −0.5, 0.1)), like real side-parted hair.
+   d. baseCap(): carve a narrow groove in the cap along the part so the real skin of the
+      head mesh shows through: d = max(d, halfGap − |x − partX(z)|) inside the top-front
+      zone, with halfGap ≈ 0.012·R tapering to 0 toward the crown
+      (smooth over z/rz from −0.35 to −0.1) so the part ends naturally. Keep the field
+      Lipschitz-safe (lipschitz already 1.4; raise only if holes appear —
+      watertight.test.ts must pass).
+   e. Optional: a very low-density stubble strip (density 0.25) along the part using the
+      same shell technique as 2b, so the part reads as scalp with fine hair, not bald skin.
+
+5) CROWN WHORL — groom.ts comb(), default flow with part 'none'
+   Hair already radiates from the crown point (0, 0.85, −0.45). Add a gentle tangential
+   swirl near it: out += cross(crownDir, u) · 0.6 · exp(−(angle(u, crownDir)/0.35)²).
+   Clockwise by default; seed-based direction is fine. Must not create a bald spot.
+
+6) EDITOR UI — editor/HairControls.tsx
+   - Slider "Hairline" (min −1, max 1, shows −100…+100), only when c.line.
+   - Chips "Edges": Clean / Soft / Laid, value t.edges ?? p.edges, only when c.edges.
+   - Place both right after "Parting". "Reset" clears them like the other tune keys.
+   - Changes regrow the groom in the worker (existing path); keep the UI responsive.
+
+7) I18N — tools/i18n/*.tsv, then `node tools/i18n/build.cjs`
+   Add lines (English → hi, kn, ta, te) for: "Hairline", "Edges", "Clean", "Laid".
+   ("Soft" and "Parting" already exist — reuse them.)
+
+8) CACHES & ASSETS
+   - Bump SCULPT_VERSION in sculpt3d/jobs.ts (80 → 81; HairP gains a key, so every hair
+     job key changes anyway).
+   - Bump snv-thumbs-v37 → v38 in editor/thumbs.tsx.
+   - Re-render the starter pictures (e2e/preset-images.e2e.cjs → public/presets/*.webp).
+
+9) HARNESS SUPPORT — e2e/avatar-harness/main.tsx (slot mode)
+   Add query params: &htune=<json> (sets look.hair, e.g. {"edges":"laid","line":0.5}),
+   &skin=<hex>, &hc=<hex> (hair colour), so every acceptance view below is reproducible.
+
+-----------------------------------------------------------------------------------------
+ACCEPTANCE CRITERIA (all must pass; attach before/after screenshots)
+-----------------------------------------------------------------------------------------
+ A1 Soft hairline: harness `?slot=hair&frame=head&ids=0,1,7,11,15,17` (6 short) and
+    `ids=20,23,35,36,39,40` (6 long): front and 3/4 (&turns=0,0.6) views show a gradual
+    edge with fine baby hairs — no raised ledge, no helmet edge. Check on light skin
+    (#f1d3bf) and deep skin (#5a3826), black (#0f0b0a) and blonde (#dab676) hair.
+ A2 Partings: a top-front camera (&cam=0,2.6,1.2,0,2.0,0 or equivalent) shows a visible
+    scalp line for part = left, right, middle and zigzag on at least 4 styles (e.g.
+    Side-parted short, Middle part, Long straight, Zigzag part waves). Side-swept styles
+    show hair falling away from the part on the small side.
+ A3 Edges control: the same style with edges clean / soft / laid shows three clearly
+    different hairlines; laid shows sleek swoops at the temples and never touches the
+    brows, eyes or ears. Works on straight, wavy, curly, coily, afro, Afro puff and
+    Cornrows.
+ A4 Hairline slider: −1 lowers and +1 raises/recedes the front hairline visibly; no gaps,
+    no cap edge, fringes still stop above the brows.
+ A5 Crown whorl visible from a top-back camera on a no-part style, no bald spot.
+ A6 Nothing else changes: buzz cuts, fades, undercuts, mohawks, ponytails, buns, braids,
+    locs and hats render as before (apart from the softer edge); hats still cover the
+    hairline with no hair poking through.
+ A7 Saved avatars: looks without line/edges load and get the soft default; a look saved
+    with line/edges reloads identically; normalizeHairTune drops bad values (unit tests).
+ A8 Performance: hair build time and triangle count per style grow by ≤ 10 %; the studio
+    stays smooth; edits finish in the worker without freezing the UI.
+ A9 Quality gates: npm run typecheck, npm test (incl. watertight.test.ts and new
+    look/hair tests), npm run build all green; studio thumbnails regenerate (v38); starter
+    pictures re-rendered and reviewed.
+
+-----------------------------------------------------------------------------------------
+TESTS TO ADD
+-----------------------------------------------------------------------------------------
+ - look/hair: tuneHair applies line/edges only when hairControls allows; clamps line;
+   normalizeHairTune keeps valid and drops invalid line/edges; default edges is 'soft'.
+ - groom: a style with part 'middle' has no lock root within the part band; edges 'clean'
+   produces no baby-hair locks; 'laid' produces swoop locks only above the brow line;
+   meshes stay watertight.
+
+-----------------------------------------------------------------------------------------
+OUT OF SCOPE (other stories)
+-----------------------------------------------------------------------------------------
+ - Fine strand shading on all locks (sumanova-us-106), hair motion (us-108), new hair
+   types/styles (us-109), region colours & hair accessories (us-110).
+
+-----------------------------------------------------------------------------------------
+RULES
+-----------------------------------------------------------------------------------------
  - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
- - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
- - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
-   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
-   respected; ≤ 8 canvases per harness page.
- - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
-   new field; old looks get sensible defaults.
- - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
-   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
-   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - ₹0: procedural only, no paid assets or services.
+ - Smooth on a mid-range Android phone; geometry built in the worker (sculpt3d/async.ts);
+   reduce-motion and data saver respected; ≤ 8 canvases per harness page.
+ - Never shift hairstyle ids; old looks must keep working.
  - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
-   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
- - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).
+   before claiming done; restart the harness if a change doesn't show.
+ - Commit as PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com> on SUM-202601,
+   no model names in commits; after pushing, share the Android SUMANOVA.apk and iPhone
+   SUMANOVA-unsigned.ipa links from the new build-N release.
