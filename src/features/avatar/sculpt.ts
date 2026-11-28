@@ -58,6 +58,25 @@ export function deform(h: HeadShape, ux: number, uy: number, uz: number, out: TH
  * `surfaceZ` describe (fixed-point on the direction), so features placed with `surfaceZ`
  * (eyes, mouth, beard) sit exactly on the sculpted skull instead of under it.
  */
+/**
+ * The head-space unit direction of a point (the `u` that `deform` maps onto the surface under it) —
+ * the coordinates hairlines and other scalp regions are defined in. (x/|p| differs from it on the
+ * elongated, deformed head: on the forehead by several centimetres.)
+ */
+export function skullDir(h: HeadShape, x: number, y: number, z: number): [number, number, number] {
+  const r = Math.sqrt(x * x + y * y + z * z) || 1e-6;
+  let ux = x / r, uy = y / r, uz = z / r;
+  for (let i = 0; i < 4; i++) {
+    const sx = h.rx * kxAt(h, uy, uz);
+    const sy = h.ry * (y < 0 ? h.chinLow : 1);
+    const sz = h.rz * (uy < 0 ? 1 - 0.1 * uy * uy : 1) * (uz < 0 ? 1.07 : 1);
+    const qx = x / sx, qy = y / sy, qz = z / sz;
+    const L = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-6;
+    ux = qx / L; uy = qy / L; uz = qz / L;
+  }
+  return [ux, uy, uz];
+}
+
 export function skullDist(h: HeadShape, x: number, y: number, z: number) {
   const r = Math.sqrt(x * x + y * y + z * z) || 1e-6;
   let ux = x / r, uy = y / r, uz = z / r, L = 1, sx = h.rx, sy = h.ry, sz = h.rz;

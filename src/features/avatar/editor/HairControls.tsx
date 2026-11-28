@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Heart, Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { Look } from '../look/config';
-import { HAIRSTYLES, HAIR_OPTIONS, hairControls, type FringeT, type HairTex, type HairTune, type PaintT, type PartT } from '../look/hair';
+import { HAIRSTYLES, HAIR_OPTIONS, hairControls, type EdgeT, type FringeT, type HairTex, type HairTune, type PaintT, type PartT } from '../look/hair';
 import { HAIR } from '../look/palettes';
 
 /**
@@ -13,6 +13,7 @@ import { HAIR } from '../look/palettes';
 const TEX_LABEL: Record<HairTex, string> = { straight: 'Straight', wavy: 'Wavy', curly: 'Curly', coily: 'Coily', textured: 'Textured' };
 const PART_LABEL: Record<PartT, string> = { none: 'None', left: 'Left', right: 'Right', middle: 'Middle', zigzag: 'Zigzag' };
 const FRINGE_LABEL: Record<FringeT, string> = { none: 'None', straight: 'Straight', curtain: 'Curtain', side: 'Side', wispy: 'Wispy', textured: 'Textured' };
+const EDGE_LABEL: Record<EdgeT, string> = { clean: 'Clean', soft: 'Soft', laid: 'Laid' };
 const PAINT_LABEL: Record<PaintT, string> = { none: 'Solid', twotone: 'Two-tone', ombre: 'Ombré', highlights: 'Highlights', streaks: 'Streaks', split: 'Split dye', lowlights: 'Lowlights' };
 
 export function HairControls({ look, onHair, onHi }: { look: Look; onHair: (t: HairTune) => void; onHi: (c: string | null) => void }) {
@@ -42,6 +43,8 @@ export function HairControls({ look, onHair, onHi }: { look: Look; onHair: (t: H
       {c.volume && <Slider label="Volume" value={t.volume ?? 0} min={-1} onChange={(v) => set({ volume: v })} />}
       {c.tex && <Chips label="Texture" options={HAIR_OPTIONS.tex} labels={TEX_LABEL} value={t.tex ?? p.tex} onPick={(v) => set({ tex: v })} />}
       {c.part && <Chips label="Parting" options={HAIR_OPTIONS.part} labels={PART_LABEL} value={t.part ?? p.part} onPick={(v) => set({ part: v })} />}
+      {c.line && <Slider label="Hairline" value={t.line ?? 0} min={-1} onChange={(v) => set({ line: v })} />}
+      {c.edges && <Chips label="Edges" options={HAIR_OPTIONS.edges} labels={EDGE_LABEL} value={t.edges ?? p.edges} onPick={(v) => set({ edges: v })} />}
       {c.fringe && <Chips label="Fringe" options={HAIR_OPTIONS.fringe} labels={FRINGE_LABEL} value={t.fringe ?? p.fringe} onPick={(v) => set({ fringe: v })} />}
       {c.paint && <Chips label="Colour effect" options={HAIR_OPTIONS.paint} labels={PAINT_LABEL} value={paint} onPick={(v) => set({ paint: v })} />}
       {(paint === 'highlights' || paint === 'streaks' || paint === 'lowlights') && (

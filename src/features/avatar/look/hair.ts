@@ -21,6 +21,8 @@ export type FadeT = 'none' | 'taper' | 'low' | 'mid' | 'high' | 'skin' | 'underc
 export type TieT = 'none' | 'pony' | 'lowpony' | 'sidepony' | 'twinpony' | 'bun' | 'lowbun' | 'messybun' | 'spacebuns' | 'halfup';
 export type BraidT = 'none' | 'single' | 'double' | 'french' | 'dutch' | 'fishtail' | 'box' | 'cornrows' | 'braidbun';
 export type LocT = 'none' | 'locs' | 'twists' | 'butterfly' | 'wavylocs';
+/** Hairline edges: crisp barber line-up, natural thinning with baby hairs, or styled laid edges. */
+export type EdgeT = 'clean' | 'soft' | 'laid';
 /** Colour treatment of the style (the colours themselves come from the colour rail). */
 export type PaintT = 'none' | 'twotone' | 'ombre' | 'highlights' | 'streaks' | 'split' | 'lowlights';
 
@@ -62,11 +64,13 @@ export interface HairP {
   /** tail / braid length (head radii) when tied or braided */
   tail: number;
   paint: PaintT;
+  /** how the hairline ends (sumanova-us-107) */
+  edges: EdgeT;
 }
 
 const D: HairP = {
   cat: 'Short', top: 0.35, side: 0.2, back: 0.22, fringeLen: 0.3, vol: 0.4, tex: 'straight', curl: 0.5, flow: 'back', part: 'none', fringe: 'none',
-  fade: 'none', tie: 'none', braid: 'none', loc: 'none', afro: 0, layers: 0.2, messy: 0.1, asym: 0, tips: 0.5, clump: 1, lift: 0, line: 0, tail: 1.6, paint: 'none',
+  fade: 'none', tie: 'none', braid: 'none', loc: 'none', afro: 0, layers: 0.2, messy: 0.1, asym: 0, tips: 0.5, clump: 1, lift: 0, line: 0, tail: 1.6, paint: 'none', edges: 'soft',
 };
 
 type R = Partial<HairP>;
@@ -78,7 +82,7 @@ const LIB: [string, HairP][] = [
   S('Short', 'Classic short', { top: 0.32, side: 0.16, back: 0.16, flow: 'side', part: 'left', vol: 0.35, tips: 0.35, fade: 'taper' }),
   S('Short', 'Textured crop', { top: 0.3, side: 0.12, back: 0.12, flow: 'forward', fringe: 'textured', fringeLen: 0.26, vol: 0.5, messy: 0.35, tips: 0.85, fade: 'mid', tex: 'textured' }),
   S('Short', 'French crop', { top: 0.26, side: 0.12, back: 0.12, flow: 'forward', fringe: 'straight', fringeLen: 0.2, vol: 0.3, tips: 0.4, fade: 'high' }),
-  S('Short', 'Caesar cut', { top: 0.2, side: 0.12, back: 0.12, flow: 'forward', fringe: 'straight', fringeLen: 0.14, vol: 0.15, tips: 0.25, fade: 'low', clump: 0.75 }),
+  S('Short', 'Caesar cut', { top: 0.2, side: 0.12, back: 0.12, flow: 'forward', fringe: 'straight', fringeLen: 0.14, vol: 0.15, tips: 0.25, fade: 'low', clump: 0.75, edges: 'clean' }),
   S('Short', 'Crew cut', { top: 0.2, side: 0.08, back: 0.08, flow: 'up', lift: 0.3, vol: 0.35, tips: 0.6, fade: 'taper', clump: 0.8 }),
   S('Short', 'Buzz cut', { fade: 'buzz', top: 0, side: 0, back: 0, vol: 0 }),
   S('Short', 'High fade', { top: 0.3, side: 0.05, back: 0.05, flow: 'up', lift: 0.45, vol: 0.5, tips: 0.6, fade: 'high' }),
@@ -221,6 +225,9 @@ export interface HairTune {
   paint?: PaintT;
   /** 0 … 1 */
   gloss?: number;
+  /** −1 … 1 (lower … higher / receding hairline) */
+  line?: number;
+  edges?: EdgeT;
 }
 
 /** Which controls make sense for a style (e.g. no parting on a buzz cut, no fringe on cornrows). */
@@ -234,6 +241,9 @@ export function hairControls(p: HairP) {
     part: !shaved && p.afro === 0 && p.flow !== 'hawk' && p.braid !== 'cornrows',
     fringe: !shaved && !structured && p.flow !== 'hawk',
     paint: !shaved,
+    line: !shaved,
+    // laid edges are common on afros, puffs, coils and cornrows too
+    edges: !shaved,
   };
 }
 
@@ -260,6 +270,8 @@ export function tuneHair(p: HairP, t: HairTune | null | undefined): HairP {
     if (t.fringe !== 'none' && p.fringe === 'none') q.fringeLen = t.fringe === 'curtain' ? 0.6 : t.fringe === 'side' ? 0.6 : 0.42;
   }
   if (c.paint && t.paint) q.paint = t.paint;
+  if (c.line && t.line) q.line = Math.max(-1, Math.min(1.2, p.line + t.line));
+  if (c.edges && t.edges) q.edges = t.edges;
   return q;
 }
 
@@ -267,7 +279,8 @@ const TEXES: HairTex[] = ['straight', 'wavy', 'curly', 'coily', 'textured'];
 const PARTS: PartT[] = ['none', 'left', 'right', 'middle', 'zigzag'];
 const FRINGES: FringeT[] = ['none', 'straight', 'curtain', 'side', 'wispy', 'textured'];
 const PAINTS: PaintT[] = ['none', 'twotone', 'ombre', 'highlights', 'streaks', 'split', 'lowlights'];
-export const HAIR_OPTIONS = { tex: TEXES, part: PARTS, fringe: FRINGES, paint: PAINTS };
+const EDGES: EdgeT[] = ['clean', 'soft', 'laid'];
+export const HAIR_OPTIONS = { tex: TEXES, part: PARTS, fringe: FRINGES, paint: PAINTS, edges: EDGES };
 
 /** Validate stored hair adjustments (unknown values are dropped). */
 export function normalizeHairTune(raw: unknown): HairTune | undefined {
@@ -275,7 +288,7 @@ export function normalizeHairTune(raw: unknown): HairTune | undefined {
   const r = raw as Record<string, unknown>;
   const num = (v: unknown, lo: number, hi: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : undefined);
   const pick = <T extends string>(v: unknown, list: T[]) => (list.includes(v as T) ? (v as T) : undefined);
-  const t: HairTune = { length: num(r.length, -1, 1), volume: num(r.volume, -1, 1), tex: pick(r.tex, TEXES), part: pick(r.part, PARTS), fringe: pick(r.fringe, FRINGES), paint: pick(r.paint, PAINTS), gloss: num(r.gloss, 0, 1) };
+  const t: HairTune = { length: num(r.length, -1, 1), volume: num(r.volume, -1, 1), tex: pick(r.tex, TEXES), part: pick(r.part, PARTS), fringe: pick(r.fringe, FRINGES), paint: pick(r.paint, PAINTS), gloss: num(r.gloss, 0, 1), line: num(r.line, -1, 1), edges: pick(r.edges, EDGES) };
   for (const k of Object.keys(t) as (keyof HairTune)[]) if (t[k] === undefined) delete t[k];
   return Object.keys(t).length ? t : undefined;
 }

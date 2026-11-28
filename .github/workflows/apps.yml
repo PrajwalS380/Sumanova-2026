@@ -116,15 +116,28 @@ jobs:
         if: needs.ios.result == 'success'
         with: { name: ios-ipa, path: out }
       - run: ls -la out
+      # which user story this build delivers: the newest "sumanova-us-NNN" in the recent commit
+      # messages (docs/user-stories), so every download says which story it contains
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 30, path: src }
+      - name: Find user story
+        id: story
+        run: |
+          id=$(git -C src log -30 --format=%B -- . ':!docs' | grep -o 'sumanova-us-[0-9]\+' | head -1 || true)
+          if [ -n "$id" ]; then
+            echo "label=${id#sumanova-} · " >> "$GITHUB_OUTPUT"
+            echo "line=**User story:** \`$id\` (docs/user-stories/$id.txt)" >> "$GITHUB_OUTPUT"
+          fi
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: SUMANOVA 0.1.${{ github.run_number }} (${{ github.ref_name }})
+          name: SUMANOVA ${{ steps.story.outputs.label }}build-${{ github.run_number }} (${{ github.ref_name }})
           target_commitish: ${{ github.sha }}
           prerelease: true
           make_latest: true
           files: out/*
           body: |
+            ${{ steps.story.outputs.line }}
             **Android:** download `SUMANOVA.apk` on your phone and open it (allow "Install unknown apps" for your browser if asked).
             **iPhone:** `SUMANOVA-unsigned.ipa` must be signed on install — see docs/MOBILE.md. Or use the web app at https://sumanova.vercel.app (Safari → Share → Add to Home Screen).
             Built from `${{ github.ref_name }}` @ `${{ github.sha }}`.

@@ -5,6 +5,7 @@ import { DEFAULT_LOOK, type Look, type Slot } from '@/features/avatar/look/confi
 import { rng } from '@/features/avatar/look/rng';
 import { HAIR, SKIN, LIPS } from '@/features/avatar/look/palettes';
 import { PRESETS } from '@/features/avatar/look/presets';
+import { normalizeHairTune } from '@/features/avatar/look/hair';
 
 /**
  * Visual harness.
@@ -40,6 +41,13 @@ if (q.get('presets')) {
     if (q.get('outer')) l.pick.outer = +q.get('outer')!;
     if (q.get('ctop')) l.color.top = '#' + q.get('ctop');
     if (q.get('couter')) l.color.outer = '#' + q.get('couter');
+    // hair review (sumanova-us-107+): &htune={"edges":"laid","line":0.5} &skin=<hex> &hc=<hex>
+    // (&htunes=<json>|<json>|… gives each figure its own tune)
+    const tunes = q.get('htunes')?.split('|');
+    const tune = tunes ? tunes[looks.length % tunes.length] : q.get('htune');
+    if (tune) l.hair = normalizeHairTune(JSON.parse(tune));
+    if (q.get('skin')) l.skin = '#' + q.get('skin');
+    if (q.get('hc')) l.color.hair = l.color.brows = '#' + q.get('hc');
     looks.push(l);
   }
 } else {

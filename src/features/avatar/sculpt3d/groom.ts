@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { deform, skullDist, smooth, wobble, type HeadShape } from '../sculpt';
+import { deform, skullDir, skullDist, smooth, wobble, type HeadShape } from '../sculpt';
 import type { HairP } from '../look/hair';
 import { rng, hashStr } from '../look/rng';
 import { Field, type Prim } from './sdf';
 import { GeoCache, meshField } from './mesh';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /**
  * The hair groom: hair is GROWN, not assembled.
@@ -287,7 +288,10 @@ export class Groomer {
       if (p.tie !== 'none' && p.braid !== 'cornrows') this.ties();
       if (p.braid !== 'none' && p.braid !== 'box' && p.braid !== 'cornrows') this.braids();
     }
-    return { strands: this.m.geometry(), cards: this.cards.geometry(), base: this.baseCap(), fade: this.fadeShell(), band: this.bandGeo() };
+    if (p.fade !== 'buzz' && !this.hatOn) this.edges();
+    const fade = this.fadeShell(), edge = this.hatOn ? null : this.edgeShell(), part = this.hatOn || p.fade === 'buzz' ? null : this.partShell();
+    const shells = [fade, edge, part].filter((g): g is THREE.BufferGeometry => !!g);
+    return { strands: this.m.geometry(), cards: this.cards.geometry(), base: this.baseCap(), fade: shells.length > 1 ? mergeGeometries(shells) : shells[0] ?? null, band: this.bandGeo() };
   }
 
   /**
@@ -317,7 +321,7 @@ export class Groomer {
       const pts = this.grow(u, (0.16 + r() * 0.06) * fb, { fringe: false, layer: 0, liftK: 0.05 });
       // the shell surface here (see baseCap): cap + the barbered shell thickness
       const shellAt = (q: V) => {
-        const uy = q.y / (q.length() || 1);
+        const uy = skullDir(this.h, q.x, q.y, q.z)[1];
         return this.cap + 0.035 * R * smooth(line, line + 0.25, uy) * (1 - smooth(0.35, 0.7, uy));
       };
       for (const q of pts) this.keepOff(q, shellAt(q) - 0.002 * R);
@@ -338,12 +342,14 @@ export class Groomer {
     const cutShort = Math.max(p.top, p.side, p.back) < 0.75 && p.tex !== 'coily' && p.tex !== 'curly' && p.afro === 0 && p.loc === 'none' && p.braid === 'none' && p.tie === 'none';
     const shell = (uy: number, az: number) => (cutShort ? 0.035 * R * smooth(this.lineAt(az), this.lineAt(az) + 0.25, uy) * (1 - smooth(0.35, 0.7, uy)) : 0);
     // tied-back hair: a fuller layer that thins out smoothly to the hairline (no ledge at the nape)
-    const thick = (uy: number, az = 0) => shell(uy, az) + this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 0.6 + 1.6 * smooth(this.lineAt(az), this.lineAt(az) + 0.3, uy) : textured ? 1 + 1.2 * smooth(this.lineAt(az), this.lineAt(az) + 0.25, uy) : 1) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
+    // the hair layer thins smoothly to ~20 % at the hairline (no raised ledge on the forehead)
+    const edgeBand = p.edges === 'clean' ? 0.05 : 0.1;
+    const taper = (uy: number, az: number) => 0.2 + 0.8 * smooth(this.lineAt(az), this.lineAt(az) + edgeBand, uy);
+    const thick = (uy: number, az = 0) => taper(uy, az) * (shell(uy, az) + this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 0.6 + 1.6 * smooth(this.lineAt(az), this.lineAt(az) + 0.3, uy) : textured ? 1 + 1.2 * smooth(this.lineAt(az), this.lineAt(az) + 0.25, uy) : 1)) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
     const prim: Prim = {
       t: 'fn', c: [0, h.ry * 0.2, -h.rz * 0.05], ext: [R * (1.3 + afro * 0.9), h.ry * (1.3 + afro * 0.9), h.rz * (1.4 + afro * 0.9)], bone: 0, k: 0,
       f: (x, y, z) => {
-        const rr = Math.sqrt(x * x + y * y + z * z) || 1e-6;
-        const uy = y / rr, az = Math.atan2(x / rr, z / rr);
+        const [dx, uy, dz] = skullDir(h, x, y, z), az = Math.atan2(dx, dz);
         let d = skullDist(h, x, y, z) - thick(uy, az);
         if (afro > 0) {
           // a rounder silhouette than the skull: blend toward a sphere over the crown
@@ -355,7 +361,9 @@ export class Groomer {
         const below = (this.lineAt(az) - uy) * h.ry * 0.9;
         const shaved = this.faded(uy + 0.05, az) ? 0.02 * R : -1;
         const hawk = p.flow === 'hawk' ? (Math.abs(x) - 0.2 * R) : -1;
-        return Math.max(d, below, shaved, hawk);
+        // the parting: a narrow groove in the hair layer, so the scalp shows along the part
+        const pg = this.partGap(x, y / h.ry, z);
+        return Math.max(d, below, shaved, hawk, pg);
       },
     };
     const f = new Field([{ prims: [prim] }], 0.02 * R, 0.06 * R);
@@ -376,11 +384,11 @@ export class Groomer {
     const uv = new Float32Array(P.count * 2);
     const C = geo.getAttribute('color');
     for (let i = 0; i < P.count; i++) {
-      q.set(P.getX(i), P.getY(i), P.getZ(i)).normalize();
-      const az = Math.atan2(q.x, q.z);
+      const [ux, uyy, uz] = skullDir(h, P.getX(i), P.getY(i), P.getZ(i));
+      const az = Math.atan2(ux, uz);
       uv[i * 2] = (az / (Math.PI * 2) + 0.5) * 9;
       const line = this.lineAt(az);
-      const t = Math.min(1, Math.max(0, (1 - q.y) / Math.max(0.2, 1 - line)));
+      const t = Math.min(1, Math.max(0, (1 - uyy) / Math.max(0.2, 1 - line)));
       uv[i * 2 + 1] = t;
       if (C && afro === 0) C.setY(i, 0.25 + 0.6 * t);
     }
@@ -388,20 +396,148 @@ export class Groomer {
     return geo;
   }
 
+  /** > 0 inside the parting groove (scalp shows), for the hair layer's SDF; −1 elsewhere */
+  partGap(x: number, uyHead: number, z: number) {
+    const { h, R, p } = this;
+    if (p.part === 'none' || p.afro > 0 || p.braid === 'cornrows' || p.flow === 'hawk') return -1;
+    const px = this.partX(z);
+    if (Number.isNaN(px) || uyHead < 0.3) return -1;
+    // widest at the front hairline, closing toward the crown (the part ends naturally)
+    const gap = 0.016 * R * smooth(-0.35, -0.1, z / h.rz);
+    if (gap <= 1e-5) return -1;
+    return gap - Math.abs(x - px);
+  }
+  /** a root inside the parting (no locks grow there) */
+  inPart(u: V, halfW: number) {
+    const { p, R, h } = this;
+    if (p.part === 'none') return false;
+    const az = Math.atan2(u.x, u.z);
+    if (!(u.y > this.lineAt(az) + 0.02 && u.y > 0.3 && u.z > -0.3)) return false;
+    const px = this.partX(u.z * h.rz);
+    if (Number.isNaN(px)) return false;
+    return Math.abs(u.x * h.rx - px) < halfW * R;
+  }
+
+  /**
+   * Hairline density shell: fine hair-coloured stubble in a thin band below and at the hairline,
+   * densest at the hairline and fading out onto the skin — the hair grows out of the skin instead of
+   * stopping at an edge. Rendered with the clipper-stubble material (density = colour.r).
+   */
+  edgeShell() {
+    const { h, p, R } = this;
+    if (p.fade === 'buzz') return null;
+    const [w, maxDens] = p.edges === 'clean' ? [0.025, 0.9] : p.edges === 'laid' ? [0.05, 0.8] : [0.06, 0.7];
+    const f = new Field([{ prims: [{ t: 'fn', c: [0, 0, 0], ext: [R * 1.2, h.ry * 1.2, h.rz * 1.3], bone: 0, k: 0, f: (x, y, z) => {
+      const [dx, uy, dz] = skullDir(h, x, y, z), az = Math.atan2(dx, dz);
+      const line = this.lineAt(az);
+      const skip = this.faded(uy, az) || (p.flow === 'hawk' && Math.abs(x) > 0.2 * R);
+      return Math.max(skullDist(h, x, y, z) - 0.004 * R, (line - w - uy) * h.ry, (uy - line - 0.03) * h.ry, skip ? 1 : -1);
+    } }] }], 0.02 * R, 0.1 * R);
+    return meshField(f, { cell: 0.008 * (R / 0.35), color: (x, y, z) => {
+      const [dx, uy, dz] = skullDir(h, x, y, z), az = Math.atan2(dx, dz);
+      const line = this.lineAt(az);
+      return [smooth(line - w, line, uy) * maxDens, 0, 0];
+    } });
+  }
+
+  /** a faint strip of fine hair along the parting, so it reads as scalp between hair, not a bare stripe */
+  partShell() {
+    const { h, R } = this;
+    if (this.partGap(0, 0.5, 0) === -1 && this.partGap(this.partX(0), 0.5, 0) === -1) return null;
+    const f = new Field([{ prims: [{ t: 'fn', c: [0, 0, 0], ext: [R * 1.2, h.ry * 1.2, h.rz * 1.3], bone: 0, k: 0, f: (x, y, z) => {
+      const g = this.partGap(x, y / h.ry, z);
+      const [dx, uy, dz] = skullDir(h, x, y, z);
+      return Math.max(skullDist(h, x, y, z) - 0.003 * R, g === -1 ? 1 : -g - 0.002 * R, (this.lineAt(Math.atan2(dx, dz)) + 0.01 - uy) * h.ry);
+    } }] }], 0.02 * R, 0.1 * R);
+    return meshField(f, { cell: 0.006 * (R / 0.35), color: () => [0.3, 0, 0] });
+  }
+
+  /** unit scalp direction from azimuth + unit height */
+  dirAt(az: number, uy: number) {
+    const rad = Math.sqrt(Math.max(0, 1 - uy * uy));
+    return v3(Math.sin(az) * rad, uy, Math.cos(az) * rad);
+  }
+
+  /**
+   * The hairline edges (sumanova-us-107): fine baby hairs (soft), sleek gelled swoops (laid) or
+   * nothing (clean, a crisp line-up). Curly / coily / afro hair gets a row of tiny baby curls.
+   */
+  edges() {
+    const { p, R, r } = this;
+    if (p.edges === 'clean') return;
+    const curlyKind = p.tex === 'coily' || p.tex === 'curly' || p.afro > 0;
+    if (p.edges === 'soft') {
+      if (p.braid === 'cornrows') return;
+      if (curlyKind) {
+        const coily = p.tex === 'coily' || p.afro > 0;
+        for (let az = -1.15; az <= 1.15; az += coily ? 0.07 : 0.09) {
+          const uy = this.lineAt(az) + 0.035 + r() * 0.03;
+          const u = this.dirAt(az, uy);
+          if (this.faded(u.y, az)) continue;
+          let pts = this.grow(u, 0.16 + r() * 0.08, { fringe: false, layer: 0.9, liftK: 0.6 });
+          pts = this.texture(this.resample(pts, 0.01 * R), r() * 6, coily ? 'coily' : 'curly', 1);
+          this.emit(pts, R * (coily ? 0.045 : 0.06) * p.clump, { flat: 0.95, tip: 0.5, radial: 5, cards: false });
+        }
+        return;
+      }
+      // fine, flat baby hairs along the forehead and temples
+      // drawn on the skin: each starts just inside the hairline and lies down onto the forehead /
+      // temple, curving a little to one side (never into the sideburns or onto the brows)
+      for (let az = -1.05; az <= 1.05; az += 0.045 + r() * 0.02) {
+        const line = this.lineAt(az);
+        if (this.faded(line, az)) continue;
+        const len = 0.02 + r() * 0.03, bend = (r() - 0.5) * 0.08 + Math.sign(az) * 0.03;
+        const pts: V[] = [];
+        for (let i = 0; i <= 6; i++) {
+          const t = i / 6;
+          const q = this.scalp(this.dirAt(az + bend * t * t, line + 0.012 - len * t), this.cap * 0.12 + 0.003 * R);
+          pts.push(q);
+        }
+        if (pts.some((q) => q.y < this.browY + 0.04 * R)) continue;
+        this.emit(pts, 0.016 * R, { flat: 0.45, tip: 0.05, radial: 4, cards: false, shade: 1.05 });
+      }
+      return;
+    }
+    // laid: sleek S-wave swoops of gelled baby hair, drawn directly on the skin at the temples and
+    // forehead corners (+ a small one in the centre)
+    const roots = [0.3, 0.5, 0.7, 0.9, 1.1];
+    const swoops: [number, number][] = [[0, 1]];
+    for (const a of roots) swoops.push([a, 1], [-a, -1]);
+    for (const [az0, side] of swoops) {
+      // one broad, flat gelled ribbon + two fine strands along its edges (fine strands alone are
+      // thinner than a pixel at avatar sizes)
+      const strands = 3;
+      const amp = az0 === 0 ? 0.6 : 1;
+      for (let k = 0; k < strands; k++) {
+        const pts: V[] = [];
+        const off = (k - 1) * 0.012 * R;
+        for (let i = 0; i <= 14; i++) {
+          const t = i / 14;
+          const az = az0 + side * 0.16 * t * (az0 === 0 ? 0.6 : 1);
+          const uy = this.lineAt(az0) + 0.01 - 0.05 * amp * Math.sin(0.9 * Math.PI * t) + 0.02 * t * t;
+          const q = this.scalp(this.dirAt(az, uy), this.cap * 0.15 + 0.004 * R);
+          q.y += off;
+          pts.push(q);
+        }
+        // never onto the brows, eyes or ears
+        if (pts.some((q) => q.y < this.browY + 0.03 * R)) continue;
+        this.emit(pts, k === 1 ? 0.03 * R : 0.012 * R, { flat: k === 1 ? 0.22 : 0.5, tip: 0.1, radial: k === 1 ? 6 : 4, cards: false, shade: 1.08 });
+      }
+    }
+  }
+
   /** short stubble shell over shaved / faded areas */
   fadeShell() {
     const { h, p, R } = this;
     if (p.fade === 'none' && p.flow !== 'hawk') return null;
     const f = new Field([{ prims: [{ t: 'fn', c: [0, 0, 0], ext: [R * 1.2, h.ry * 1.2, h.rz * 1.3], bone: 0, k: 0, f: (x, y, z) => {
-      const rr = Math.sqrt(x * x + y * y + z * z) || 1e-6;
-      const uy = y / rr, az = Math.atan2(x / rr, z / rr);
+      const [dx, uy, dz] = skullDir(h, x, y, z), az = Math.atan2(dx, dz);
       const shaved = this.faded(uy, az) || (p.flow === 'hawk' && Math.abs(x) > 0.2 * R);
       return Math.max(skullDist(h, x, y, z) - 0.005 * R, (this.lineAt(az) - 0.02 - uy) * h.ry, shaved ? -1 : 1);
     } }] }], 0.02 * R, 0.1 * R);
     const lvl = { none: 0, taper: -0.55, low: -0.3, mid: -0.05, high: 0.2, skin: 0.22, undercut: 0.3, sides: 0.3, buzz: 1 }[p.fade];
     return meshField(f, { cell: 0.009 * (R / 0.35), color: (x, y, z) => {
-      const rr = Math.hypot(x, y, z) || 1e-6;
-      const uy = y / rr;
+      const uy = skullDir(h, x, y, z)[1];
       // density: full stubble near the hair, fading to skin at the bottom (skin fades go all the way)
       const dens = p.fade === 'buzz' ? 0.85 : p.fade === 'undercut' || p.fade === 'sides' ? 0.6 : smooth(lvl - (p.fade === 'skin' ? 0.35 : 0.6), lvl, uy);
       return [dens, 0, 0];
@@ -446,7 +582,13 @@ export class Groomer {
       case 'forward': out.set(0, -0.2, 1).lerp(v3(0, -1, -0.2), smooth(0.2, -0.6, u.z)); break;
       // quiff: the front sweeps up and back; everything behind the hairline is combed straight back
       case 'up': out.set(0, 1, -0.55).lerp(v3(0, 0.05, -1), smooth(0.62, 0.3, u.z)); break;
-      case 'side': out.set(p.part === 'right' ? 1 : -1, -0.25, 0.1).lerp(v3(away, -0.8, -0.3), smooth(-0.1, -0.6, u.z)); break;
+      case 'side': {
+        const sweep = p.part === 'right' ? 1 : -1;
+        // the small side of the part falls away from it (otherwise the sweep buries the part)
+        if (!Number.isNaN(px) && Math.sign(root.x - px) === -sweep && u.y > 0.2) out.set(away * 0.9, -0.5, 0.1);
+        else out.set(sweep, -0.25, 0.1).lerp(v3(away, -0.8, -0.3), smooth(-0.1, -0.6, u.z));
+        break;
+      }
       case 'out': out.copy(u).multiplyScalar(1.5).add(v3(0, 0.6, -0.2)); break;
       case 'hawk': out.set(-root.x * 2, 1.2, -0.15); break;
       case 'messy': out.set((r() - 0.5) * 2, -0.3 + r() * 0.6, 0.6 + (r() - 0.5)); break;
@@ -456,6 +598,9 @@ export class Groomer {
           // no part: radiate from the crown whorl
           const crown = v3(0, 0.85, -0.45).normalize();
           out.copy(u).sub(crown).addScaledVector(UP, -0.3);
+          // a gentle whorl around the crown (direction per avatar), no bald spot
+          const ang = Math.acos(Math.max(-1, Math.min(1, u.dot(crown))));
+          out.addScaledVector(v3().crossVectors(crown, u), 0.6 * (this.seed % 2 ? -1 : 1) * Math.exp(-((ang / 0.35) ** 2)));
           if (out.lengthSq() < 1e-4) out.set(0, 0, -1);
         } else out.set(away * (0.85 - 0.5 * (1 - front)), -0.55, -0.4 - 0.15 * front);
       }
@@ -595,14 +740,16 @@ export class Groomer {
   }
 
   /** emit a hair clump along a grown path */
-  emit(pts: V[], w0: number, o: { flat?: number; tip?: number; rand?: number; radial?: number; shade?: number; tStart?: number; tEnd?: number; /** strand cards on this lock (default: main locks) */ cards?: boolean }) {
+  emit(pts: V[], w0: number, o: { flat?: number; tip?: number; rand?: number; radial?: number; shade?: number; tStart?: number; tEnd?: number; /** strand cards on this lock (default: main locks) */ cards?: boolean; /** 0 … 1: thin root (locks at the hairline) */ rootThin?: number }) {
     const { R } = this;
     const rand = o.rand ?? this.r();
     const flat = o.flat ?? 0.34;
     const tipK = o.tip ?? 0.2; // width left at the tip (0 = pointed)
     this.m.add(pts, {
       // a sculpted lock: full through the body, swelling a little, tapering to a point
-      wAt: (t) => w0 * (1.15 - 0.15 * smooth(0, 0.35, t)) * (1 - (1 - tipK) * Math.pow(smooth(0.25, 1, t), 1.3)),
+      // locks rooted at the hairline start thin and fill out along their length (a soft edge
+      // instead of a full-width lock overhanging the forehead)
+      wAt: (t) => w0 * (1.15 - 0.15 * smooth(0, 0.35, t)) * (1 - (1 - tipK) * Math.pow(smooth(0.25, 1, t), 1.3)) * (1 - (o.rootThin ?? 0) * 0.75 * (1 - smooth(0, 0.35, t))),
       flat,
       radial: o.radial ?? 4,
       // below the head centre locks face outward horizontally (no twisting under the jaw)
@@ -613,17 +760,17 @@ export class Groomer {
       tEnd: o.tEnd,
     });
     // fine strand cards on the lock's outer face (main locks only; sub-locks / flyaways are already fine)
-    if (o.cards !== false && this.p.tex !== 'coily' && w0 > 0.03 * R && pts.length >= 3) this.addCards(pts, w0, flat, tipK, rand, o.tStart ?? 0, o.tEnd ?? 1);
+    if (o.cards !== false && this.p.tex !== 'coily' && w0 > 0.03 * R && pts.length >= 3) this.addCards(pts, w0, flat, tipK, rand, o.tStart ?? 0, o.tEnd ?? 1, o.rootThin ?? 0);
   }
 
   /** two strand cards along the outer face of a lock, running a little past its tip; sometimes a flyaway */
-  addCards(all: V[], w0: number, flat: number, tipK: number, rand: number, t0: number, t1: number) {
+  addCards(all: V[], w0: number, flat: number, tipK: number, rand: number, t0: number, t1: number, rootThin = 0) {
     const { R, r } = this;
     // a thin strip needs far fewer segments than the lock under it (≤ 12 points)
     const stride = Math.max(1, Math.ceil(all.length / 12));
     const pts = all.filter((_, i) => i % stride === 0 || i === all.length - 1);
     const n = pts.length;
-    const wAt = (t: number) => w0 * (1.15 - 0.15 * smooth(0, 0.35, t)) * (1 - (1 - tipK) * Math.pow(smooth(0.25, 1, t), 1.3));
+    const wAt = (t: number) => w0 * (1.15 - 0.15 * smooth(0, 0.35, t)) * (1 - (1 - tipK) * Math.pow(smooth(0.25, 1, t), 1.3)) * (1 - rootThin * 0.75 * (1 - smooth(0, 0.35, t)));
     const T = v3(), N = v3(), B = v3();
     const frames: { T: V; N: V; B: V; w: number }[] = [];
     for (let i = 0; i < n; i++) {
@@ -698,6 +845,7 @@ export class Groomer {
       if (p.flow === 'hawk' && Math.abs(u.x) > 0.2) continue;
       if (this.hatOn && u.y > 0.35) continue;
       if (only && !only(u, u.y, az)) continue;
+      if (this.inPart(u, 0.06)) continue;
       // regions: front (fringe zone), sides, back, crown
       const a = Math.abs(az) / Math.PI;
       const frontness = Math.max(0, 1 - a * 2.4) * smooth(0.95, 0.5, u.y);
@@ -737,7 +885,7 @@ export class Groomer {
       let pts = this.grow(u, front ? L * 1.3 : L, { fringe, layer, liftK: tight ? 0.08 : shortCut ? 0.3 : 1, front });
       // barbered sides / back: the short locks lie ON the smooth shell (not inside it), so the back of
       // the head shows combed hair texture instead of a bare helmet
-      if (tight) for (let i = 1; i < pts.length; i++) this.keepOff(pts[i], this.cap + 0.03 * R * smooth(line, line + 0.25, pts[i].y / (pts[i].length() || 1)));
+      if (tight) for (let i = 1; i < pts.length; i++) this.keepOff(pts[i], this.cap + 0.03 * R * smooth(line, line + 0.25, skullDir(this.h, pts[i].x, pts[i].y, pts[i].z)[1]));
       // roots by the hairline rise out of the scalp layer (no stepped edge)
       if (!fringe) this.bury(pts, u);
       const step = coily ? 0.012 * R : curly ? 0.02 * R : 0.04 * R;
@@ -751,7 +899,9 @@ export class Groomer {
       // quiffs / pompadours: one smooth rolled wave of broad locks (not flame-like spikes)
       const roll = p.flow === 'up' && p.tips < 0.7;
       const tip = p.fringe === 'straight' && fringe ? 0.4 : roll ? 0.55 : tight ? 0.5 : medium && !fringe ? Math.max(0.14, 0.3 - 0.2 * p.tips) : shortCut ? 0.32 - 0.15 * p.tips : Math.max(0.03, 0.3 - 0.3 * p.tips);
-      this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : medium ? 0.55 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7 });
+      // locks next to the hairline or the parting start thin, so the edge and the part stay visible
+      const edgeK = fringe ? 0 : Math.max(smooth(line + 0.14, line + 0.02, u.y) * (p.edges === 'clean' ? 0.7 : 1), this.inPart(u, 0.16) ? 0.85 : 0);
+      this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : medium ? 0.55 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7, rootThin: edgeK });
       // detail: finer locks riding on top of the main one and fanning apart toward the tips
       // (piecey, separated ends and layered depth — the sculpted-groom look)
       if (!coily && !tight) this.subLocks(pts, roll ? w0 * 1.2 : w0, { n: curly ? (longest > 0.8 ? 0 : 1) : roll ? 1 : shortCut ? 1 : short ? 2 : 3, flat: curly ? 0.75 : 0.5, spread: shortCut ? 0.3 : short ? 0.55 : 0.8 });
@@ -759,18 +909,6 @@ export class Groomer {
       if (!coily && u.z < 0.3 && r() < 0.035 + p.messy * 0.05 && L > 0.2) {
         const fp = this.texture(this.resample(this.grow(u, L * (1 + r() * 0.15), { fringe, layer: layer + 0.6, liftK: 1.5 }), 0.03 * R), r() * 6, 'textured', 1);
         this.emit(fp, 0.006 * R, { flat: 1, tip: 0.3, radial: 3, shade: 1.05 });
-      }
-    }
-    // curls / coils: a row of small baby curls along the front hairline (no smooth band there)
-    if ((coily || curly) && !only && !this.hatOn) {
-      for (let az = -1.15; az <= 1.15; az += coily ? 0.07 : 0.09) {
-        const uy = this.lineAt(az) + 0.035 + r() * 0.03;
-        const rad = Math.sqrt(Math.max(0, 1 - uy * uy));
-        u.set(Math.sin(az) * rad, uy, Math.cos(az) * rad);
-        if (this.faded(u.y, az)) continue;
-        let pts = this.grow(u, 0.16 + r() * 0.08, { fringe: false, layer: 0.9, liftK: 0.6 });
-        pts = this.texture(this.resample(pts, 0.01 * R), r() * 6, coily ? 'coily' : 'curly', 1);
-        this.emit(pts, R * (coily ? 0.045 : 0.06) * p.clump, { flat: 0.95, tip: 0.5, radial: 5, cards: false });
       }
     }
     void h;

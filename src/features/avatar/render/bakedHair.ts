@@ -18,7 +18,7 @@ const BAKED_IDS = new Set(BAKED_STYLES.map((n) => HAIRSTYLES.findIndex((v) => v.
 /** Use the finished asset? Only for headline styles whose shape isn't adjusted (colour / shine are fine). */
 export function bakedHairId(id: number | null | undefined, tune: HairTune | undefined, hatOn: boolean): number | null {
   if (id == null || hatOn || !BAKED_IDS.has(id)) return null;
-  if (tune && (tune.length || tune.volume || tune.tex || tune.part || tune.fringe)) return null;
+  if (tune && (tune.length || tune.volume || tune.tex || tune.part || tune.fringe || tune.line || tune.edges)) return null;
   return id;
 }
 
