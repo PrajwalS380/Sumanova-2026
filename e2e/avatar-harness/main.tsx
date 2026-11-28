@@ -6,6 +6,8 @@ import { rng } from '@/features/avatar/look/rng';
 import { HAIR, SKIN, LIPS } from '@/features/avatar/look/palettes';
 import { PRESETS } from '@/features/avatar/look/presets';
 import { normalizeHairTune } from '@/features/avatar/look/hair';
+import { liveHairMotion } from '@/features/avatar/render/hairMotion';
+(window as unknown as { __hairMotion: () => number[] }).__hairMotion = liveHairMotion;
 
 /**
  * Visual harness.
@@ -78,8 +80,30 @@ if (q.get('presets')) {
 const size = +(q.get('size') ?? 300);
 // ?switch=outer:0,13 → start on the first variant and swap to the second after 3s (live-edit check).
 const sw = q.get('switch')?.split(':');
+// ?shake=yaw → a scripted head turn: yaw to +0.6 rad over 0.6 s, hold 2 s, back, hold (hair lag & settling)
+const shake = q.get('shake');
+function shakeYaw(t: number) {
+  const c = t % 5.2;
+  const ease = (x: number) => x * x * (3 - 2 * x);
+  if (c < 0.6) return 0.6 * ease(c / 0.6);
+  if (c < 2.6) return 0.6;
+  if (c < 3.2) return 0.6 * (1 - ease((c - 2.6) / 0.6));
+  return 0;
+}
 function App() {
   const [, force] = (React as typeof import('react')).useState(0);
+  const [yaw, setYaw] = (React as typeof import('react')).useState(0);
+  (React as typeof import('react')).useEffect(() => {
+    if (shake !== 'yaw') return;
+    const t0 = performance.now();
+    let id = 0;
+    const tick = () => {
+      setYaw(shakeYaw((performance.now() - t0) / 1000));
+      id = requestAnimationFrame(tick);
+    };
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, []);
   (React as typeof import('react')).useEffect(() => {
     if (!sw) return;
     const [slot, ids] = sw;
@@ -96,7 +120,7 @@ function App() {
     <div style={{ display: 'flex', flexWrap: 'wrap' }}>
       {looks.map((l, i) => (
         <div key={i} style={{ width: size, height: size * (frame === 'head' ? 1 : 1.3), position: 'relative' }}>
-          <AvatarStage configs={[q.get('bare') ? { ...l, pick: { ...l.pick, hair: q.get('hair') ? l.pick.hair : null } } : l]} bare={!!q.get('bare')} poses={[(q.get('poses') ? q.get('poses')!.split(',')[i] : q.get('pose')) as never]} interactive={false} framing={frame} turn={q.get('turns') ? +q.get('turns')!.split(',')[i] : +(q.get('turn') ?? 0)} cam={q.get('cam') ? (() => { const n = q.get('cam')!.split(',').map(Number); return { pos: [n[0], n[1], n[2]] as [number, number, number], target: [n[3], n[4], n[5]] as [number, number, number] }; })() : undefined} />
+          <AvatarStage configs={[q.get('bare') ? { ...l, pick: { ...l.pick, hair: q.get('hair') ? l.pick.hair : null } } : l]} bare={!!q.get('bare')} poses={[(q.get('poses') ? q.get('poses')!.split(',')[i] : q.get('pose')) as never]} interactive={false} framing={frame} turn={(q.get('turns') ? +q.get('turns')!.split(',')[i] : +(q.get('turn') ?? 0)) + yaw} cam={q.get('cam') ? (() => { const n = q.get('cam')!.split(',').map(Number); return { pos: [n[0], n[1], n[2]] as [number, number, number], target: [n[3], n[4], n[5]] as [number, number, number] }; })() : undefined} />
           <span style={{ position: 'absolute', left: 6, top: 4, color: '#aaa', font: '11px sans-serif' }}>{i + +(q.get('from') ?? 0)}</span>
         </div>
       ))}

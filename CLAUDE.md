@@ -184,6 +184,11 @@ each download after the newest story id in non-docs commits ("SUMANOVA us-NNN ·
 Use `[skip ci]` for in-progress pushes. Hair edges/parting (us-107): `HairP.edges`, `HairTune.line/edges`; hairline
 regions are found in head space with `skullDir`/`skullDistDir` (x/|p| is centimetres off on the forehead).
 Harness: `&htune=<json>` / `&htunes=<json>|<json>` / `&skin=<hex>` / `&hc=<hex>`.
+Hair motion (us-108): groom writes per-vertex `hairPivot` (swing point) + `hairGrp` (0 fringe, 1/2 sides, 3 back,
+4 top, 5/6 tails, 7 plaits, −1 still) via `Groomer.mo` / `withMotion()`; `render/hairMotion.ts` = fixed-step
+pendulum solver (50 ms latency buffer → same at any fps), shader rotates each lock about its pivot + neck/shoulder
+push-out. `withHairAtRest()` for captures; reduce-motion → `uMotion` 0. Contact sheets: `node e2e/hair-motion.e2e.cjs
+<out> dancing|shake=yaw <ids> [turn]` (frames in `<out>.frames/`). Harness `&shake=yaw`, `window.__hairMotion()`.
 
 ## Sandbox limits (this cloud environment)
 Outbound network to supabase.co / vercel.app is blocked from the shell; use Supabase MCP (`execute_sql`) and Vercel

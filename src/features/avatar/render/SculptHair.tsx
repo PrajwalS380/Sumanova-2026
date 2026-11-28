@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { GROUPS, HairMotion, hairStill, registerHairMotion, type HeadPose } from './hairMotion';
+import { saveData } from '@/lib/display';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { HeadShape } from '../sculpt';
@@ -47,26 +49,94 @@ vec3 hairBase(float t, float rnd, vec3 pos) {
 }
 `;
 
-function useHairMaterial(root: string, tip: string | null, hi: string | null, paint: PaintT, gloss: number, sway: React.MutableRefObject<{ value: THREE.Vector3 }>, normalMap: THREE.Texture | null = null, card = false) {
+/** Uniforms shared by every hair material of one SculptHair (the motion solver writes them). */
+interface MotionUniforms {
+  uGrpRot: { value: Float32Array };
+  uGrpTip: { value: Float32Array };
+  uMotion: { value: number };
+  uNeck: { value: THREE.Vector4 };
+  uShoulder: { value: THREE.Vector4 };
+  uBrow: { value: number };
+}
+
+/**
+ * Vertex shader part of the hair motion (sumanova-us-108): every lock rotates about its own pivot by
+ * its group's mid → tip rotation (more toward the tip), then is pushed out of the neck / shoulders
+ * and never toward the face.
+ */
+const MOTION_HEAD = `
+attribute vec3 hairPivot; attribute float hairGrp;
+uniform vec3 uGrpRot[${GROUPS}]; uniform vec3 uGrpTip[${GROUPS}];
+uniform float uMotion; uniform vec4 uNeck; uniform vec4 uShoulder; uniform float uBrow;
+vec3 hRot = vec3(0.0);
+vec3 rotV(vec3 v, vec3 r) {
+  float a = length(r);
+  if (a < 1e-5) return v;
+  vec3 k = r / a;
+  float c = cos(a), s = sin(a);
+  return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c);
+}
+`;
+const MOTION_ROT = `
+#ifdef HAIR_MOTION
+if (hairGrp > -0.5 && uMotion > 0.0) {
+  int gi = int(hairGrp + 0.5);
+  float tt = clamp(color.g, 0.0, 1.0);
+  hRot = mix(uGrpRot[gi], uGrpTip[gi], smoothstep(0.4, 1.0, tt)) * pow(tt, 1.4) * uMotion;
+}
+#endif
+`;
+const MOTION_APPLY = `
+#ifdef HAIR_MOTION
+if (hairGrp > -0.5 && uMotion > 0.0) {
+  vec3 rest = transformed;
+  transformed = hairPivot + rotV(transformed - hairPivot, hRot);
+  // neck: a cylinder under the jaw (same shape as the groom's keepOffBody)
+  if (transformed.y < uNeck.z && transformed.y > uNeck.w) {
+    vec2 d = vec2(transformed.x, transformed.z - uNeck.x);
+    float l = length(d);
+    if (l < uNeck.y) { d *= uNeck.y / max(l, 1e-4); transformed.x = d.x; transformed.z = uNeck.x + d.y; }
+  }
+  // shoulders: an elliptic cylinder below the sloping shoulder line; drape over the side the lock is on
+  float k = uShoulder.w;
+  float sTop = -0.5 * k - 0.16 * k * pow(max(0.0, abs(transformed.x) - 0.14 * k) / (0.24 * k), 2.0);
+  if (transformed.y < sTop && abs(transformed.x) < uShoulder.z) {
+    float ex = transformed.x / uShoulder.z, ez = (transformed.z - uShoulder.x) / uShoulder.y;
+    if (ex * ex + ez * ez < 1.0) transformed.z = uShoulder.x + sign(rest.z - uShoulder.x + 1e-5) * uShoulder.y * sqrt(max(0.0, 1.0 - ex * ex));
+  }
+  // in front of the ears and below the brows, hair may only move away from the face
+  if (rest.z > 0.0 && rest.y < uBrow) transformed.z = min(transformed.z, rest.z);
+}
+#endif
+`;
+
+function useHairMaterial(root: string, tip: string | null, hi: string | null, paint: PaintT, gloss: number, sway: React.MutableRefObject<{ value: THREE.Vector3 }>, normalMap: THREE.Texture | null = null, card = false, motion: MotionUniforms | null = null) {
   const mat = useMemo(() => {
     const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0, envMapIntensity: 0.3 });
     // strand cards: fine strands cut out of thin strips (alpha test keeps them crisp, no sorting)
     if (card) { m.alphaTest = 0.45; m.side = THREE.DoubleSide; }
-    const uniforms = { uRoot: { value: new THREE.Color(root) }, uTip: { value: new THREE.Color(tip ?? root) }, uHi: { value: new THREE.Color(hi ?? '#e8c9a0') }, uPaint: { value: 0 }, uGloss: { value: 0.6 }, uBaked: { value: 0 }, uCard: { value: card ? 1 : 0 }, uSway: sway.current };
+    const uniforms = { uRoot: { value: new THREE.Color(root) }, uTip: { value: new THREE.Color(tip ?? root) }, uHi: { value: new THREE.Color(hi ?? '#e8c9a0') }, uPaint: { value: 0 }, uGloss: { value: 0.6 }, uBaked: { value: 0 }, uCard: { value: card ? 1 : 0 }, uSway: sway.current, ...(motion ?? {}) };
+    if (motion) m.defines = { ...m.defines, HAIR_MOTION: '' };
     m.userData.uniforms = uniforms;
     m.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, uniforms);
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute vec3 hairT;\nuniform vec3 uSway;\nvarying vec3 vHairT; varying vec3 vHairPos; varying vec2 vHUv;')
+        .replace('#include <common>', '#include <common>\nattribute vec3 hairT;\nuniform vec3 uSway;\nvarying vec3 vHairT; varying vec3 vHairPos; varying vec2 vHUv;' + (motion ? MOTION_HEAD : ''))
+        .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n' + (motion ? MOTION_ROT + '\n#ifdef HAIR_MOTION\nobjectNormal = rotV(objectNormal, hRot);\n#endif' : ''))
         .replace(
           '#include <begin_vertex>',
           `#include <begin_vertex>
 vHairPos = position; vHUv = uv;
+#ifndef HAIR_MOTION
 #ifdef USE_COLOR
-  // secondary motion: tips lag behind the head (long hair, tails), roots stay put
+  // baked assets: one spring for the whole style (tips lag behind the head, roots stay put)
   transformed += uSway * pow(color.g, 1.6) * smoothstep(0.05, -0.35, position.y);
 #endif
-vHairT = normalize(normalMatrix * hairT);`,
+vHairT = normalize(normalMatrix * hairT);
+#else
+vHairT = normalize(normalMatrix * rotV(hairT, hRot));
+#endif
+` + (motion ? MOTION_APPLY : ''),
         );
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', '#include <common>\n' + HAIR_HEAD)
@@ -154,7 +224,7 @@ if (uBaked < 0.5) {
     };
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card]);
+  }, [card, motion]);
   useEffect(() => {
     const u = mat.userData.uniforms as { uRoot: { value: THREE.Color }; uTip: { value: THREE.Color }; uHi: { value: THREE.Color }; uPaint: { value: number }; uGloss: { value: number } };
     u.uRoot.value.set(root);
@@ -212,9 +282,38 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
   const res = useSculpt({ k: 'hair', h, p, seed, hatOn });
   const baked = useBakedHair(bakedId);
   const sway = useRef({ value: new THREE.Vector3() });
-  const mat = useHairMaterial(color, tip, hi, p.paint, gloss, sway);
+  // per-lock secondary motion (sumanova-us-108): one solver per hairstyle, written into shared uniforms
+  const solver = useMemo(() => new HairMotion(), []);
+  const mu = useMemo<MotionUniforms>(() => ({
+    uGrpRot: { value: solver.mid },
+    uGrpTip: { value: solver.tip },
+    uMotion: { value: 0 },
+    uNeck: { value: new THREE.Vector4() },
+    uShoulder: { value: new THREE.Vector4() },
+    uBrow: { value: 0 },
+  }), [solver]);
+  useEffect(() => {
+    const off = registerHairMotion(mu.uMotion);
+    return () => void off();
+  }, [mu]);
+  // body shapes the hair keeps out of (head-local, same as the groom's keepOffBody)
+  useEffect(() => {
+    const k = h.rx / 0.35, R = h.rx;
+    mu.uNeck.value.set(-0.03 * k, 0.15 * k + 0.01 * R, -h.ry * 0.55, -0.62 * k);
+    mu.uShoulder.value.set(-0.02 * k, 0.19 * k + 0.01 * R, 0.42 * k + 0.01 * R, k);
+    mu.uBrow.value = 0.075 * (h.ry / 0.39);
+  }, [h, mu]);
+  // how much each group can swing: crops stay still, long hair swings, tails and plaits always do
+  useEffect(() => {
+    const longest = Math.max(p.top, p.side, p.back);
+    const loose = Math.min(1, Math.max(0, (longest - 0.45) / 1.0));
+    for (let k = 0; k < GROUPS; k++) solver.weights[k] = k <= 4 ? loose : 1;
+    solver.weights[0] = Math.max(loose, p.fringe !== 'none' ? Math.min(1, Math.max(0, (p.fringeLen - 0.3) / 0.6)) : 0);
+  }, [p, solver]);
+  const mat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, null, false, mu);
+  const baseMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway);
   const bakedMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, baked?.normalMap ?? null);
-  const cardMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, null, true);
+  const cardMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, null, true, mu);
   // the asset was sculpted on the reference head: fit it to this head's proportions
   const fit = useMemo(() => {
     const r = bakeHead();
@@ -223,23 +322,55 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
   const stubble = useStubbleMaterial(color);
   const group = useRef<THREE.Group>(null);
   const spring = useRef({ prev: null as THREE.Vector3 | null, vel: new THREE.Vector3(), off: new THREE.Vector3() });
-  // how much this style can swing: long hair and tails, not crops
+  // how much this style can swing: long hair and tails, not crops (baked assets' single spring)
   const swing = Math.min(1, Math.max(0, Math.max(p.side, p.back, p.tie !== 'none' || p.braid !== 'none' ? p.tail : 0) - 0.5) / 1.2);
+  // scratch objects (no per-frame allocations)
+  const tmp = useMemo(() => ({ v: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), w: new THREE.Vector3(), pose: { px: 0, py: 0, pz: 0, qx: 0, qy: 0, qz: 0, qw: 1, radius: 1 } as HeadPose }), []);
+  // reduce motion (Settings or the OS) stops the hair at once
+  const reduced = useRef(false);
+  useEffect(() => {
+    const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    const upd = () => (reduced.current = !!mq?.matches || document.documentElement.classList.contains('reduce-motion'));
+    upd();
+    mq?.addEventListener?.('change', upd);
+    const mo = new MutationObserver(upd);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    solver.breeze = !saveData();
+    return () => {
+      mq?.removeEventListener?.('change', upd);
+      mo.disconnect();
+    };
+  }, [solver]);
 
   useFrame((_, dt) => {
     const g = group.current;
-    if (!g || !animate || swing <= 0) return;
+    if (!g) return;
+    if (!animate || reduced.current || document.hidden || hairStill()) {
+      if (mu.uMotion.value !== 0 || !animate) {
+        mu.uMotion.value = 0;
+        solver.reset();
+      }
+      return;
+    }
+    g.getWorldPosition(tmp.v);
+    g.getWorldQuaternion(tmp.q);
+    g.getWorldScale(tmp.s);
+    const P = tmp.pose;
+    P.px = tmp.v.x; P.py = tmp.v.y; P.pz = tmp.v.z;
+    P.qx = tmp.q.x; P.qy = tmp.q.y; P.qz = tmp.q.z; P.qw = tmp.q.w;
+    P.radius = h.rx * tmp.s.y;
+    solver.step(dt, P);
+    mu.uMotion.value = 1;
+    // baked assets (no per-lock data) keep the single spring
+    if (!baked || swing <= 0) return;
     const s = spring.current;
-    const w = g.getWorldPosition(new THREE.Vector3());
-    if (!s.prev) s.prev = w.clone();
+    if (!s.prev) s.prev = tmp.v.clone();
     const dtc = Math.min(0.05, Math.max(1e-3, dt));
-    // head motion in the head's own frame → the hair lags behind it (a damped spring)
-    const v = w.clone().sub(s.prev).divideScalar(dtc);
-    s.prev.copy(w);
-    const q = g.getWorldQuaternion(new THREE.Quaternion()).invert();
-    v.applyQuaternion(q);
-    const target = v.multiplyScalar(-0.045 * swing).clampLength(0, 0.09);
-    s.vel.addScaledVector(target.sub(s.off), 60 * dtc).multiplyScalar(Math.exp(-9 * dtc));
+    tmp.w.copy(tmp.v).sub(s.prev).divideScalar(dtc);
+    s.prev.copy(tmp.v);
+    tmp.w.applyQuaternion(tmp.q.invert());
+    tmp.w.multiplyScalar(-0.045 * swing).clampLength(0, 0.09).sub(s.off);
+    s.vel.addScaledVector(tmp.w, 60 * dtc).multiplyScalar(Math.exp(-9 * dtc));
     s.off.addScaledVector(s.vel, dtc);
     sway.current.value.copy(s.off);
   });
@@ -252,7 +383,7 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
         <mesh geometry={baked.geo} material={bakedMat} scale={fit} castShadow />
       ) : (
         <>
-          {g.base && <mesh geometry={g.base} material={mat} />}
+          {g.base && <mesh geometry={g.base} material={baseMat} />}
           {g.geo && <mesh geometry={g.geo} material={mat} castShadow />}
           {g.cards && <mesh geometry={g.cards} material={cardMat} />}
         </>

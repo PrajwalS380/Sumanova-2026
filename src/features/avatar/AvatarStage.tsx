@@ -1,3 +1,4 @@
+import { withHairAtRest } from './render/hairMotion';
 import { forwardRef, Suspense, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -77,8 +78,11 @@ function Capturer({ apiRef }: { apiRef: React.MutableRefObject<AvatarStageHandle
       cam.lookAt(0, 1.2, 0);
     }
     cam.updateProjectionMatrix();
-    gl.render(scene, cam);
-    const blob = await new Promise<Blob>((resolve, reject) => gl.domElement.toBlob((b) => (b ? resolve(b) : reject(new Error('Capture failed'))), 'image/png'));
+    // hair at rest in the picture (never caught mid-swing)
+    const blob = await withHairAtRest(async () => {
+      gl.render(scene, cam);
+      return new Promise<Blob>((resolve, reject) => gl.domElement.toBlob((b) => (b ? resolve(b) : reject(new Error('Capture failed'))), 'image/png'));
+    });
     cam.position.copy(prev.pos);
     cam.quaternion.copy(prev.q);
     cam.updateProjectionMatrix();

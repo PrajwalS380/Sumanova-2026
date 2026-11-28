@@ -63,6 +63,9 @@ class StrandMesh {
   tan: number[] = [];
   uv: number[] = [];
   col: number[] = [];
+  /** motion (sumanova-us-108): the point the lock swings about, and its motion group (−1 = still) */
+  piv: number[] = [];
+  grp: number[] = [];
   idx: number[] = [];
   get count() { return this.pos.length / 3; }
 
@@ -70,7 +73,7 @@ class StrandMesh {
    * One clump along `pts`: elliptical cross-section (`w` across, `w * flat` through), the flat
    * side facing `out(p)` (away from the head), width profile `wAt(t)`, shade profile `shadeAt`.
    */
-  add(pts: V[], o: { wAt: (t: number) => number; flat: number; radial: number; out: (p: V, o: V) => void; shadeAt: (t: number, p: V) => number; rand: number; tStart?: number; tEnd?: number }) {
+  add(pts: V[], o: { wAt: (t: number) => number; flat: number; radial: number; out: (p: V, o: V) => void; shadeAt: (t: number, p: V) => number; rand: number; tStart?: number; tEnd?: number; mo: Motion }) {
     const n = pts.length;
     if (n < 2) return;
     if (this.guides) this.guides.push({ pts: pts.flatMap((q) => [q.x, q.y, q.z]), w: pts.map((_, i) => o.wAt(i / (n - 1))), flat: o.flat, rand: o.rand, t0: o.tStart ?? 0, t1: o.tEnd ?? 1 });
@@ -104,6 +107,8 @@ class StrandMesh {
         this.tan.push(T.x, T.y, T.z);
         this.uv.push(j / R, t);
         this.col.push(sh, t, o.rand);
+        this.piv.push(o.mo.pivot.x, o.mo.pivot.y, o.mo.pivot.z);
+        this.grp.push(o.mo.staticAbove != null && pts[i].y > o.mo.staticAbove ? -1 : o.mo.grp);
       }
     }
     for (let i = 0; i < n - 1; i++)
@@ -121,11 +126,21 @@ class StrandMesh {
     g.setAttribute('hairT', new THREE.Float32BufferAttribute(this.tan, 3));
     g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
+    g.setAttribute('hairPivot', new THREE.Float32BufferAttribute(this.piv, 3));
+    g.setAttribute('hairGrp', new THREE.Float32BufferAttribute(this.grp, 1));
     g.setIndex(this.count > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
     g.computeBoundingSphere();
     return g;
   }
 }
+
+/**
+ * How a lock moves (sumanova-us-108): motion group and the point it swings about.
+ *   0 fringe / baby hairs · 1 left side · 2 right side · 3 back · 4 top / crown
+ *   5 tail 1 · 6 tail 2 / second plait · 7 plait / braid · −1 never moves
+ * `staticAbove`: vertices higher than this stay still (the over-the-scalp part of a French plait).
+ */
+export interface Motion { grp: number; pivot: V; staticAbove?: number }
 
 /**
  * Strand cards: flat strips laid on a lock's outer face (and a few loose flyaways off the
@@ -140,8 +155,10 @@ class CardMesh {
   col: number[] = [];
   idx: number[] = [];
   get count() { return this.pos.length / 3; }
+  piv: number[] = [];
+  grp: number[] = [];
   /** a strip through `centres` (one per path point), `across` = half-width direction × width */
-  strip(centres: V[], across: V[], nrm: V[], tan: V[], shade: number[], t0: number, t1: number, rand: number) {
+  strip(centres: V[], across: V[], nrm: V[], tan: V[], shade: number[], t0: number, t1: number, rand: number, mo: Motion) {
     const base = this.count;
     const n = centres.length;
     for (let i = 0; i < n; i++) {
@@ -153,6 +170,8 @@ class CardMesh {
         this.tan.push(tan[i].x, tan[i].y, tan[i].z);
         this.uv.push(s < 0 ? 0 : 1, t);
         this.col.push(shade[i], t, rand);
+        this.piv.push(mo.pivot.x, mo.pivot.y, mo.pivot.z);
+        this.grp.push(mo.staticAbove != null && c.y > mo.staticAbove ? -1 : mo.grp);
       }
     }
     for (let i = 0; i < n - 1; i++) {
@@ -169,6 +188,8 @@ class CardMesh {
     g.setAttribute('hairT', new THREE.Float32BufferAttribute(this.tan, 3));
     g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
+    g.setAttribute('hairPivot', new THREE.Float32BufferAttribute(this.piv, 3));
+    g.setAttribute('hairGrp', new THREE.Float32BufferAttribute(this.grp, 1));
     g.setIndex(this.count > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
     g.computeBoundingSphere();
     return g;
@@ -180,6 +201,20 @@ export class Groomer {
   r: () => number;
   m = new StrandMesh();
   cards = new CardMesh();
+  /** motion context for the locks emitted next (null = by where the lock grows) */
+  mo: Motion | null = null;
+  /** the motion group a root on the scalp belongs to */
+  autoMotion(root: V): Motion {
+    const { R, h } = this;
+    const grp = root.x < -0.25 * R && root.y < h.ry * 0.55 ? 1 : root.x > 0.25 * R && root.y < h.ry * 0.55 ? 2 : root.z < -0.2 * h.rz ? 3 : 4;
+    return { grp, pivot: root.clone() };
+  }
+  /** run `f` with every lock it emits in this motion group */
+  withMotion(mo: Motion | null, f: () => void) {
+    const prev = this.mo;
+    this.mo = mo;
+    try { f(); } finally { this.mo = prev; }
+  }
   band: Prim[] = [];
   /** thickness of the scalp layer (strands start just above it) */
   cap: number;
@@ -276,7 +311,8 @@ export class Groomer {
   build(): GroomOut {
     const { p } = this;
     if (p.fade !== 'buzz') {
-      if (p.afro > 0) this.afro();
+      // afro volume never swings (a cloud of coils, not loose locks)
+      if (p.afro > 0) this.withMotion({ grp: -1, pivot: v3() }, () => this.afro());
       else if (p.braid === 'cornrows') this.cornrows();
       else if (p.braid === 'box') this.boxBraids();
       else if (p.loc !== 'none') this.locs();
@@ -326,7 +362,7 @@ export class Groomer {
       };
       for (const q of pts) this.keepOff(q, shellAt(q) - 0.002 * R);
       if (pts.length < 3) continue;
-      this.addCards(pts, 0.05 * R * (0.85 + r() * 0.3), 0.25, 0.4, r(), 0, 1);
+      this.addCards(pts, 0.05 * R * (0.85 + r() * 0.3), 0.25, 0.4, r(), 0, 1, 0, { grp: -1, pivot: pts[0] });
     }
   }
 
@@ -470,9 +506,15 @@ export class Groomer {
    * nothing (clean, a crisp line-up). Curly / coily / afro hair gets a row of tiny baby curls.
    */
   edges() {
-    const { p, R, r } = this;
+    const { p } = this;
     if (p.edges === 'clean') return;
     const curlyKind = p.tex === 'coily' || p.tex === 'curly' || p.afro > 0;
+    const zero = v3();
+    this.mo = { grp: 0, pivot: zero };
+    try { this.edgesInner(curlyKind, zero); } finally { this.mo = null; }
+  }
+  edgesInner(curlyKind: boolean, zero: V) {
+    const { p, R, r } = this;
     if (p.edges === 'soft') {
       if (p.braid === 'cornrows') return;
       if (curlyKind) {
@@ -483,7 +525,7 @@ export class Groomer {
           if (this.faded(u.y, az)) continue;
           let pts = this.grow(u, 0.16 + r() * 0.08, { fringe: false, layer: 0.9, liftK: 0.6 });
           pts = this.texture(this.resample(pts, 0.01 * R), r() * 6, coily ? 'coily' : 'curly', 1);
-          this.emit(pts, R * (coily ? 0.045 : 0.06) * p.clump, { flat: 0.95, tip: 0.5, radial: 5, cards: false });
+          this.emit(pts, R * (coily ? 0.045 : 0.06) * p.clump, { flat: 0.95, tip: 0.5, radial: 5, cards: false, mo: { grp: 0, pivot: pts[0].clone() } });
         }
         return;
       }
@@ -501,7 +543,7 @@ export class Groomer {
           pts.push(q);
         }
         if (pts.some((q) => q.y < this.browY + 0.04 * R)) continue;
-        this.emit(pts, 0.016 * R, { flat: 0.45, tip: 0.05, radial: 4, cards: false, shade: 1.05 });
+        this.emit(pts, 0.016 * R, { flat: 0.45, tip: 0.05, radial: 4, cards: false, shade: 1.05, mo: { grp: 0, pivot: pts[0].clone() } });
       }
       return;
     }
@@ -528,7 +570,8 @@ export class Groomer {
         }
         // never onto the brows, eyes or ears
         if (pts.some((q) => q.y < this.browY + 0.03 * R)) continue;
-        this.emit(pts, k === 1 ? 0.03 * R : 0.012 * R, { flat: k === 1 ? 0.22 : 0.5, tip: 0.1, radial: k === 1 ? 6 : 4, cards: false, shade: 1.08 });
+        // gelled flat to the skin: laid edges never move
+        this.emit(pts, k === 1 ? 0.03 * R : 0.012 * R, { flat: k === 1 ? 0.22 : 0.5, tip: 0.1, radial: k === 1 ? 6 : 4, cards: false, shade: 1.08, mo: { grp: -1, pivot: zero } });
       }
     }
   }
@@ -747,9 +790,10 @@ export class Groomer {
   }
 
   /** emit a hair clump along a grown path */
-  emit(pts: V[], w0: number, o: { flat?: number; tip?: number; rand?: number; radial?: number; shade?: number; tStart?: number; tEnd?: number; /** strand cards on this lock (default: main locks) */ cards?: boolean; /** 0 … 1: thin root (locks at the hairline) */ rootThin?: number }) {
+  emit(pts: V[], w0: number, o: { flat?: number; tip?: number; rand?: number; radial?: number; shade?: number; tStart?: number; tEnd?: number; /** strand cards on this lock (default: main locks) */ cards?: boolean; /** 0 … 1: thin root (locks at the hairline) */ rootThin?: number; mo?: Motion }) {
     const { R } = this;
     const rand = o.rand ?? this.r();
+    const mo = o.mo ?? this.mo ?? this.autoMotion(pts[0]);
     const flat = o.flat ?? 0.34;
     const tipK = o.tip ?? 0.2; // width left at the tip (0 = pointed)
     this.m.add(pts, {
@@ -765,13 +809,14 @@ export class Groomer {
       rand: rand,
       tStart: o.tStart,
       tEnd: o.tEnd,
+      mo,
     });
     // fine strand cards on the lock's outer face (main locks only; sub-locks / flyaways are already fine)
-    if (o.cards !== false && this.p.tex !== 'coily' && w0 > 0.03 * R && pts.length >= 3) this.addCards(pts, w0, flat, tipK, rand, o.tStart ?? 0, o.tEnd ?? 1, o.rootThin ?? 0);
+    if (o.cards !== false && this.p.tex !== 'coily' && w0 > 0.03 * R && pts.length >= 3) this.addCards(pts, w0, flat, tipK, rand, o.tStart ?? 0, o.tEnd ?? 1, o.rootThin ?? 0, mo);
   }
 
   /** two strand cards along the outer face of a lock, running a little past its tip; sometimes a flyaway */
-  addCards(all: V[], w0: number, flat: number, tipK: number, rand: number, t0: number, t1: number, rootThin = 0) {
+  addCards(all: V[], w0: number, flat: number, tipK: number, rand: number, t0: number, t1: number, rootThin = 0, mo: Motion = this.mo ?? this.autoMotion(all[0])) {
     const { R, r } = this;
     // a thin strip needs far fewer segments than the lock under it (≤ 12 points)
     const stride = Math.max(1, Math.ceil(all.length / 12));
@@ -810,7 +855,7 @@ export class Groomer {
         tn.push(f.T);
         sh.push(1);
       }
-      this.cards.strip(c, acr, nr, tn, sh, t0, Math.min(1.06, t1 + 0.06), (rand + (side > 0 ? 0.37 : 0.71)) % 1);
+      this.cards.strip(c, acr, nr, tn, sh, t0, Math.min(1.06, t1 + 0.06), (rand + (side > 0 ? 0.37 : 0.71)) % 1, mo);
     }
     // a loose flyaway off the silhouette on some locks (outer half only, never over the face)
     if (r() < 0.16 + this.p.messy * 0.2 && pts[0].z < 0.4 * R) {
@@ -825,7 +870,7 @@ export class Groomer {
         tn.push(f.T);
         sh.push(1);
       }
-      if (c.length >= 3) this.cards.strip(c, acr, nr, tn, sh, 0.35, 1.04, (rand + 0.13) % 1);
+      if (c.length >= 3) this.cards.strip(c, acr, nr, tn, sh, 0.35, 1.04, (rand + 0.13) % 1, mo);
     }
   }
 
@@ -907,6 +952,7 @@ export class Groomer {
       const roll = p.flow === 'up' && p.tips < 0.7;
       const tip = p.fringe === 'straight' && fringe ? 0.4 : roll ? 0.55 : tight ? 0.5 : medium && !fringe ? Math.max(0.14, 0.3 - 0.2 * p.tips) : shortCut ? 0.32 - 0.15 * p.tips : Math.max(0.03, 0.3 - 0.3 * p.tips);
       // locks next to the hairline or the parting start thin, so the edge and the part stay visible
+      this.mo = fringe ? { grp: 0, pivot: pts[0].clone() } : this.autoMotion(pts[0]);
       const edgeK = fringe ? 0 : Math.max(smooth(line + 0.14, line + 0.02, u.y) * (p.edges === 'clean' ? 0.7 : 1), this.inPart(u, 0.16) ? 0.85 : 0);
       this.emit(pts, w0, { flat: coily ? 0.95 : curly ? 0.75 : short ? 0.3 : medium ? 0.55 : 0.42 + p.tips * 0.1, tip, radial: coily ? 5 : 7, rootThin: edgeK });
       // detail: finer locks riding on top of the main one and fanning apart toward the tips
@@ -918,6 +964,7 @@ export class Groomer {
         this.emit(fp, 0.006 * R, { flat: 1, tip: 0.3, radial: 3, shade: 1.05 });
       }
     }
+    this.mo = null;
     void h;
   }
 
@@ -1041,6 +1088,7 @@ export class Groomer {
         out: (q, o) => o.copy(q).normalize(),
         shadeAt: (t) => 0.75 + 0.25 * t,
         rand: r(),
+        mo: this.autoMotion(pts[0]),
       });
     }
   }
@@ -1090,16 +1138,17 @@ export class Groomer {
       const path = this.grow(u, dist * 1.6 + 0.1, { fringe: false, layer: 0.8, target, liftK: 0.2 });
       // the lock emerges from inside the scalp layer (no stepped edge along the hairline / nape)
       this.bury(path, u);
-      this.emit(path, 0.21 * R * (0.85 + r() * 0.3), { flat: 0.22, tip: 0.75 });
+      this.emit(path, 0.21 * R * (0.85 + r() * 0.3), { flat: 0.22, tip: 0.75, mo: { grp: -1, pivot: path[0] } });
     }
     // fringe / face-framing pieces stay loose
     if (p.fringe !== 'none') this.scalpStrands((uu, uy) => uu.z > 0.55 && uy < 0.85);
-    for (const T of pts) {
+    for (const [ti, T] of pts.entries()) {
       const n = T.clone().normalize();
       const isBun = p.tie === 'bun' || p.tie === 'lowbun' || p.tie === 'messybun' || p.tie === 'spacebuns';
       if (isBun && p.braid === 'braidbun') continue; // the plait wound into a bun is built in braids()
-      if (isBun) this.bun(T, n, p.tie === 'spacebuns' ? 0.3 : p.tie === 'messybun' ? 0.4 : 0.37);
-      else this.tail(T, n, p.tie === 'twinpony' ? 0.6 : 1);
+      // buns never move; tails swing about the tie point (a second tail has its own pendulum)
+      if (isBun) this.withMotion({ grp: -1, pivot: T }, () => this.bun(T, n, p.tie === 'spacebuns' ? 0.3 : p.tie === 'messybun' ? 0.4 : 0.37));
+      else this.withMotion({ grp: ti === 0 ? 5 : 6, pivot: T.clone() }, () => this.tail(T, n, p.tie === 'twinpony' ? 0.6 : 1));
       // the tie: a scrunchie / hair tie wrapping the gathered hair
       if (p.braid !== 'braidbun') this.band.push({ t: 'torus', c: [T.x + n.x * 0.03 * R, T.y + n.y * 0.03 * R, T.z + n.z * 0.03 * R], R: 0.085 * R * (isBun ? 1.4 : 1), r: 0.032 * R, rot: eulerFromAxis(n), bone: 0 });
     }
@@ -1229,18 +1278,20 @@ export class Groomer {
     switch (p.braid) {
       case 'single': {
         this.gatherTo([v3(0, -h.ry * 0.45, -h.rz * 0.98)]);
-        this.plait(hang(v3(0, -h.ry * 0.45, -h.rz * 1.02), p.tail, v3(0, -1, -0.3)), 0.2 * R);
+        const top = v3(0, -h.ry * 0.45, -h.rz * 1.02);
+        this.withMotion({ grp: 7, pivot: top }, () => this.plait(hang(top, p.tail, v3(0, -1, -0.3)), 0.2 * R));
         break;
       }
       case 'fishtail': {
         this.gatherTo([v3(h.rx * 0.55, -h.ry * 0.5, -h.rz * 0.6)]);
-        this.plait(hang(v3(h.rx * 0.62, -h.ry * 0.55, -h.rz * 0.55), p.tail, v3(0.25, -1, 0.35)), 0.2 * R, { fishtail: true });
+        const top = v3(h.rx * 0.62, -h.ry * 0.55, -h.rz * 0.55);
+        this.withMotion({ grp: 7, pivot: top }, () => this.plait(hang(top, p.tail, v3(0.25, -1, 0.35)), 0.2 * R, { fishtail: true }));
         break;
       }
       case 'double': {
         const ends = [-1, 1].map((s) => v3(s * h.rx * 0.88, -h.ry * 0.45, -h.rz * 0.35));
         this.gatherTo(ends);
-        for (const e of ends) this.plait(hang(e, p.tail, v3(Math.sign(e.x) * 0.1, -1, 0.45)), 0.17 * R);
+        for (const [i, e] of ends.entries()) this.withMotion({ grp: i === 0 ? 7 : 6, pivot: e.clone() }, () => this.plait(hang(e, p.tail, v3(Math.sign(e.x) * 0.1, -1, 0.45)), 0.17 * R));
         break;
       }
       case 'french':
@@ -1254,7 +1305,9 @@ export class Groomer {
         }
         const nape = over[over.length - 1];
         this.gatherTo(over, true);
-        this.plait([...over, ...hang(nape, p.tail, v3(0, -1, -0.25)).slice(1)], 0.1 * R, { raised: p.braid === 'dutch' ? 0.6 : 0, taper: 0.5 });
+        // only the hanging part below the nape swings
+        this.withMotion({ grp: 7, pivot: nape.clone(), staticAbove: nape.y + 0.01 * R }, () =>
+          this.plait([...over, ...hang(nape, p.tail, v3(0, -1, -0.25)).slice(1)], 0.1 * R, { raised: p.braid === 'dutch' ? 0.6 : 0, taper: 0.5 }));
         break;
       }
       case 'braidbun': {
@@ -1268,7 +1321,7 @@ export class Groomer {
           const t = i / 60, th = t * Math.PI * 4.2, rr = 0.28 * R * (1 - t * 0.8);
           spiral.push(C.clone().addScaledVector(a1, Math.cos(th) * rr).addScaledVector(a2, Math.sin(th) * rr).addScaledVector(n, 0.12 * R * Math.sin(t * Math.PI) + 0.06 * R * t));
         }
-        this.plait(spiral, 0.075 * R, { taper: 0.4, out: (q, o) => o.copy(q).sub(C).normalize().lerp(n, 0.5).normalize() });
+        this.withMotion({ grp: -1, pivot: C }, () => this.plait(spiral, 0.075 * R, { taper: 0.4, out: (q, o) => o.copy(q).sub(C).normalize().lerp(n, 0.5).normalize() }));
         break;
       }
     }
@@ -1313,7 +1366,7 @@ export class Groomer {
       const path = this.grow(u, (root.distanceTo(target) / R) * 1.6 + 0.1, { fringe: false, layer: 0, target, liftK: 0.2 });
       // the lock emerges from inside the scalp layer (no stepped edge along the hairline / nape)
       this.bury(path, u);
-      this.emit(path, 0.21 * R * (0.85 + r() * 0.3), { flat: 0.22, tip: 0.75 });
+      this.emit(path, 0.21 * R * (0.85 + r() * 0.3), { flat: 0.22, tip: 0.75, mo: { grp: -1, pivot: path[0] } });
     }
   }
 
@@ -1331,7 +1384,7 @@ export class Groomer {
         if (uu.y < this.lineAt(Math.atan2(uu.x, uu.z)) + 0.02) continue;
         path.push(this.scalp(uu, this.cap * 0.2 + 0.018 * R));
       }
-      if (path.length > 3) this.plait(path, 0.042 * R, { taper: 0.1 });
+      if (path.length > 3) this.withMotion({ grp: -1, pivot: path[0] }, () => this.plait(path, 0.042 * R, { taper: 0.1 }));
     }
     // the rows end in short braids at the nape
     void h;
@@ -1351,7 +1404,7 @@ export class Groomer {
       const a = Math.abs(az) / Math.PI;
       const L = (p.side * (1 - a) + p.back * a) * (0.92 + r() * 0.14);
       const path = this.grow(u, Math.max(0.8, L), { fringe: false, layer: smooth(0, 1, u.y), liftK: 1.2 });
-      this.plait(path, 0.038 * R, { taper: 0.25 });
+      this.withMotion({ grp: 7, pivot: path[0].clone() }, () => this.plait(path, 0.038 * R, { taper: 0.25 }));
     }
   }
 }
