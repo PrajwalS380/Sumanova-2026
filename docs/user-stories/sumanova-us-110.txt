@@ -1,0 +1,32 @@
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 1 — HAIR
+Baseline: build-103
+
+sumanova-us-110 · HAIR 5/5 · Total hair control
+STORY:  As a user, I want to shape and colour my hair freely (length per region, volume,
+        roots, tips, under-layer, highlights, accessories), so no one else has my exact hair.
+TODAY:  One length/volume slider; colours = hair + tips + highlight.
+PROMPT: In HairControls.tsx add region sliders (top, sides, back, fringe length), messiness,
+        and a colour editor with up to 3 stops (roots → lengths → tips) plus placements:
+        money-piece, peekaboo under-layer, face-framing, full streak. Add hair accessories
+        as a new optional slot `hairAcc` (clips, scrunchie, headband bow, flower, gajra,
+        hair pins, beads on braids) attached to groom anchors (tie point, braid ends, part).
+        Re-groom in the worker only for shape changes; colour changes are uniforms only.
+ACCEPT: - Colour edits update instantly (no worker job); shape edits finish < 1.5 s.
+        - Accessories sit on the hair surface for 20 test styles (no floating/clipping).
+WIN:    Bitmoji offers fixed styles + a colour; we offer a real hair salon.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).

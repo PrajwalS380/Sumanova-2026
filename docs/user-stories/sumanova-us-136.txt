@@ -1,0 +1,27 @@
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 7 — BODY & TORSO
+Baseline: build-103
+
+sumanova-us-136 · BODY 1/5 · Appealing proportions
+STORY:  As a user, I want a balanced, attractive stylised body, not a big head on a short
+        padded torso.
+TODAY:  Short torso, wide shoulders under clothes, large head (HEAD_SCALE 0.8).
+PROMPT: Tune anatomy.ts proportions with a reference sheet: head ≈ 1/5.5 of height, longer
+        torso and neck, natural shoulder slope; review against all 100 bodies masc/fem.
+ACCEPT: - Side-by-side before/after sheet of 12 starters approved by the owner.
+WIN:    Premium, fashion-friendly proportions.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).

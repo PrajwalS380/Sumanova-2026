@@ -1,0 +1,28 @@
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 3 — EYES, BROWS & LASHES
+Baseline: build-103
+
+sumanova-us-120 · EYES 5/5 · Lids and lashes for every eye
+STORY:  As a user with monolids, hooded or double-lidded eyes, I want them accurate, and soft
+        lashes that look like mascara, not spikes.
+TODAY:  Lashes are tubes; lid fold via torus lines.
+PROMPT: Make lashes lightweight ribbon cards with procedural alpha (soft tips, clumps), add a
+        mascara amount; sculpt the lid fold (double lid, hooded overhang, monolid with epicanthic
+        fold) into the lid geometry instead of a line; add under-eye shape (puffy / flat / bags).
+ACCEPT: - Monolid / hooded / double-lid families read correctly from the front and 3/4 views.
+WIN:    Accurate eye shapes across ethnicities.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).

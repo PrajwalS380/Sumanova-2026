@@ -1,0 +1,28 @@
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 3 — EYES, BROWS & LASHES
+Baseline: build-103
+
+sumanova-us-119 · EYES 4/5 · Real-hair brows that move
+STORY:  As a user, I want brows made of fine hairs with my exact shape that move with my mood.
+TODAY:  Tube base + strokes; shape only by catalogue.
+PROMPT: Replace the solid tube with a density-mapped strand brow (no hard outline), add
+        sliders: arch height, arch position, thickness, tail length, inner gap, height; per-side
+        brow raise for expressions (left/right independent, e.g. sceptical look); brow colour
+        independent of hair; brow slits keep working.
+ACCEPT: - No visible solid "tube" at 1:1 zoom; sliders and per-side raise work in all moods.
+WIN:    Natural, shapeable brows; Bitmoji brows are stickers.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).

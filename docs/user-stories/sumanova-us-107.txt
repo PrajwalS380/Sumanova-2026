@@ -1,5 +1,6 @@
-SUMANOVA — USER STORY (prompt-style)
-Rules for every story: see docs/AVATAR_USER_STORIES.txt ("RULES FOR EVERY STORY").
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 1 — HAIR
+Baseline: build-103
 
 sumanova-us-107 · HAIR 2/5 · Natural hairline, partings and scalp
 STORY:  As a user, I want my hairline, temples and parting to look natural, so my avatar
@@ -14,3 +15,18 @@ ACCEPT: - Front close-up of 6 short and 6 long styles shows a soft gradient hair
         - Middle/side/zigzag parts are visible from the top-front camera.
         - Old looks without the new fields render exactly as before.
 WIN:    Natural hairlines and laid edges — detail Bitmoji does not model.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).

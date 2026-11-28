@@ -1,0 +1,33 @@
+SUMANOVA — AVATAR USER STORY (prompt-style)
+PART 1 — HAIR
+Baseline: build-103
+
+sumanova-us-106 · HAIR 1/5 · Hair that reads as hair, not clay
+STORY:  As a user, I want my hair to look soft, layered and full of fine strands, so it
+        looks like a real groomed hairstyle instead of a lumpy clay helmet.
+TODAY:  groom.ts grows ~150–260 broad locks; up close they read as smooth plates/ropes.
+PROMPT: Upgrade the hair to two tiers: keep the broad sculpted locks as the silhouette, and
+        add a GPU strand layer in render/SculptHair.tsx — procedural strand striations, root
+        darkening, per-lock tint jitter, and thin alpha-tapered "flyaway" cards (procedural
+        texture, no image assets) along the outer silhouette of each lock. Add soft
+        self-shadow (AO in vertex colour from the groom) between layers.
+ACCEPT: - 10 headline styles (Classic short, Curtains, Wolf cut, Long straight, Long wavy,
+          Butterfly cut, High ponytail, Messy bun, Loose curls, Natural afro) show visible
+          strands in the 160 px thumbnail and in the full-body view.
+        - No "helmet" edge visible from front, 3/4 or back; triangles per style ≤ budget.
+WIN:    Bitmoji hair is flat cel-shaded shapes; ours is groomed, layered, light-catching hair.
+
+RULES (apply to this story):
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).
