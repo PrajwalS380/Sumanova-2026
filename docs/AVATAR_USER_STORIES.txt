@@ -1,0 +1,805 @@
+SUMANOVA — AVATAR USER STORIES (prompt-style)
+=============================================
+Stories: sumanova-us-106 … sumanova-us-190  (17 parts × 5 stories = 85 stories)
+Baseline: build-103 (12 starter characters, screenshot reviewed 2026-11-27)
+Goal: every part of a SUMANOVA avatar must look and feel clearly better than a Bitmoji —
+more detailed, more expressive, more inclusive, more editable — while staying 100% original.
+
+-----------------------------------------------------------------------------------------
+WHAT BUILD-103 SHOWS (the problems these stories fix)
+-----------------------------------------------------------------------------------------
+ - Hair reads as lumpy clay or a helmet (teal crop, pink long hair, black long hair); the
+   hairline is a hard edge on the forehead; long hair looks like ropes, not flowing hair.
+ - Faces are flat and orange-tinted; every character has the same open-mouth grin; the eyes
+   are small and doll-like; there is little bone structure (cheekbones, brow, jaw).
+ - Beards look like a dark mask stuck on the chin, not hair.
+ - Bodies: big head, short torso, stiff "A-pose" arms, tiny hands with spread fingers,
+   straight tube legs, tiny feet; every character stands the same way.
+ - Clothes look like puffy padded shells: boxy pillow shoulders, no drape, odd white
+   collar rings / plackets, white lines at the waist, the saree is a flat strip.
+ - Glasses lenses render as opaque white; bags/hats/glasses are simple shapes.
+
+-----------------------------------------------------------------------------------------
+RULES FOR EVERY STORY (paste with any prompt)
+-----------------------------------------------------------------------------------------
+ - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
+ - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
+ - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
+   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
+   respected; ≤ 8 canvases per harness page.
+ - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
+   new field; old looks get sensible defaults.
+ - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
+   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
+   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
+   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
+ - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).
+
+=========================================================================================
+PART 1 — HAIR
+=========================================================================================
+
+sumanova-us-106 · HAIR 1/5 · Hair that reads as hair, not clay
+STORY:  As a user, I want my hair to look soft, layered and full of fine strands, so it
+        looks like a real groomed hairstyle instead of a lumpy clay helmet.
+TODAY:  groom.ts grows ~150–260 broad locks; up close they read as smooth plates/ropes.
+PROMPT: Upgrade the hair to two tiers: keep the broad sculpted locks as the silhouette, and
+        add a GPU strand layer in render/SculptHair.tsx — procedural strand striations, root
+        darkening, per-lock tint jitter, and thin alpha-tapered "flyaway" cards (procedural
+        texture, no image assets) along the outer silhouette of each lock. Add soft
+        self-shadow (AO in vertex colour from the groom) between layers.
+ACCEPT: - 10 headline styles (Classic short, Curtains, Wolf cut, Long straight, Long wavy,
+          Butterfly cut, High ponytail, Messy bun, Loose curls, Natural afro) show visible
+          strands in the 160 px thumbnail and in the full-body view.
+        - No "helmet" edge visible from front, 3/4 or back; triangles per style ≤ budget.
+WIN:    Bitmoji hair is flat cel-shaded shapes; ours is groomed, layered, light-catching hair.
+
+sumanova-us-107 · HAIR 2/5 · Natural hairline, partings and scalp
+STORY:  As a user, I want my hairline, temples and parting to look natural, so my avatar
+        doesn't look like it wears a wig.
+TODAY:  Hard hairline step on the forehead (teal crop), no visible scalp at the parting.
+PROMPT: In groom.ts baseCap()/lineAt(): fade density over the last 6–8 mm (shorter, thinner
+        locks + "baby hairs" at the front and temples), tint the scalp under partings with a
+        skin-mixed colour, add a visible part line (straight / side / zigzag) and a crown
+        whorl. Add HairTune.line (hairline height −1…1) and HairTune.edges (none / soft /
+        laid edges) in look/hair.ts and HairControls.tsx.
+ACCEPT: - Front close-up of 6 short and 6 long styles shows a soft gradient hairline.
+        - Middle/side/zigzag parts are visible from the top-front camera.
+        - Old looks without the new fields render exactly as before.
+WIN:    Natural hairlines and laid edges — detail Bitmoji does not model.
+
+sumanova-us-108 · HAIR 3/5 · Hair that moves
+STORY:  As a user, I want my hair, ponytails and braids to swing when my avatar walks,
+        dances or turns its head, so it feels alive.
+TODAY:  One spring "uSway" vector shifts tips uniformly.
+PROMPT: Add per-lock secondary motion: store a lock id + lock root in vertex attributes,
+        drive a cheap 2-spring chain per hair group (front, sides, back, tail/braid) from the
+        head bone's velocity in useFrame, apply in the vertex shader, and keep tips outside a
+        shoulder/neck capsule. Ponytails and plaits get their own pendulum. Turn off with
+        reduce-motion; freeze for thumbnails/captures.
+ACCEPT: - Walking/dancing poses: ponytail and long hair swing with a visible lag, no
+          intersection with shoulders; 60 fps on the harness (?random=4) on mid devices.
+        - Thumbnails are stable (no motion blur, same image every render).
+WIN:    Bitmoji hair is static; ours reacts to every movement.
+
+sumanova-us-109 · HAIR 4/5 · Every hair type, done right
+STORY:  As a user of any background, I want my exact hair texture and cultural style, so I
+        can truly see myself.
+TODAY:  5 textures (straight/wavy/curly/coily/textured); limited Indian and textured styles.
+PROMPT: Add a curl-pattern scale (1, 2A–2C, 3A–3C, 4A–4C) as HairTune.pattern, mapping to
+        curl radius/frequency/shrinkage in groom.ts texture(). Add 30 styles (ids appended
+        after 109): Indian long plait with paranda, jooda bun with gajra flowers, oiled
+        middle-part plait, twisted bun, bantu knots, finger coils, two-strand twists, puff
+        with edges, tapered TWA, silk press, wash-and-go, sisterlocks, faux hawk on coils,
+        bob with baby bangs, man-bun + fade, top-knot with sikh patka option, etc.
+ACCEPT: - 30 new styles in the right category, each passing the duplicate checker.
+        - Every curl pattern shows a visibly different curl size in the hair close-up.
+        - A short review sheet (harness grid) of all textured and Indian styles.
+WIN:    Wider, more accurate textured and South-Asian hair than any Bitmoji catalogue.
+
+sumanova-us-110 · HAIR 5/5 · Total hair control
+STORY:  As a user, I want to shape and colour my hair freely (length per region, volume,
+        roots, tips, under-layer, highlights, accessories), so no one else has my exact hair.
+TODAY:  One length/volume slider; colours = hair + tips + highlight.
+PROMPT: In HairControls.tsx add region sliders (top, sides, back, fringe length), messiness,
+        and a colour editor with up to 3 stops (roots → lengths → tips) plus placements:
+        money-piece, peekaboo under-layer, face-framing, full streak. Add hair accessories
+        as a new optional slot `hairAcc` (clips, scrunchie, headband bow, flower, gajra,
+        hair pins, beads on braids) attached to groom anchors (tie point, braid ends, part).
+        Re-groom in the worker only for shape changes; colour changes are uniforms only.
+ACCEPT: - Colour edits update instantly (no worker job); shape edits finish < 1.5 s.
+        - Accessories sit on the hair surface for 20 test styles (no floating/clipping).
+WIN:    Bitmoji offers fixed styles + a colour; we offer a real hair salon.
+
+=========================================================================================
+PART 2 — FACE SHAPE & BONE STRUCTURE
+=========================================================================================
+
+sumanova-us-111 · FACE 1/5 · A sculpted face, not a ball
+STORY:  As a user, I want visible cheekbones, a brow ridge, temples, a defined jaw and chin,
+        so my face has character instead of looking like a smooth ball.
+TODAY:  sculpt3d/head.ts adds only faint cheek fullness; faces look flat and round.
+PROMPT: Extend head.ts with inset landmark volumes: brow ridge, zygomatic arches, temple
+        hollows, jaw angle (gonial), chin pad, under-cheek plane, nasolabial fold — each driven
+        by HeadP params (new optional fields) and kept inset so the k/4 smooth-union bulge
+        never pushes the eyes/mouth off the analytic surface (surfaceZ). Masculine/feminine
+        defaults follow body.fem.
+ACCEPT: - Profile and 3/4 views of the 10 head families show distinct bone structure.
+        - Eyes, brows and lips still sit on the skin (no sinking/floating) for all 100 heads.
+        - watertight.test.ts still passes.
+WIN:    Real facial structure with cartoon charm — beyond Bitmoji's flat faces.
+
+sumanova-us-112 · FACE 2/5 · Face sliders
+STORY:  As a user, I want fine sliders for my face, so I can match my real face exactly.
+TODAY:  Only face size, eye size and eye spacing sliders.
+PROMPT: Add tune keys (−1…1, normalised in normalizeLook): face width, face length, jaw width,
+        jaw angle, chin length, chin width, cheekbone height, cheek fullness, forehead height,
+        eye height, eye tilt, nose height/width/length, mouth height/width, lip fullness,
+        ear height/size. Group them under each category (Face, Eyes, Nose, Mouth, Ears) as
+        sliders; add "symmetric / free" for eye tilt and brows. Head-mesh changes go through
+        the worker with a 120 ms debounce.
+ACCEPT: - Each slider makes a visible change at ±1 and nothing breaks at the extremes.
+        - Undo/redo covers slider moves; saved looks restore the exact values.
+WIN:    Slider-level precision that Bitmoji's pick-a-shape flow doesn't give.
+
+sumanova-us-113 · FACE 3/5 · Real skin tones and skin details
+STORY:  As a user, I want my true skin tone with my undertone and my marks (freckles, moles,
+        vitiligo, birthmarks), so my avatar is really me.
+TODAY:  Faces render orange/flat; 100 tones but no undertone or marks.
+PROMPT: Fix colour: correct sRGB/linear handling and tone mapping so the skin swatch equals the
+        rendered mid-tone (check AvatarStage lights). Add an undertone picker (cool / neutral /
+        warm / olive) applied as a hue shift on the chosen depth. Add a "Skin details" category
+        with procedural decal layers on the head and body: freckles (density, area), moles,
+        beauty spot placement, vitiligo patches, birthmark, rosacea flush, acne-free default.
+ACCEPT: - Rendered cheek colour is within ΔE < 6 of the picked swatch under the studio light.
+        - Each mark type has ≥ 5 options, placed with a tap in face view.
+WIN:    Accurate tone + undertone + inclusive skin features, far richer than Bitmoji.
+
+sumanova-us-114 · FACE 4/5 · Age, dimples and character lines
+STORY:  As a user, I want dimples, smile lines, under-eye and age details, so my avatar can
+        look exactly my age and personality.
+TODAY:  No dimples, no age, no lines.
+PROMPT: Add a Cheeks/Character category: dimples (cheek / chin, depth), cheek apples, smile
+        lines, under-eye softness, forehead lines, crow's feet — as soft-shading decals and
+        tiny sculpt dents (inset). Add an Age choice (teen / young adult / adult / mature /
+        senior) that adjusts lines, jaw softness, brow thickness and offers grey-blend hair.
+        Dimples deepen automatically with "happy" and "laughing".
+ACCEPT: - Dimples visible in the face thumbnail; senior preset clearly reads older but still cute.
+WIN:    Age-inclusive, characterful faces; Bitmoji keeps everyone the same age.
+
+sumanova-us-115 · FACE 5/5 · Makeup studio
+STORY:  As a user, I want full makeup and Indian looks (kajal, bindi, festival paint), so I
+        can dress my avatar's face for every occasion.
+TODAY:  Eyeshadow, blush and lip colour only.
+PROMPT: Add a Makeup category with layers: foundation finish (matte/dewy glow via roughness),
+        contour, highlighter, eyeshadow placement (lid / crease / smoky / cut-crease /
+        graphic), eyeliner styles, kajal (upper/lower), bindi (20 shapes/colours), sindoor,
+        face gems, festival/sports face paint (original designs, flag colours), glitter.
+        Store as look.makeup (normalised); render as decals on the head mesh.
+ACCEPT: - 8 layers combine without z-fighting; each has ≥ 10 options; all saved/restored.
+WIN:    Culture-aware makeup (bindi, kajal, sindoor) Bitmoji doesn't offer.
+
+=========================================================================================
+PART 3 — EYES, BROWS & LASHES
+=========================================================================================
+
+sumanova-us-116 · EYES 1/5 · Big, alive, expressive eyes
+STORY:  As a user, I want bright, expressive eyes with depth, so my avatar feels alive.
+TODAY:  Eyes look small, close together and glassy-doll in build-103.
+PROMPT: Rebalance render/Face.tsx eye metrics (size, spacing, height) for the cartoon-real
+        style; add a procedural iris shader (radial fibres, collarette, limbal ring, depth
+        parallax), wet waterline, lid thickness, contact shadow from the upper lid onto the
+        eyeball, and one catchlight aligned to the key light.
+ACCEPT: - Face thumbnails of all 12 starters read as "bright eyes" in a 5-person review.
+        - Iris detail visible at full-body zoom; no aliasing shimmer.
+WIN:    Eyes with real depth and life vs Bitmoji's flat drawn eyes.
+
+sumanova-us-117 · EYES 2/5 · Eyes that look and react
+STORY:  As a user, I want my avatar's eyes to look at me, glance around and smile with me.
+TODAY:  Blink only.
+PROMPT: Add an eye controller: micro-saccades, look-at (camera in studio, the finger/cursor
+        while editing, chat partner direction in stickers), lids follow gaze, Duchenne squint
+        when happy/laughing, pupils widen in dim scenes. Disable for reduce-motion.
+ACCEPT: - In the studio the eyes follow the pointer smoothly; captures are deterministic.
+WIN:    Eye contact — Bitmoji avatars don't track you.
+
+sumanova-us-118 · EYES 3/5 · Iris variety
+STORY:  As a user, I want iris patterns like mine or fun ones (heterochromia, two-tone).
+TODAY:  One colour per eye pair.
+PROMPT: Add colour.eyeL / eyeR (optional), iris pattern (plain, flecked, central
+        heterochromia, sunburst, ring) and fun lenses (galaxy, cat-slit, heart pupils, star
+        pupils — all procedural).
+ACCEPT: - 5 patterns × any colour; heterochromia renders per eye; saved looks unaffected.
+WIN:    More eye personalisation than Bitmoji.
+
+sumanova-us-119 · EYES 4/5 · Real-hair brows that move
+STORY:  As a user, I want brows made of fine hairs with my exact shape that move with my mood.
+TODAY:  Tube base + strokes; shape only by catalogue.
+PROMPT: Replace the solid tube with a density-mapped strand brow (no hard outline), add
+        sliders: arch height, arch position, thickness, tail length, inner gap, height; per-side
+        brow raise for expressions (left/right independent, e.g. sceptical look); brow colour
+        independent of hair; brow slits keep working.
+ACCEPT: - No visible solid "tube" at 1:1 zoom; sliders and per-side raise work in all moods.
+WIN:    Natural, shapeable brows; Bitmoji brows are stickers.
+
+sumanova-us-120 · EYES 5/5 · Lids and lashes for every eye
+STORY:  As a user with monolids, hooded or double-lidded eyes, I want them accurate, and soft
+        lashes that look like mascara, not spikes.
+TODAY:  Lashes are tubes; lid fold via torus lines.
+PROMPT: Make lashes lightweight ribbon cards with procedural alpha (soft tips, clumps), add a
+        mascara amount; sculpt the lid fold (double lid, hooded overhang, monolid with epicanthic
+        fold) into the lid geometry instead of a line; add under-eye shape (puffy / flat / bags).
+ACCEPT: - Monolid / hooded / double-lid families read correctly from the front and 3/4 views.
+WIN:    Accurate eye shapes across ethnicities.
+
+=========================================================================================
+PART 4 — NOSE & EARS
+=========================================================================================
+
+sumanova-us-121 · NOSE/EARS 1/5 · Nose profile control
+STORY:  As a user, I want to shape my nose (bridge, hump, tip, nostrils) so it matches mine.
+PROMPT: Expose sliders mapped to NoseP: bridge height, bridge width, hump, tip size, tip lift,
+        tip droop, nostril width, nostril flare, length; sculpt3d/head.ts already reads these —
+        add bridge "dip" between the eyes and a columella edge. Show a profile camera while
+        editing the nose (stage: 'profile').
+ACCEPT: - Each slider changes the profile visibly; nose stays fused with no seam.
+WIN:    True 3D nose shaping — Bitmoji noses are a few drawn shapes.
+
+sumanova-us-122 · NOSE/EARS 2/5 · Nose rings, nath and septum done beautifully
+STORY:  As an Indian user, I want a real nath (nose ring with a chain to the ear) and studs
+        that sit exactly on my nostril.
+PROMPT: Place nose jewellery on the sculpted nostril surface (raycast to the head mesh instead
+        of the analytic nose), add nath-with-chain (chain arc to the ear/hair), clicker,
+        crystal stud sizes, gold/silver/oxidised metals.
+ACCEPT: - Jewellery touches the skin on all 100 noses (no float, no sink).
+WIN:    Culturally specific jewellery Bitmoji lacks.
+
+sumanova-us-123 · NOSE/EARS 3/5 · Detailed, placeable ears
+STORY:  As a user, I want ears of my exact size, angle and height, with real helix detail.
+PROMPT: Add sliders ear size, height, angle (stick-out), lobe size, attached/free, pointed
+        amount; refine head.ts ear field (antihelix Y, tragus, lobe thickness).
+ACCEPT: - Ear close-up (frame=ear) shows rim, bowl and lobe for all 10 families.
+WIN:    Sculpted ears instead of simple ovals.
+
+sumanova-us-124 · NOSE/EARS 4/5 · Ear jewellery stacking
+STORY:  As a user, I want jhumkas, ear cuffs, chains and stacked piercings that sit on my ear.
+PROMPT: Re-anchor ear piercings to sculpted ear landmarks (lobe, helix, conch, tragus, rook);
+        add jhumkas (bell earrings with sway), chandbali, drop chains, ear climbers, ear cuffs;
+        earrings sway with head motion.
+ACCEPT: - 25 arrangements × metals still work; new pieces hang with gravity and sway.
+WIN:    Rich, culture-inclusive ear jewellery.
+
+sumanova-us-125 · NOSE/EARS 5/5 · Perfect side and 3/4 views
+STORY:  As a user, I want my avatar to look great from every angle.
+PROMPT: Add a 360° turntable in the studio (drag to spin), side/3-4 thumbnails for nose/ear
+        categories, and a harness view ?turns=0,0.6,1.57,3.14 for review of every face slot.
+ACCEPT: - No artefacts (gaps, floating features) at any angle for the 12 starters.
+WIN:    Full 3D quality; Bitmoji is designed mostly for front views.
+
+=========================================================================================
+PART 5 — MOUTH, LIPS & TEETH
+=========================================================================================
+
+sumanova-us-126 · MOUTH 1/5 · Sculpted lips
+STORY:  As a user, I want full, shaped lips with a cupid's bow and real volume.
+TODAY:  Lips are flat shapes drawn on the face surface.
+PROMPT: Sculpt lip volumes into the head mesh (upper/lower vermilion, philtrum columns,
+        corners) driven by MouthP, and keep the drawn layers only for colour/gloss; the lip
+        surface must deform with expressions (see sumanova-us-181).
+ACCEPT: - Lips cast soft shadows and have volume in profile; no z-fighting.
+WIN:    Real 3D lips vs drawn lips.
+
+sumanova-us-127 · MOUTH 2/5 · Smiles that differ
+STORY:  As a user, I want my own smile — closed, soft, toothy, gap-toothed, braces — not the
+        same big grin as everyone.
+TODAY:  Every starter shows the same open grin.
+PROMPT: Default expression becomes a soft closed smile; add a Smile slot: closed, soft,
+        half-teeth, big grin, smirk L/R; teeth options: even, gap, slightly crooked, braces
+        (colours), retainer, missing-tooth cute, fangs (fun).
+ACCEPT: - 12 starters show at least 5 different smiles; teeth options visible in face thumbs.
+WIN:    Individual smiles; Bitmoji smiles are interchangeable.
+
+sumanova-us-128 · MOUTH 3/5 · 100 truly different mouths
+STORY:  As a user browsing mouths, I want every tile to look different.
+TODAY:  look/face.ts MOUTHS steps only vary width (5) and fullness (2) inside a family.
+PROMPT: Rebuild MOUTH steps (keep ids) to vary bow, upper/lower ratio, corner tilt, width,
+        philtrum depth and lip line; run ?dupes=mouth&frame=face and hide look-alikes.
+ACCEPT: - Duplicate checker reports no pairs in the mouth grid.
+WIN:    Real variety where Bitmoji offers a handful.
+
+sumanova-us-129 · MOUTH 4/5 · Talking avatar (lip-sync)
+STORY:  As a user, I want my avatar to talk in voice notes and Avatar Cam with matching lips.
+PROMPT: Add 12 visemes to the mouth rig; drive them on-device from audio energy + simple
+        spectral bands for voice notes, and from MediaPipe blendshapes in AvatarCamScreen.tsx.
+ACCEPT: - Voice-note sticker plays with believable lip motion; no server, ₹0.
+WIN:    Talking avatars inside chat.
+
+sumanova-us-130 · MOUTH 5/5 · Lip finishes
+STORY:  As a user, I want matte, gloss, satin, ombré lips and lip liner.
+PROMPT: Add finish (matte/satin/gloss/metallic), liner colour, ombré inner colour, lip shine
+        intensity to look.makeup; render via the lip material.
+ACCEPT: - All finishes distinguishable in the face thumbnail.
+WIN:    Beauty-app-level lip detail.
+
+=========================================================================================
+PART 6 — FACIAL HAIR
+=========================================================================================
+
+sumanova-us-131 · BEARD 1/5 · Beards made of hair, not masks
+STORY:  As a bearded user, I want my beard to look like real hair with soft edges.
+TODAY:  Beards render as a dark solid shell on the chin (build-103 characters 1, 5, 11).
+PROMPT: Replace the solid beard shell with a short-lock groom (reuse groom.ts locks with
+        beard-specific comb directions: down on the chin, back along the jaw, out on the
+        moustache), soft density falloff at the cheek line and neckline, skin visible through
+        thin areas; keep stubble shader for short lengths.
+ACCEPT: - No hard outline anywhere; strands visible in the face thumbnail; mouth stays clear.
+WIN:    Groomed, believable beards.
+
+sumanova-us-132 · BEARD 2/5 · Beard shaping
+STORY:  As a user, I want to shape my beard: length, cheek line, neckline, fullness, fade.
+PROMPT: Sliders: length, cheek line height, neckline height, fullness/density, fade to
+        sideburns, moustache connection on/off, chin point; map to BeardP + new fields.
+ACCEPT: - Each slider produces a visible, artefact-free change.
+WIN:    Barber-level control.
+
+sumanova-us-133 · BEARD 3/5 · Beard textures
+STORY:  As a user, I want straight, wavy, curly, coily or patchy beards.
+PROMPT: Add beard texture (reuse hair texture code) and patchiness (density noise mask).
+ACCEPT: - 5 textures clearly different at full-body and face zoom.
+WIN:    Inclusive beard textures.
+
+sumanova-us-134 · BEARD 4/5 · Moustache styles
+STORY:  As a user, I want 20 moustache styles including twirled Indian styles.
+PROMPT: Extend tache shapes: pencil, chevron, walrus, horseshoe, handlebar, twirled (rajput
+        style), English, toothbrush-free alternatives, soul patch combos — sculpted locks.
+ACCEPT: - 20 distinct moustaches (dupe-checked); ids appended.
+WIN:    More and more authentic moustaches.
+
+sumanova-us-135 · BEARD 5/5 · Grey, dyed and decorated
+STORY:  As a user, I want salt-and-pepper, fully grey, dyed beards and beard beads/rings.
+PROMPT: Colour stops for beard (base + grey mix %), beard accessories slot (beads, rings,
+        braided chin beard).
+ACCEPT: - Grey mix slider works 0–100 %; accessories attach to the chin locks.
+WIN:    Age- and style-inclusive facial hair.
+
+=========================================================================================
+PART 7 — BODY & TORSO
+=========================================================================================
+
+sumanova-us-136 · BODY 1/5 · Appealing proportions
+STORY:  As a user, I want a balanced, attractive stylised body, not a big head on a short
+        padded torso.
+TODAY:  Short torso, wide shoulders under clothes, large head (HEAD_SCALE 0.8).
+PROMPT: Tune anatomy.ts proportions with a reference sheet: head ≈ 1/5.5 of height, longer
+        torso and neck, natural shoulder slope; review against all 100 bodies masc/fem.
+ACCEPT: - Side-by-side before/after sheet of 12 starters approved by the owner.
+WIN:    Premium, fashion-friendly proportions.
+
+sumanova-us-137 · BODY 2/5 · Body sliders
+STORY:  As a user, I want sliders for height, shoulders, chest, waist, hips, belly, torso
+        length, leg length, arm length and muscle.
+PROMPT: Turn BodyP into continuous tune values (keep the 100 presets as starting points);
+        re-sculpt in the worker (debounced) and key the cache by rounded values.
+ACCEPT: - Each slider visible; clothes follow automatically (no clipping) for 20 outfits.
+WIN:    Any body shape — Bitmoji has a few body types.
+
+sumanova-us-138 · BODY 3/5 · Every body belongs
+STORY:  As a user, I want plus-size, very muscular, petite, tall and disability options
+        (wheelchair, prosthetic arm/leg, cane, hearing aids, vitiligo).
+PROMPT: Add body presets for plus-size and muscular builds; add a mobility slot: wheelchair
+        (sculpted, poses adapt), prosthetic arm/leg (left/right), cane, crutches; all poses
+        stay valid.
+ACCEPT: - Each option works with standing/sitting/waving poses; no clipping.
+WIN:    Representation Bitmoji doesn't fully cover.
+
+sumanova-us-139 · BODY 4/5 · Neck, collarbones, shoulders
+STORY:  As a user, I want a real neck and shoulders that show in open necklines.
+PROMPT: Neck length/thickness tune, visible collarbones and trapezius in scoop/V necklines,
+        smooth neck-to-head blend (no seam at the head portal).
+ACCEPT: - No seam visible at the neck in any turn; collarbones read in Tank/Slip/Saree.
+WIN:    Clean, natural neckline anatomy.
+
+sumanova-us-140 · BODY 5/5 · Tattoos and body art
+STORY:  As a user, I want tattoos, mehndi and birthmarks on my arms, legs and neck.
+PROMPT: Body decal system (UV-free: projected in object space per bone) with 60 original
+        tattoo designs, mehndi patterns for hands/feet, placement and scale.
+ACCEPT: - Decals follow skinning in every pose; hidden under clothes correctly.
+WIN:    Personal body art with Indian mehndi.
+
+=========================================================================================
+PART 8 — ARMS & HANDS
+=========================================================================================
+
+sumanova-us-141 · HANDS 1/5 · Natural relaxed arms and hands
+STORY:  As a user, I want relaxed arms and right-sized hands, not stiff arms with tiny hands
+        and spread fingers.
+TODAY:  Build-103: A-pose arms, small hands, fingers apart.
+PROMPT: Rest pose arms closer to the body with elbows slightly bent; hand size +12–15 %;
+        relaxed gesture with fingers together and a natural cascade; palm facing the thigh.
+ACCEPT: - Standing pose reads relaxed in the 12-starter sheet; hands visible and readable.
+WIN:    Natural stance where Bitmoji is stiff.
+
+sumanova-us-142 · HANDS 2/5 · Gesture library
+STORY:  As a user, I want 25 hand gestures (heart, OK, namaste, salute, rock-on, call-me,
+        finger heart, clap, fist bump, shush, facepalm…).
+PROMPT: Extend rig.ts CURL/SPREAD/THUMB tables + arm poses; add a Gestures row in Pose.
+ACCEPT: - 25 gestures readable in a 160 px sticker thumbnail.
+WIN:    Expressive hands for chat stickers.
+
+sumanova-us-143 · HANDS 3/5 · Nails, rings, bangles, watches
+STORY:  As a user, I want nail length/shape/colour/nail art, rings, bangles, kada, watches.
+PROMPT: Nail shape (round/square/almond/stiletto) + length + colour + 10 procedural nail
+        arts; hand accessories slot with rings per finger, bangles/kada stack, watches,
+        bracelets — skinned to the hand/forearm bones.
+ACCEPT: - Accessories stay attached in every gesture; nails render under any colour.
+WIN:    Detailed hands Bitmoji doesn't offer.
+
+sumanova-us-144 · HANDS 4/5 · Clean deformation
+STORY:  As a user, I want elbows and wrists that bend without pinching or twisting.
+PROMPT: Add twist bones (forearm/upper arm split weights) and corrective weights at elbow and
+        wrist; test with crossed, pointing, peace poses.
+ACCEPT: - No candy-wrapper twist or pinching in any of the 11+ poses.
+WIN:    Professional-grade rig quality.
+
+sumanova-us-145 · HANDS 5/5 · Holding things
+STORY:  As a user, I want my avatar to hold a phone, chai cup, coffee, flowers, book, bat.
+PROMPT: Props slot with 20 sculpted original props + grip gestures; props attach to the hand
+        bone with per-prop offsets.
+ACCEPT: - Each prop sits in the palm with fingers wrapped; used in stickers.
+WIN:    Story-telling avatars.
+
+=========================================================================================
+PART 9 — LEGS & FEET
+=========================================================================================
+
+sumanova-us-146 · LEGS 1/5 · Natural legs and stance
+STORY:  As a user, I want shapely legs with a natural stance, not straight tubes.
+TODAY:  Trousers hide stiff straight legs; same stance for all.
+PROMPT: Add subtle knee bend, hip tilt and contrapposto variants (3 stance styles chosen per
+        avatar), refine thigh/calf curves so trousers drape over them.
+ACCEPT: - 12 starters show at least 3 different stances.
+WIN:    Personality in the stance.
+
+sumanova-us-147 · LEGS 2/5 · Feet that are planted
+STORY:  As a user, I want properly sized feet planted on the ground with a contact shadow.
+PROMPT: Feet scale +10 %, ground plane contact shadow (cheap blob + shadow map), feet stay
+        level and on y=0 in every pose (IK foot lock).
+ACCEPT: - No floating or sinking feet in any pose.
+WIN:    Grounded, solid figures.
+
+sumanova-us-148 · LEGS 3/5 · Sitting, kneeling, cross-legged
+STORY:  As a user, I want sitting cross-legged, kneeling, squatting and lying poses.
+PROMPT: New poses with clothing that deforms (trousers bend at knees, skirts drape over laps).
+ACCEPT: - 5 new poses, no clothing clipping for 20 outfits.
+WIN:    More life-like poses (e.g. sitting cross-legged on the floor).
+
+sumanova-us-149 · LEGS 4/5 · Better walk and dance cycles
+STORY:  As a user, I want smooth walk and dance animations with weight.
+PROMPT: Replace sine swings with keyed cycles (heel strike, pass, push-off), hip sway, arm
+        counter-swing; 5 dance styles (including a bhangra-inspired move).
+ACCEPT: - Loops seamless; 60 fps on a mid-range phone.
+WIN:    Expressive motion.
+
+sumanova-us-150 · LEGS 5/5 · Leg jewellery and details
+STORY:  As a user, I want anklets/payal, toe rings, leg tattoos and alta.
+PROMPT: Leg/foot accessory slot attached to shin/foot bones; visible with sandals or barefoot.
+ACCEPT: - Payal sits on the ankle in all poses; toe rings visible with sandals.
+WIN:    Indian-inclusive details.
+
+=========================================================================================
+PART 10 — TOPS
+=========================================================================================
+
+sumanova-us-151 · TOPS 1/5 · Fabric that drapes and fits
+STORY:  As a user, I want tops that fit and drape like fabric, not puffy padded shells.
+TODAY:  Pillowy shoulders, puffy sleeves, white collar rings/lines, waist lines showing.
+PROMPT: In sculpt3d/garments.ts reduce ease on fitted cuts, add procedural fold maps (normal
+        perturbation in the cloth shader) at elbows, armpits, waist and hem; remove default
+        "light"/"dark" trims that read as white rings; hem sits cleanly over the waistband
+        (no gap / no inner layer showing); BASE_TEE/BASE_SHORTS only when nothing else covers.
+ACCEPT: - No white rings or lines at neck/waist in the 12-starter sheet.
+        - Folds visible but subtle; sleeves follow the arm.
+WIN:    Clothes that look like clothes.
+
+sumanova-us-152 · TOPS 2/5 · 50 new tops
+STORY:  As a user, I want many more cuts: turtleneck, henley, oversized hoodie variants,
+        kurta (short/long), off-shoulder, corset top, peplum, cardigan, rugby, jersey, etc.
+PROMPT: Add 5 cut groups × 10 looks (ids appended), each with its own TopSpec.
+ACCEPT: - Dupe checker clean; all cuts work under jackets.
+WIN:    Bigger, fresher wardrobe.
+
+sumanova-us-153 · TOPS 3/5 · Real materials
+STORY:  As a user, I want cotton, knit, satin, silk, leather, denim, sequin and sheer fabrics.
+PROMPT: Material per item: procedural normal maps (knit rib, denim twill, leather grain,
+        satin anisotropy, sequin sparkle), sheen/roughness per fabric; keep Cloth keyed.
+ACCEPT: - Materials distinguishable in the 160 px thumbnail.
+WIN:    Fabric realism.
+
+sumanova-us-154 · TOPS 4/5 · Styling options
+STORY:  As a user, I want sleeves rolled, front tuck, half tuck, untucked, collar popped,
+        buttons open, layering a shirt open over a tee.
+PROMPT: Per-item style flags stored in look.style; garments.ts applies them.
+ACCEPT: - Each flag visible; layering 3 levels without clipping.
+WIN:    Stylist-level control.
+
+sumanova-us-155 · TOPS 5/5 · Design your own print
+STORY:  As a user, I want to put my own text, emoji (Nova emoji) or photo on a tee.
+PROMPT: On-device print designer: text + Nova emoji + image upload, rendered to a canvas
+        texture on the chest area (UV region); stored in Supabase storage (owner's bucket,
+        RLS) — no brands, simple on-device check for size.
+ACCEPT: - Print stays sharp, curves with the chest, survives reload.
+WIN:    Personal merch-style clothing.
+
+=========================================================================================
+PART 11 — JACKETS & OUTERWEAR
+=========================================================================================
+
+sumanova-us-156 · JACKETS 1/5 · Tailored construction
+STORY:  As a user, I want jackets with real lapels, seams, zips and pockets.
+PROMPT: Proper notch/shawl lapels, shoulder seams, flap pockets, zip teeth, stitch lines
+        (normal-map) for Blazer, Biker, Denim jacket, Bomber, Trench.
+ACCEPT: - Construction details visible in upper-body thumbs.
+WIN:    Tailoring detail.
+
+sumanova-us-157 · JACKETS 2/5 · Perfect layering
+STORY:  As a user, I want any jacket over any top with no poke-through; hoods outside.
+PROMPT: Layer solver: outer ease computed from the actual inner garment field; hood of a
+        hoodie lies over the jacket collar.
+ACCEPT: - All 10 tops × 10 jackets combos pass a clip test in the harness.
+WIN:    Flawless layering.
+
+sumanova-us-158 · JACKETS 3/5 · Open / closed / on shoulders
+STORY:  As a user, I want my jacket open, zipped, half-zipped or draped on shoulders.
+PROMPT: Variants per jacket built as separate cached jobs.
+ACCEPT: - States visible and saved.
+WIN:    Styling depth.
+
+sumanova-us-159 · JACKETS 4/5 · New outerwear
+STORY:  As a user, I want Nehru jacket, shacket, windbreaker, cardigan, poncho, shawl,
+        waistcoat, sherwani coat.
+PROMPT: Add cuts (ids appended), each 10 looks.
+ACCEPT: - Dupe checker clean.
+WIN:    Indian + global outerwear.
+
+sumanova-us-160 · JACKETS 5/5 · Weather and season outfits
+STORY:  As a user, I want quick monsoon, winter and summer outfits (raincoat, umbrella).
+PROMPT: Saved outfit presets + raincoat cut + umbrella prop; optional "match the weather"
+        suggestion (no paid API; use device info only if available, else manual).
+ACCEPT: - One tap applies a season outfit; undo works.
+WIN:    Context-aware styling.
+
+=========================================================================================
+PART 12 — BOTTOMS / PANTS
+=========================================================================================
+
+sumanova-us-161 · PANTS 1/5 · Trousers that fit and break
+STORY:  As a user, I want trousers with a proper rise, creases and a break over the shoe.
+PROMPT: Hem rests on the shoe (break), front crease for chinos/trousers, back pockets,
+        belt loops; legs taper naturally.
+ACCEPT: - Hem never clips into or floats above the shoe for 10 shoes.
+WIN:    Well-fitting trousers.
+
+sumanova-us-162 · PANTS 2/5 · Skirts as bottoms
+STORY:  As a user, I want skirts I can pair with any top: mini, pleated, pencil, A-line midi,
+        maxi, denim skirt.
+PROMPT: Skirt cuts in BOTTOMS reusing the dress skirt loft; pleat displacement.
+ACCEPT: - Skirts pair with every top; arms clear skirts.
+WIN:    Mix-and-match freedom.
+
+sumanova-us-163 · PANTS 3/5 · Indian bottoms
+STORY:  As a user, I want dhoti, lungi/mundu, salwar, patiala, churidar, palazzo.
+PROMPT: New cuts with folds/gathers (patiala pleats, churidar ankle bunching, dhoti drape).
+ACCEPT: - Each recognisable in the lower-body thumbnail.
+WIN:    Wardrobe built for India.
+
+sumanova-us-164 · PANTS 4/5 · Denim realism
+STORY:  As a user, I want washes, fading, whiskers, rips and rolled cuffs.
+PROMPT: Procedural denim shader params (wash level, fade zones, whiskers, rip holes as alpha
+        with skin under), cuff roll option.
+ACCEPT: - 5 washes and rips visible; ripped knees show skin.
+WIN:    Fashion-real denim.
+
+sumanova-us-165 · PANTS 5/5 · Waist details & shorts lengths
+STORY:  As a user, I want belts, high/mid/low rise and short lengths.
+PROMPT: Belt slot (buckle styles), rise option, shorts length slider.
+ACCEPT: - Belt sits on the waistband; shorts length changes cleanly.
+WIN:    Fine control.
+
+=========================================================================================
+PART 13 — DRESSES & ETHNIC WEAR
+=========================================================================================
+
+sumanova-us-166 · DRESSES 1/5 · A real saree
+STORY:  As a user, I want a beautiful saree with pleats, a pallu over the shoulder and a
+        blouse — in Nivi, Bengali, Gujarati and Nauvari drapes.
+TODAY:  The saree sash is a flat strip across the body (build-103 character 8).
+PROMPT: Rebuild the saree: fitted blouse (sleeve options), front pleats (fan displacement),
+        pallu as a lofted cloth ribbon from the waist over the left shoulder, falling behind
+        with border band (c2) and pallu motif (c3); drape style option; border patterns.
+ACCEPT: - Recognisable drapes from front and back; border visible; no clipping when waving.
+WIN:    The best saree in any avatar app.
+
+sumanova-us-167 · DRESSES 2/5 · Lehenga, anarkali, salwar with dupatta
+STORY:  As a user, I want lehenga choli, anarkali and salwar kameez with a dupatta.
+PROMPT: Rebuild these with flared panels, embroidery border patterns, and a dupatta (one
+        shoulder / both / head) as a light cloth strip with sway.
+ACCEPT: - Dupatta styles visible and stable in poses.
+WIN:    Festival-ready ethnic wear.
+
+sumanova-us-168 · DRESSES 3/5 · Skirts that move
+STORY:  As a user, I want dresses that flare when I dance and drape when I sit.
+PROMPT: Skirt panel springs (cheap) driven by pelvis motion; sitting pose re-lofts the skirt
+        over the knees.
+ACCEPT: - Dance pose shows flare; sitting shows lap drape, no legs through cloth.
+WIN:    Living fabric.
+
+sumanova-us-169 · DRESSES 4/5 · Occasion wear for everyone
+STORY:  As a user, I want sherwani, kurta-pyjama, bandhgala, gowns, jumpsuits, abaya,
+        and other occasion outfits shown respectfully.
+PROMPT: New full-outfit cuts (dress slot or new `full` slot), reviewed for cultural accuracy.
+ACCEPT: - 20 occasion outfits; each passes a respectful-depiction checklist.
+WIN:    Inclusive formalwear.
+
+sumanova-us-170 · DRESSES 5/5 · Embroidery and prints
+STORY:  As a user, I want zari, block-print, bandhani, ikat, chikankari and mirror work.
+PROMPT: New procedural patterns in render/patterns.ts with metallic thread sheen.
+ACCEPT: - 8 traditional patterns, original artwork, readable in thumbs.
+WIN:    Indian textile richness.
+
+=========================================================================================
+PART 14 — SHOES & SOCKS
+=========================================================================================
+
+sumanova-us-171 · SHOES 1/5 · Detailed shoes
+STORY:  As a user, I want shoes with stitching, eyelets, tongues, toe caps and lace bows.
+PROMPT: Add tongue, eyelets, lace bow, toe cap, heel tab and stitch normal maps to shoeLast
+        builds; correct foot size.
+ACCEPT: - Feet thumbnails show construction details.
+WIN:    Sneakerhead-level detail (brand-free).
+
+sumanova-us-172 · SHOES 2/5 · More footwear
+STORY:  As a user, I want heels, flats, juttis, kolhapuris, mojaris, sports cleats, platform
+        sneakers, hiking boots, flip-flops.
+PROMPT: New cuts (ids appended); heel height changes the foot pose and stance.
+ACCEPT: - Heels raise the heel and the body correctly.
+WIN:    Full footwear range incl. Indian styles.
+
+sumanova-us-173 · SHOES 3/5 · Shoe–trouser interaction
+STORY:  As a user, I want trousers over shoes, jeans tucked in boots, socks peeking.
+PROMPT: Bottom hem adapts to shoe height (tucked option for boots).
+ACCEPT: - No clipping for 10 bottoms × 10 shoes.
+WIN:    Realistic outfit combos.
+
+sumanova-us-174 · SHOES 4/5 · Fun socks
+STORY:  As a user, I want patterned and mismatched socks and visible socks in sandals.
+PROMPT: Sock patterns per foot, mismatched option, toe socks; more distinct sock cuts (fix the
+        7 hidden duplicates).
+ACCEPT: - Dupe checker clean for socks.
+WIN:    Playful details.
+
+sumanova-us-175 · SHOES 5/5 · Colour every part
+STORY:  As a user, I want separate colours for upper, sole, laces and accents.
+PROMPT: Extra colour keys (shoesSole, shoesLace, shoesAccent) with rails.
+ACCEPT: - Each part recolours independently.
+WIN:    Custom-sneaker experience.
+
+=========================================================================================
+PART 15 — ACCESSORIES (hats, glasses, bags, jewellery)
+=========================================================================================
+
+sumanova-us-176 · ACCESSORIES 1/5 · Hats that sit on the hair
+STORY:  As a user, I want hats that sit naturally with my hair squashed under them and
+        sticking out at the sides.
+PROMPT: Sculpt hats (brims, crowns, knit) in the worker; groom compresses hair under the hat
+        volume and lets ends show below the band.
+ACCEPT: - 10 hats × 20 hairstyles: no hair through the hat, no floating hat.
+WIN:    Natural hat fit.
+
+sumanova-us-177 · ACCESSORIES 2/5 · Glasses that look like glasses
+STORY:  As a user, I want clear lenses I can see my eyes through, real frames and nose pads.
+TODAY:  Lenses render opaque white (build-103 character 11).
+PROMPT: Fix lens material (transparent, slight reflection, tint gradient), sculpt frames with
+        thickness, hinges, nose pads sitting on the nose bridge; temples reach the ears.
+ACCEPT: - Eyes visible through clear lenses for all 10 frames; frames sit on the nose.
+WIN:    Eyewear realism.
+
+sumanova-us-178 · ACCESSORIES 3/5 · Bags that are worn
+STORY:  As a user, I want bags whose straps go across my chest/shoulder and move with me.
+PROMPT: Sculpt bags; straps as skinned curves across the chest/shoulder bones; backpack
+        straps over the shoulders; positions updated for the current body space.
+ACCEPT: - Straps follow the body in every pose without clipping.
+WIN:    Worn accessories, not stuck-on shapes.
+
+sumanova-us-179 · ACCESSORIES 4/5 · Necklaces and Indian jewellery
+STORY:  As a user, I want chains, pendants, mangalsutra, choker, maang tikka, matha patti.
+PROMPT: Neck and head jewellery slots that drape on the chest/forehead with gravity.
+ACCEPT: - Jewellery rests on skin/clothes, no clipping in poses.
+WIN:    Rich jewellery set.
+
+sumanova-us-180 · ACCESSORIES 5/5 · Head coverings & wearables
+STORY:  As a user, I want turbans/pagdi styles, hijab, dupatta-on-head, headphones, earbuds,
+        face masks, watches — done respectfully.
+PROMPT: Sculpted head coverings that replace hair rendering where needed; wearables slot.
+ACCEPT: - Each covering reviewed for accuracy; hair hidden correctly under it.
+WIN:    Respectful, inclusive representation.
+
+=========================================================================================
+PART 16 — EXPRESSIONS, POSES & ANIMATION
+=========================================================================================
+
+sumanova-us-181 · EXPRESSIONS 1/5 · A real facial rig
+STORY:  As a user, I want 40 expressions where brows, lids, cheeks and lips all move together.
+TODAY:  11 moods; most starters show the same grin.
+PROMPT: Blendshape-like rig on the sculpted head (cheek raise, lip corner pull, jaw open, brow
+        inner/outer, lid squint …) precomputed in the worker; expressions = combinations.
+ACCEPT: - 40 expressions readable in a 160 px sticker; default is a soft smile.
+WIN:    Emotion range beyond Bitmoji.
+
+sumanova-us-182 · EXPRESSIONS 2/5 · Mood mixer
+STORY:  As a user, I want sliders (happy, surprise, angry, sad, cheeky) to mix my own face.
+PROMPT: Mixer UI writing to look.expressionMix; stickers can use it.
+ACCEPT: - Smooth mixing without broken shapes.
+WIN:    Custom emotions.
+
+sumanova-us-183 · EXPRESSIONS 3/5 · Pose studio
+STORY:  As a user, I want 50 poses and a simple custom pose editor (drag hands, head, feet).
+PROMPT: Pose library + IK handles in the studio; save custom poses per user.
+ACCEPT: - Custom pose saved and reused in stickers.
+WIN:    Unlimited poses.
+
+sumanova-us-184 · EXPRESSIONS 4/5 · Personality idle
+STORY:  As a user, I want my avatar to idle with its own personality (bouncy, calm, cool).
+PROMPT: 4 idle styles with breathing, weight shifts, glances; selectable.
+ACCEPT: - Idles loop seamlessly; reduce-motion turns them off.
+WIN:    Avatars that feel like characters.
+
+sumanova-us-185 · EXPRESSIONS 5/5 · Live face mirroring
+STORY:  As a user, I want Avatar Cam to copy my real face precisely (blinks, brows, smile,
+        jaw, head turn) in real time.
+PROMPT: Map MediaPipe face blendshapes (already bundled, on-device) to the new rig in
+        AvatarCamScreen.tsx with smoothing; record clips for chat.
+ACCEPT: - ≥ 24 fps on a mid-range phone; latency < 120 ms.
+WIN:    Live avatar video, ₹0.
+
+=========================================================================================
+PART 17 — RENDERING, PERFORMANCE & STICKERS
+=========================================================================================
+
+sumanova-us-186 · RENDER 1/5 · Premium lighting and materials
+STORY:  As a user, I want my avatar to look soft, warm and premium, not plastic or orange.
+PROMPT: ACES/AgX tone mapping, correct colour spaces, soft shadow + cheap AO, studio
+        environment tuned, skin wrap-lighting; calibrate against swatches.
+ACCEPT: - Owner-approved before/after sheet; no orange cast.
+WIN:    Best-lit avatars on mobile.
+
+sumanova-us-187 · RENDER 2/5 · Fast on every phone
+STORY:  As a user on a budget Android, I want the avatar to load fast and stay smooth.
+PROMPT: LODs (thumbnail / list / studio), triangle budgets per part, worker job priorities,
+        pre-warmed caches, GPU timing check in the harness.
+ACCEPT: - Studio ≥ 50 fps on a mid-range device; first full avatar < 2.5 s from cache-cold.
+WIN:    High detail without lag.
+
+sumanova-us-188 · RENDER 3/5 · Studio that's a joy to use
+STORY:  As a user, I want search, favourites, compare before/after, randomise-but-lock parts
+        and a turntable.
+PROMPT: Add search per category, heart favourites, hold-to-compare, lock icons for random.
+ACCEPT: - All actions undoable; usable one-handed.
+WIN:    Faster, smarter editing.
+
+sumanova-us-189 · RENDER 4/5 · Stickers that read at small sizes
+STORY:  As a user, I want crisp avatar stickers in chat with outlines and 100 scenes.
+PROMPT: Sticker renderer with optional clean outline, tuned framing, 100 original sticker
+        scenes (moods, festivals, greetings in 5 languages), duo stickers with friends.
+ACCEPT: - Stickers render on-device, cached, readable at 96 px.
+WIN:    Sticker library rivalling Bitmoji's core feature, with our 3D quality.
+
+sumanova-us-190 · RENDER 5/5 · Quality gate
+STORY:  As the owner, I want every avatar change checked against a quality bar.
+PROMPT: Harness review sheets per part (front/3-4/side), snapshot tests, dupe checker in CI
+        (headless), and a checklist mapped to stories 106–189.
+ACCEPT: - A failing visual/dupe check blocks the release build.
+WIN:    Quality stays above Bitmoji with every update.
+
+-----------------------------------------------------------------------------------------
+END — 85 stories (sumanova-us-106 … sumanova-us-190)
