@@ -1,0 +1,16 @@
+SUMANOVA — USER STORY (prompt-style)
+Rules for every story: see docs/AVATAR_USER_STORIES.txt ("RULES FOR EVERY STORY").
+
+sumanova-us-107 · HAIR 2/5 · Natural hairline, partings and scalp
+STORY:  As a user, I want my hairline, temples and parting to look natural, so my avatar
+        doesn't look like it wears a wig.
+TODAY:  Hard hairline step on the forehead (teal crop), no visible scalp at the parting.
+PROMPT: In groom.ts baseCap()/lineAt(): fade density over the last 6–8 mm (shorter, thinner
+        locks + "baby hairs" at the front and temples), tint the scalp under partings with a
+        skin-mixed colour, add a visible part line (straight / side / zigzag) and a crown
+        whorl. Add HairTune.line (hairline height −1…1) and HairTune.edges (none / soft /
+        laid edges) in look/hair.ts and HairControls.tsx.
+ACCEPT: - Front close-up of 6 short and 6 long styles shows a soft gradient hairline.
+        - Middle/side/zigzag parts are visible from the top-front camera.
+        - Old looks without the new fields render exactly as before.
+WIN:    Natural hairlines and laid edges — detail Bitmoji does not model.
