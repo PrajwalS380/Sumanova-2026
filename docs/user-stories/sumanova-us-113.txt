@@ -1,31 +1,205 @@
-SUMANOVA — AVATAR USER STORY (prompt-style)
-PART 2 — FACE SHAPE & BONE STRUCTURE
-Baseline: build-103
+SUMANOVA — AVATAR USER STORY (detailed prompt)
+PART 2 — FACE SHAPE & BONE STRUCTURE (3/5)
+Baseline: build-103 (code as of SUM-202601 @ 4e720b0: SCULPT_VERSION 107, snv-thumbs-v40)
+Build order (face): us-111 → us-112 → us-113 → us-114 → us-115.
+  Depends on: nothing hard. If us-111/us-112 are built, marks are placed on the final face
+  surface automatically (they live in the skin material, see step 3).
+  Provides for later stories — build these as SHARED pieces, not one-offs:
+    - the skin-layer system in the skin material (`SkinLayers`, step 3): us-114 (age lines,
+      dimples, under-eye) and us-115 (makeup: foundation, contour, blush, bindi…) ADD layer
+      kinds to it; us-140 (tattoos, mehndi, body birthmarks) reuses it on the body.
+    - tap-to-place on the avatar (`pickSurfacePoint`, step 4): reused by us-114, us-115,
+      us-140.
+    - the skin colour model (depth + undertone, step 2): us-137/us-138 (body) and the hand /
+      nail tones follow it.
+    - the colour-accuracy test (step 1d): us-186 (global lighting / tone mapping) must keep
+      it passing — this story calibrates skin under the CURRENT studio lighting and does
+      not change the global lights or tone mapping (that is us-186's job).
 
-sumanova-us-113 · FACE 3/5 · Real skin tones and skin details
-STORY:  As a user, I want my true skin tone with my undertone and my marks (freckles, moles,
-        vitiligo, birthmarks), so my avatar is really me.
-TODAY:  Faces render orange/flat; 100 tones but no undertone or marks.
-PROMPT: Fix colour: correct sRGB/linear handling and tone mapping so the skin swatch equals the
-        rendered mid-tone (check AvatarStage lights). Add an undertone picker (cool / neutral /
-        warm / olive) applied as a hue shift on the chosen depth. Add a "Skin details" category
-        with procedural decal layers on the head and body: freckles (density, area), moles,
-        beauty spot placement, vitiligo patches, birthmark, rosacea flush, acne-free default.
-ACCEPT: - Rendered cheek colour is within ΔE < 6 of the picked swatch under the studio light.
-        - Each mark type has ≥ 5 options, placed with a tap in face view.
-WIN:    Accurate tone + undertone + inclusive skin features, far richer than Bitmoji.
+=========================================================================================
+sumanova-us-113 · Real skin tones and skin details — my exact tone, undertone and marks
+=========================================================================================
 
-RULES (apply to this story):
+USER STORY
+  As a SUMANOVA user, I want my avatar's skin to be my real colour — the right depth and
+  the right undertone (cool, neutral, warm or olive) — and to carry the things that make
+  my skin mine (freckles, moles, a beauty spot, vitiligo, a birthmark, a scar, a rosy
+  flush), so that my avatar truly looks like me and represents every skin respectfully,
+  far beyond Bitmoji's flat tone swatches.
+
+WHY (what build-103 does today)
+  - Skin is one hex (Look.skin) picked from 100 HSL swatches (look/palettes.ts SKIN:
+    10 depth bands × 10 steps, hue 22±11°). There is no undertone choice: olive and cool
+    pink-beige skins can't be made.
+  - Rendered faces read orange: SkinMat (render/Face.tsx) adds a strong warm sheen
+    (#ffb8a0 / #e0926a at sheen 0.42–1.0) under a warm key light, a warm rim light and a
+    brown hemisphere ground (AvatarStage.tsx), on top of react-three-fiber's default
+    ACES tone mapping. The swatch the user taps does not match what they see.
+  - selfie/generate.ts darkens the measured skin by a fixed 0.92 to "compensate" — a
+    guess, not a calibration.
+  - No skin marks of any kind; head and body meshes have no UVs (sculpted fields), so
+    texture decals can't simply be painted on.
+
+-----------------------------------------------------------------------------------------
+PROMPT (paste this to Claude)
+-----------------------------------------------------------------------------------------
+Implement sumanova-us-113 in the SUMANOVA repo (branch SUM-202601). Read CLAUDE.md first.
+Scope: look/palettes.ts, look/config.ts, render/Face.tsx (SkinMat, lipTone, nailTone),
+render/SculptBody.tsx (material props), a new render/skinLayers.ts, AvatarStage.tsx
+(tap-to-place only — NOT lights / tone mapping), editor/categories.ts, AvatarStudio.tsx
+(skin panels), selfie/analyze.ts + selfie/generate.ts, the harness, tests, i18n.
+
+1) COLOUR ACCURACY (skin only, under today's studio light)
+   a. Measure first: in the harness render a front face for 20 tones (2 per depth band)
+      and sample the lit cheek (a 12×12 px patch facing the camera). Compute CIE ΔE2000
+      between the sampled colour and the swatch shown in the picker. Record the baseline.
+   b. Fix in the skin material, not in the lights: lower and neutralise the sheen
+      (sheenColor ≈ mix(skin, white) instead of fixed salmon/orange; sheen ≤ 0.35 for light,
+      ≤ 0.55 for deep skin), keep a gentle clearcoat glow, and add a small "calibration"
+      correction (per depth band, computed once, stored as a constant table) so the lit
+      cheek mid-tone matches the swatch. Deep skins must keep their rich glow (no grey /
+      ashy look).
+   c. The picker swatches show the CALIBRATED displayed colour (what the cheek looks like),
+      so what you tap is what you get.
+   d. Make this an automated check: e2e/skin-accuracy.e2e.cjs renders the 20 tones and
+      fails when any ΔE2000 ≥ 6. us-186 must keep this passing when it changes lighting.
+   e. Remove the fixed ×0.92 in selfie/generate.ts skinForAvatar(); the selfie now maps
+      straight to the calibrated palette (step 5).
+
+2) DEPTH + UNDERTONE COLOUR MODEL — look/palettes.ts + look/config.ts
+   a. New palette SKIN2: 24 depth steps (very fair → very deep, evenly spaced in CIE L*)
+      × 4 undertones = 96 tones, all original, generated in OKLCH/LCh:
+        cool    – pink / rosy (lower hue, a* up)
+        neutral – balanced
+        warm    – golden / peach (higher hue, b* up)
+        olive   – green-grey cast (lower chroma, hue toward yellow-green)
+      Keep the old SKIN array (100) untouched: saved looks use those hexes.
+   b. Look gets an optional `skinSel?: { depth: number; under: 'cool'|'neutral'|'warm'|'olive'; fine?: { h: number; l: number } }`.
+      Look.skin (hex) stays the single source used by every renderer — skinSel only
+      restores the picker. `fine` is a small nudge (hue ±6°, lightness ±4 L*) for an exact
+      match. normalizeLook validates/clamps skinSel; old looks (no skinSel) keep their hex
+      and the picker highlights the nearest depth/undertone.
+   c. Derived tones follow the final skin: lipTone(), nailTone(), the inner-eye corner, ear
+      shading and blush defaults use the undertone (cool → rosier lips, olive → muted).
+
+3) SKIN LAYERS (shared system) — new render/skinLayers.ts + SkinMat
+   a. SkinMat gets an optional `layers` prop and compiles ONE extended material
+      (onBeforeCompile) per mesh: procedural, UV-free marks evaluated from the vertex's
+      rest-pose `position` (head-local for the head mesh, bind-pose body space for body /
+      hands / feet), so marks stick to the skin in every pose and expression.
+      Uniform budget: ≤ 24 point marks + ≤ 6 area layers per material; keep it WebGL1-safe.
+   b. Layer kinds in this story (each with ≥ 5 options):
+        freckles   – density, size, darkness; areas: nose & cheeks / whole face /
+                     shoulders & arms (body mesh)
+        mole       – point marks: size, raised (tiny normal bump), colour (brown/dark)
+        beautySpot – single small dark point at preset spots (above lip L/R, cheekbone,
+                     chin, under eye) or tap-placed
+        birthmark  – soft irregular patch (café-au-lait / port-wine-stain / pale) at a
+                     tapped point, size and opacity
+        vitiligo   – depigmented patches (noise-thresholded, soft edges, slightly pink at
+                     the border on deep skin): amount 0…1; areas: around eyes, around
+                     mouth, hands, arms, whole body; symmetric option
+        scar       – thin line (eyebrow slit scar, cheek, chin, lip) with a subtle normal
+                     dip, colour lighter or darker than skin
+        flush      – rosy cheeks / nose (rosacea-like) amount; under-eye tone (subtle
+                     darker or bluish) amount
+      Nothing is added by default (clear skin) — every layer is opt-in.
+   c. Data: Look.skinMarks?: SkinMark[] (≤ 24), SkinMark = { k: kind; at?: [x, y, z] (local);
+      space: 'head' | 'body'; size: number; amount: number; tone?: string; area?: string;
+      sym?: boolean }. normalizeLook validates kinds, clamps numbers, drops unknown
+      entries, caps the list.
+   d. Marks render in thumbnails/captures and on every screen the avatar appears; when an
+      expression or pose deforms the face/body, marks move with it.
+   e. Hair, beards, eyebrows, makeup and clothes draw over the skin — marks never show
+      through them.
+
+4) TAP TO PLACE — AvatarStage.tsx + studio
+   - `pickSurfacePoint(event) → { space, point(local), normal }`: raycast the head/body
+     meshes (skinned: use the rest-pose position of the hit triangle's vertices so stored
+     points are pose-independent).
+   - In the Skin details panel: choose a mark, tap the face (camera already on 'head'
+     stage) or body; long-press a mark to move, pinch/slider to resize, bin to delete;
+     "Mirror" duplicates to the other side; undo/redo covers every action.
+
+5) SELFIE → TONE & UNDERTONE — selfie/analyze.ts + generate.ts
+   - From the already-sampled skin patches compute L*a*b*; depth = nearest L* step,
+     undertone from hue angle / chroma (cool / neutral / warm / olive), plus `fine` to
+     close the gap. Freckles: detect high-frequency dark spots on the cheeks/nose region
+     and, if clearly present, OFFER (not force) a freckles layer on the result screen.
+     All on-device; the photo never leaves the phone.
+
+6) STUDIO UI — editor/categories.ts + AvatarStudio.tsx
+   - "Skin" category: a depth strip (24 swatches, calibrated colours) + undertone chips
+     (Cool / Neutral / Warm / Olive) with a one-line hint, + "Fine tune" (hue & lightness
+     sliders), + "Classic tones" to reach the old 100 swatches.
+   - New "Skin details" category (Face & body tab): grid of mark kinds with thumbnails,
+     per-kind controls (amount, size, area), tap-to-place hint, list of placed marks.
+   - All new labels translated (en, hi, kn, ta, te) via tools/i18n TSV + build.
+
+7) HARNESS — e2e/avatar-harness/main.tsx
+   - Reuse &skin / &htune / &hc / &tune / &hp / &fem where present (add only if missing);
+     add &skinsel=<json> and &marks=<json>.
+   - Review sheets: (a) 24 depths × 4 undertones (as 12 sheets of 8, head frame);
+     (b) every mark kind × 3 options on light, medium and deep skin; (c) vitiligo on 4
+     depths, front + hands; (d) marks with expressions laughing/surprised and pose
+     waving to prove they stick.
+
+8) CACHES
+   - Thumbnails change (skin material): bump the snv-thumbs-vN store by one from its
+     CURRENT value (was v40 when written). Never reuse a number another story used.
+   - SCULPT_VERSION: no bump (no geometry changes).
+   - Re-render the 12 starter pictures (e2e/preset-images.e2e.cjs) — their skins should
+     look the same tone, less orange; owner reviews.
+
+-----------------------------------------------------------------------------------------
+ACCEPTANCE CRITERIA (attach sheets + the ΔE report)
+-----------------------------------------------------------------------------------------
+ A1 Accuracy: for 20 tones the rendered lit cheek is within ΔE2000 < 6 of the shown swatch
+    (report before vs after); no orange cast; deep skins keep warmth and glow, not ashy.
+ A2 Undertones: the 4 undertones are clearly distinguishable at every depth in the head
+    thumbnail; olive reads olive, cool reads rosy.
+ A3 Old avatars: looks with only a skin hex render with the same base tone (material
+    calibration only) and the picker shows the nearest selection.
+ A4 Marks: each of the 7 kinds has ≥ 5 options, is visible in the 160 px face thumbnail,
+    can be placed by tap where applicable, moves with expressions and poses, never shows
+    through hair/brows/beard/clothes, and looks respectful on light and deep skin.
+ A5 Vitiligo: patches have natural soft edges, work on face, hands and body, symmetric
+    option works, and look dignified (owner + ideally a person with vitiligo reviews).
+ A6 Selfie: depth + undertone from 6 test photos (light→deep, cool→olive) are judged
+    closer than before; freckles offer appears only when freckles are visible.
+ A7 Performance: one material per mesh, no extra draw calls; shader cost fine on a
+    mid-range phone (studio ≥ 55 fps with 24 marks).
+ A8 Quality gates: npm run typecheck, npm test, npm run build green; e2e skin-accuracy
+    passes.
+
+-----------------------------------------------------------------------------------------
+TESTS TO ADD
+-----------------------------------------------------------------------------------------
+ - look/palettes: SKIN2 has 96 unique tones, L* monotonic by depth, undertone hue order.
+ - look/config: skinSel / skinMarks normalisation (clamps, caps at 24, drops unknown
+   kinds); old looks unchanged.
+ - selfie: undertone classification on synthetic Lab samples (cool/neutral/warm/olive).
+ - skinLayers: uniform packing stays within budget; marks round-trip through save/load.
+
+-----------------------------------------------------------------------------------------
+OUT OF SCOPE (other stories)
+-----------------------------------------------------------------------------------------
+ - Global lighting, tone mapping, shadows (us-186); bone structure (us-111) and sliders
+   (us-112); dimples, age lines, under-eye bags (us-114); makeup, bindi, face paint
+   (us-115); tattoos and mehndi (us-140); body hair.
+
+-----------------------------------------------------------------------------------------
+RULES
+-----------------------------------------------------------------------------------------
  - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
- - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
- - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
-   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
-   respected; ≤ 8 canvases per harness page.
- - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
-   new field; old looks get sensible defaults.
- - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
-   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
-   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - ₹0: procedural, on-device; no paid services; selfie photos never leave the phone.
+ - Respectful representation: no mark kind is presented as a flaw; nothing is added by
+   default; wording is neutral.
+ - Smooth on a mid-range Android phone; ≤ 8 canvases per harness page.
+ - Never shift ids or change the old SKIN palette; old looks must keep working.
  - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
-   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
- - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).
+   before claiming done; restart the harness if a change doesn't show.
+ - Commit as PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com> on SUM-202601,
+   no model names in commits; the final story commit must change a non-docs file (see
+   CLAUDE.md); after pushing, share the Android SUMANOVA.apk and iPhone
+   SUMANOVA-unsigned.ipa links from the new build-N release.
