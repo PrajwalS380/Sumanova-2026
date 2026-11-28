@@ -189,6 +189,12 @@ Hair motion (us-108): groom writes per-vertex `hairPivot` (swing point) + `hairG
 pendulum solver (50 ms latency buffer → same at any fps), shader rotates each lock about its pivot + neck/shoulder
 push-out. `withHairAtRest()` for captures; reduce-motion → `uMotion` 0. Contact sheets: `node e2e/hair-motion.e2e.cjs
 <out> dancing|shake=yaw <ids> [turn]` (frames in `<out>.frames/`). Harness `&shake=yaw`, `window.__hairMotion()`.
+Hair types (us-109): 140 styles (110–139 appended; never reorder 0–109, `look/hairNames.v1.json` guards them). Curl
+pattern scale `HairP.pattern` / `HairTune.pattern` (1, 2A–4C) via `PATTERN_SPEC` (shrink, volume, clump, wave / spiral /
+zig-zag in `Groomer.texture`); no pattern = the old code path, byte-identical (hash test in `hairTypes.test.ts`). New
+recipe flags: sleek, bevel, looped, knotless, goddess, puff, deco (paranda / gajra / ribbon / beads → `GroomOut.deco/
+decoW/decoC`, colour key `hairDeco`), tags (indian / textured / braids / short / long → studio filter chips). New ties
+topknot / bantu / pineapple / bubble / halfspace, braids sideplait / flattwist / fulani, locs micro.
 
 ## Sandbox limits (this cloud environment)
 Outbound network to supabase.co / vercel.app is blocked from the shell; use Supabase MCP (`execute_sql`) and Vercel

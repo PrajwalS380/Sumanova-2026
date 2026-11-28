@@ -18,9 +18,49 @@ export type HairFlow = 'down' | 'back' | 'forward' | 'up' | 'side' | 'out' | 'me
 export type PartT = 'none' | 'left' | 'right' | 'middle' | 'zigzag';
 export type FringeT = 'none' | 'straight' | 'curtain' | 'side' | 'wispy' | 'textured';
 export type FadeT = 'none' | 'taper' | 'low' | 'mid' | 'high' | 'skin' | 'undercut' | 'sides' | 'buzz';
-export type TieT = 'none' | 'pony' | 'lowpony' | 'sidepony' | 'twinpony' | 'bun' | 'lowbun' | 'messybun' | 'spacebuns' | 'halfup';
-export type BraidT = 'none' | 'single' | 'double' | 'french' | 'dutch' | 'fishtail' | 'box' | 'cornrows' | 'braidbun';
-export type LocT = 'none' | 'locs' | 'twists' | 'butterfly' | 'wavylocs';
+export type TieT = 'none' | 'pony' | 'lowpony' | 'sidepony' | 'twinpony' | 'bun' | 'lowbun' | 'messybun' | 'spacebuns' | 'halfup'
+  // sumanova-us-109
+  | 'topknot' | 'bantu' | 'pineapple' | 'bubble' | 'halfspace';
+export type BraidT = 'none' | 'single' | 'double' | 'french' | 'dutch' | 'fishtail' | 'box' | 'cornrows' | 'braidbun'
+  // sumanova-us-109
+  | 'sideplait' | 'flattwist' | 'fulani';
+export type LocT = 'none' | 'locs' | 'twists' | 'butterfly' | 'wavylocs' | 'micro';
+/** Hair-type scale (sumanova-us-109): 1 straight, 2A–2C waves, 3A–3C curls, 4A–4C coils. */
+export type CurlPattern = '1' | '2A' | '2B' | '2C' | '3A' | '3B' | '3C' | '4A' | '4B' | '4C';
+export const CURL_PATTERNS: CurlPattern[] = ['1', '2A', '2B', '2C', '3A', '3B', '3C', '4A', '4B', '4C'];
+export interface PatternSpec { tex: HairTex; shape: 'none' | 'wave' | 'spiral' | 'zigzag'; radius: number; pitch: number; shrink: number; vol: number; clump: number; frizz: number }
+/** One table drives the groom for every curl pattern (head-radius units). */
+export const PATTERN_SPEC: Record<CurlPattern, PatternSpec> = {
+  '1': { tex: 'straight', shape: 'none', radius: 0, pitch: 1, shrink: 1, vol: 0, clump: 1, frizz: 0 },
+  '2A': { tex: 'wavy', shape: 'wave', radius: 0.03, pitch: 0.1 * 2 * Math.PI, shrink: 0.97, vol: 0.05, clump: 1, frizz: 0 },
+  '2B': { tex: 'wavy', shape: 'wave', radius: 0.045, pitch: 0.08 * 2 * Math.PI, shrink: 0.94, vol: 0.1, clump: 0.95, frizz: 0 },
+  '2C': { tex: 'wavy', shape: 'wave', radius: 0.06, pitch: 0.065 * 2 * Math.PI, shrink: 0.9, vol: 0.2, clump: 0.9, frizz: 1 },
+  '3A': { tex: 'curly', shape: 'spiral', radius: 0.05, pitch: 0.12, shrink: 0.88, vol: 0.25, clump: 0.9, frizz: 0 },
+  '3B': { tex: 'curly', shape: 'spiral', radius: 0.035, pitch: 0.08, shrink: 0.8, vol: 0.35, clump: 0.8, frizz: 0 },
+  '3C': { tex: 'curly', shape: 'spiral', radius: 0.025, pitch: 0.055, shrink: 0.7, vol: 0.45, clump: 0.75, frizz: 0 },
+  '4A': { tex: 'coily', shape: 'spiral', radius: 0.036, pitch: 0.05, shrink: 0.62, vol: 0.9, clump: 0.7, frizz: 0 },
+  '4B': { tex: 'coily', shape: 'zigzag', radius: 0.034, pitch: 0.042, shrink: 0.52, vol: 1.1, clump: 0.65, frizz: 0 },
+  '4C': { tex: 'coily', shape: 'zigzag', radius: 0.032, pitch: 0.034, shrink: 0.42, vol: 1.35, clump: 0.6, frizz: 0 },
+};
+/** One-line hints for the editor. */
+export const PATTERN_HINT: Record<CurlPattern, string> = {
+  '1': 'Straight, no curl',
+  '2A': '2A: loose, barely-there waves',
+  '2B': '2B: defined S-waves from mid-length',
+  '2C': '2C: deep waves with some frizz',
+  '3A': '3A: big, loose curls',
+  '3B': '3B: springy ringlets',
+  '3C': '3C: tight corkscrew curls',
+  '4A': '4A: defined coils',
+  '4B': '4B: Z-shaped coils',
+  '4C': '4C: tight zig-zag coils, most shrinkage',
+};
+/** Default pattern for a texture word (old looks without a pattern keep their own path). */
+export const TEX_PATTERN: Partial<Record<HairTex, CurlPattern>> = { straight: '1', wavy: '2B', curly: '3B', coily: '4A' };
+export type HairTag = 'indian' | 'textured' | 'braids' | 'short' | 'long';
+export const HAIR_TAGS: HairTag[] = ['indian', 'textured', 'braids', 'short', 'long'];
+/** Decorations that belong to a style (paranda, gajra, ribbons, beads). Colour key: hairDeco. */
+export type DecoT = 'none' | 'paranda' | 'gajra' | 'ribbon' | 'beads';
 /** Hairline edges: crisp barber line-up, natural thinning with baby hairs, or styled laid edges. */
 export type EdgeT = 'clean' | 'soft' | 'laid';
 /** Colour treatment of the style (the colours themselves come from the colour rail). */
@@ -66,6 +106,23 @@ export interface HairP {
   paint: PaintT;
   /** how the hairline ends (sumanova-us-107) */
   edges: EdgeT;
+  // ---- sumanova-us-109 (all optional: old recipes stay byte-identical)
+  /** hair-type scale; overrides tex / curl with the pattern table */
+  pattern?: CurlPattern;
+  /** 0 … 1: sleek / oiled / pressed (flat to the scalp, glossier) */
+  sleek?: number;
+  /** 0 … 1: long straight ends curve under (silk press) */
+  bevel?: number;
+  deco?: DecoT;
+  tags?: HairTag[];
+  /** double braids loop back up and are tied behind the ears */
+  looped?: boolean;
+  /** box braids: no root knot (the braid grows out of the scalp) */
+  knotless?: boolean;
+  /** box braids end in loose curly pieces */
+  goddess?: boolean;
+  /** a lifted front section (puff and plait) */
+  puff?: boolean;
 }
 
 const D: HairP = {
@@ -200,7 +257,55 @@ const LIB: [string, HairP][] = [
   S('Updos & braids', 'Top knot', { tie: 'messybun', top: 0.5, side: 0.06, back: 0.06, flow: 'back', vol: 0.3, messy: 0.3, fade: 'undercut' }),
   S('Curly & coily', 'Afro puff', { tie: 'bun', tex: 'coily', curl: 1, top: 0.4, side: 0.3, back: 0.3, flow: 'back', vol: 0.3, afro: 0 }),
   S('Creative', 'Lowlight shag', { top: 0.55, side: 0.7, back: 0.85, flow: 'down', part: 'middle', fringe: 'wispy', fringeLen: 0.38, vol: 0.8, layers: 0.95, tips: 0.85, tex: 'wavy', curl: 0.35, paint: 'lowlights' }),
+  // ------------------------------------------------------------------ sumanova-us-109: every hair type (ids 110–139)
+  // South-Asian
+  S('Updos & braids', 'Long plait with paranda', { braid: 'single', top: 0.4, side: 0.3, back: 0.3, flow: 'back', part: 'middle', vol: 0.15, tail: 2.4, tips: 0.4, sleek: 0.5, deco: 'paranda', tags: ['indian', 'braids', 'long'] }),
+  S('Updos & braids', 'Jooda with gajra', { tie: 'lowbun', top: 0.4, side: 0.3, back: 0.3, flow: 'back', part: 'middle', vol: 0.1, sleek: 0.7, deco: 'gajra', tags: ['indian'] }),
+  S('Updos & braids', 'Oiled middle-part plait', { braid: 'single', top: 0.4, side: 0.3, back: 0.3, flow: 'back', part: 'middle', vol: 0.05, tail: 2.1, tips: 0.35, sleek: 1, tags: ['indian', 'braids', 'long'] }),
+  S('Updos & braids', 'Twin plaits with ribbons', { braid: 'double', looped: true, top: 0.4, side: 0.3, back: 0.3, flow: 'down', part: 'middle', vol: 0.12, tail: 1.3, tips: 0.4, sleek: 0.4, deco: 'ribbon', tags: ['indian', 'braids'] }),
+  S('Updos & braids', 'Side plait over shoulder', { braid: 'sideplait', top: 0.4, side: 0.3, back: 0.3, flow: 'back', part: 'left', vol: 0.2, tail: 2.0, tips: 0.45, tags: ['indian', 'braids', 'long'] }),
+  S('Updos & braids', 'Joora top knot', { tie: 'topknot', top: 0.4, side: 0.3, back: 0.3, flow: 'back', part: 'none', vol: 0.05, sleek: 0.8, tags: ['indian'] }),
+  S('Updos & braids', 'Puff and plait', { braid: 'single', puff: true, top: 0.4, side: 0.3, back: 0.3, flow: 'back', part: 'none', vol: 0.3, tail: 1.8, tips: 0.4, tags: ['indian', 'braids'] }),
+  S('Long', 'Waist-length straight', { top: 0.9, side: 2.6, back: 2.9, flow: 'down', part: 'middle', vol: 0.3, tips: 0.35, sleek: 0.6, tags: ['indian', 'long'] }),
+  // Afro & textured
+  S('Curly & coily', 'Bantu knots', { tie: 'bantu', tex: 'coily', curl: 1, pattern: '4B', top: 0.3, side: 0.3, back: 0.3, flow: 'out', vol: 0.2, tags: ['textured', 'short'] }),
+  S('Curly & coily', 'Finger coils', { tex: 'coily', curl: 0.9, pattern: '4A', top: 0.45, side: 0.36, back: 0.38, flow: 'out', vol: 0.9, clump: 0.8, tips: 0.4, tags: ['textured', 'short'] }),
+  S('Curly & coily', 'Short two-strand twists', { loc: 'twists', top: 0.5, side: 0.45, back: 0.5, flow: 'out', part: 'none', vol: 0.4, tags: ['textured', 'short'] }),
+  S('Updos & braids', 'Flat twists', { braid: 'flattwist', top: 0.4, side: 0.3, back: 0.3, flow: 'back', vol: 0, tail: 0.6, tags: ['textured', 'braids'] }),
+  S('Curly & coily', 'Pineapple puff', { tie: 'pineapple', tex: 'coily', curl: 1, pattern: '4C', top: 0.4, side: 0.3, back: 0.3, flow: 'back', vol: 0.2, edges: 'laid', tags: ['textured'] }),
+  S('Curly & coily', 'Tapered TWA', { tex: 'coily', curl: 1, pattern: '4C', afro: 0.25, top: 0.32, side: 0.18, back: 0.2, flow: 'out', vol: 0.8, fade: 'taper', tags: ['textured', 'short'] }),
+  S('Curly & coily', 'Wash-and-go curls', { tex: 'curly', curl: 0.9, pattern: '3C', top: 0.7, side: 0.85, back: 0.9, flow: 'down', part: 'middle', vol: 1, clump: 0.8, tips: 0.4, tags: ['textured'] }),
+  S('Curly & coily', 'Sisterlocks', { loc: 'micro', top: 0.85, side: 1.15, back: 1.25, flow: 'down', part: 'middle', vol: 0.3, tags: ['textured', 'long'] }),
+  S('Updos & braids', 'Knotless braids', { braid: 'box', knotless: true, top: 0.4, side: 1.6, back: 1.8, flow: 'down', part: 'middle', vol: 0.25, tail: 1.8, tags: ['textured', 'braids', 'long'] }),
+  S('Updos & braids', 'Goddess braids', { braid: 'box', knotless: true, goddess: true, top: 0.4, side: 1.5, back: 1.7, flow: 'down', part: 'middle', vol: 0.3, tail: 1.7, tags: ['textured', 'braids', 'long'] }),
+  S('Updos & braids', 'Fulani-inspired braids', { braid: 'fulani', top: 0.4, side: 1.3, back: 1.5, flow: 'down', part: 'middle', vol: 0.2, tail: 1.5, deco: 'beads', tags: ['textured', 'braids', 'long'] }),
+  S('Creative', 'Coily frohawk', { flow: 'hawk', tex: 'coily', curl: 1, pattern: '4B', top: 0.55, side: 0.05, back: 0.35, lift: 0.6, vol: 1, clump: 0.8, fade: 'taper', tags: ['textured'] }),
+  // Waves & curls
+  S('Medium', 'Wavy lob', { tex: 'wavy', curl: 0.6, pattern: '2B', top: 0.62, side: 0.95, back: 0.9, flow: 'down', part: 'left', vol: 0.55, tips: 0.5 }),
+  S('Long', 'Beach waves', { tex: 'wavy', curl: 0.7, pattern: '2C', top: 0.8, side: 1.6, back: 1.75, flow: 'down', part: 'middle', vol: 0.65, messy: 0.3, tips: 0.65, tags: ['long'] }),
+  S('Medium', 'Curly shag', { tex: 'curly', curl: 0.6, pattern: '3A', top: 0.62, side: 0.85, back: 0.9, flow: 'down', part: 'none', fringe: 'textured', fringeLen: 0.42, layers: 0.9, vol: 1, tips: 0.6, tags: ['textured'] }),
+  S('Long', 'Spiral curls', { tex: 'curly', curl: 0.85, pattern: '3B', top: 0.8, side: 1.8, back: 2.0, flow: 'down', part: 'middle', vol: 1.1, clump: 0.8, tips: 0.4, tags: ['textured', 'long'] }),
+  S('Long', 'Silk press', { pattern: '1', top: 0.85, side: 1.7, back: 1.9, flow: 'down', part: 'middle', vol: 0.35, tips: 0.2, sleek: 0.8, bevel: 1, tags: ['long'] }),
+  // Everyday & trendy
+  S('Updos & braids', 'Bob with baby bangs', { top: 0.55, side: 0.72, back: 0.66, flow: 'down', part: 'none', fringe: 'straight', fringeLen: 0.22, vol: 0.35, tips: 0.05, clump: 1.15 }),
+  S('Updos & braids', 'Man bun with fade', { tie: 'bun', top: 0.5, side: 0.06, back: 0.06, flow: 'back', vol: 0.25, fade: 'skin', tags: ['short'] }),
+  S('Updos & braids', 'Slick-back bun', { tie: 'lowbun', top: 0.45, side: 0.3, back: 0.3, flow: 'back', part: 'none', vol: 0.05, sleek: 0.85 }),
+  S('Updos & braids', 'Bubble ponytail', { tie: 'bubble', top: 0.4, side: 0.3, back: 0.3, flow: 'back', vol: 0.2, tail: 2.0, tips: 0.5 }),
+  S('Updos & braids', 'Half-up space buns', { tie: 'halfspace', top: 0.6, side: 1.4, back: 1.6, flow: 'down', part: 'middle', vol: 0.45, tips: 0.5 }),
 ];
+
+/** Tags on existing recipes (discovery only: they don't change the groom). */
+const OLD_TAGS: Record<string, HairTag[]> = {
+  'Natural afro': ['textured'], 'Rounded afro': ['textured'], 'Tight coils': ['textured', 'short'], 'Loose curls': ['textured'],
+  Ringlets: ['textured'], 'Curly bob': ['textured'], 'Curly fringe': ['textured'], 'Curly undercut': ['textured', 'short'],
+  'Textured coils': ['textured'], 'Twist-out': ['textured'], 'Short locs': ['textured', 'short'], 'Medium locs': ['textured'],
+  'Long locs': ['textured', 'long'], 'Wavy locs': ['textured', 'long'], 'Rope twists': ['textured', 'long'], 'Box braids': ['textured', 'braids', 'long'],
+  Cornrows: ['textured', 'braids'], 'Butterfly locs': ['textured', 'long'], 'Long coils': ['textured', 'long'], 'Curly top fade': ['textured', 'short'],
+  'Afro puff': ['textured'], 'Single braid': ['braids', 'indian'], 'Double braids': ['braids', 'indian'], 'French braid': ['braids'],
+  'Dutch braid': ['braids'], 'Fishtail braid': ['braids'], 'Braided bun': ['braids'], 'Low bun': ['indian'], 'Middle-parted long': ['indian', 'long'],
+  'Buzz cut': ['short'], 'Crew cut': ['short'], 'Classic short': ['short'], 'Textured crop': ['short'], 'Long straight': ['long'], 'Long wavy': ['long'],
+};
+for (const [name, p] of LIB) if (OLD_TAGS[name]) p.tags = OLD_TAGS[name];
 
 export const HAIRSTYLES: Variant<HairP>[] = LIB.map(([name, p], id) => ({ id, name, family: p.cat, p }));
 
@@ -228,6 +333,8 @@ export interface HairTune {
   /** −1 … 1 (lower … higher / receding hairline) */
   line?: number;
   edges?: EdgeT;
+  /** hair-type scale (sumanova-us-109) */
+  pattern?: CurlPattern;
 }
 
 /** Which controls make sense for a style (e.g. no parting on a buzz cut, no fringe on cornrows). */
@@ -263,6 +370,13 @@ export function tuneHair(p: HairP, t: HairTune | null | undefined): HairP {
   if (c.tex && t.tex) {
     q.tex = t.tex;
     if (t.tex !== p.tex) q.curl = t.tex === 'coily' ? 0.9 : t.tex === 'curly' ? 0.75 : 0.55;
+    // a new texture word drops the recipe's own pattern (unless one is picked below)
+    if (t.tex !== p.tex) delete q.pattern;
+  }
+  if (c.tex && t.pattern) {
+    q.pattern = t.pattern;
+    q.tex = PATTERN_SPEC[t.pattern].tex;
+    if (q.tex !== p.tex) q.curl = q.tex === 'coily' ? 0.9 : q.tex === 'curly' ? 0.75 : q.tex === 'wavy' ? 0.55 : p.curl;
   }
   if (c.part && t.part) q.part = t.part;
   if (c.fringe && t.fringe) {
@@ -288,7 +402,7 @@ export function normalizeHairTune(raw: unknown): HairTune | undefined {
   const r = raw as Record<string, unknown>;
   const num = (v: unknown, lo: number, hi: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : undefined);
   const pick = <T extends string>(v: unknown, list: T[]) => (list.includes(v as T) ? (v as T) : undefined);
-  const t: HairTune = { length: num(r.length, -1, 1), volume: num(r.volume, -1, 1), tex: pick(r.tex, TEXES), part: pick(r.part, PARTS), fringe: pick(r.fringe, FRINGES), paint: pick(r.paint, PAINTS), gloss: num(r.gloss, 0, 1), line: num(r.line, -1, 1), edges: pick(r.edges, EDGES) };
+  const t: HairTune = { length: num(r.length, -1, 1), volume: num(r.volume, -1, 1), tex: pick(r.tex, TEXES), part: pick(r.part, PARTS), fringe: pick(r.fringe, FRINGES), paint: pick(r.paint, PAINTS), gloss: num(r.gloss, 0, 1), line: num(r.line, -1, 1), edges: pick(r.edges, EDGES), pattern: pick(r.pattern, CURL_PATTERNS) };
   for (const k of Object.keys(t) as (keyof HairTune)[]) if (t[k] === undefined) delete t[k];
   return Object.keys(t).length ? t : undefined;
 }

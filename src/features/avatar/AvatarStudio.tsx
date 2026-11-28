@@ -18,7 +18,7 @@ import { prepareLook } from './render/lookParts';
 import { CATEGORIES, EXPRESSIONS, POSES, type Category, type Mode } from './editor/categories';
 import { mannequin, useThumb } from './editor/thumbs';
 import { HairControls, HairSearch, useFavs } from './editor/HairControls';
-import type { HairTune } from './look/hair';
+import { HAIRSTYLES, type HairTune } from './look/hair';
 
 const FACE_SLOTS: Slot[] = ['head', 'eyes', 'lashes', 'brows', 'nose', 'mouth', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce'];
 
@@ -252,7 +252,7 @@ function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial, onHair }
   return (
     <div className="space-y-4">
       {cat.sliders?.map((s) => <TuneSlider key={s.key} label={s.label} value={look.tune[s.key]} onChange={(v) => onTune(s.key, v)} />)}
-      {cat.id === 'hair' && <HairControls look={look} onHair={onHair} onHi={(c) => onColor('hairHi', c)} />}
+      {cat.id === 'hair' && <HairControls look={look} onHair={onHair} onHi={(c) => onColor('hairHi', c)} onDeco={(c) => onColor('hairDeco', c)} />}
       {cat.swatches && <SwatchGrid palette={cat.swatches.palette} value={cat.swatches.key === 'skin' ? look.skin : look.color[cat.swatches.key] ?? null} allowNone={cat.swatches.allowNone} onPick={(c) => onColor(cat.swatches!.key, c)} />}
       {cat.slot && <VariantGrid cat={cat} slot={cat.slot} look={look} onPick={(id) => onPick(cat.slot!, id)} />}
     </div>
@@ -270,7 +270,19 @@ function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; l
   const favs = useFavs();
   const isHair = slot === 'hair';
   const query = q.trim().toLowerCase();
-  const shown = list.filter((v) => (fam === '♥' ? favs.includes(v.id) : !fam || v.family === fam) && (!query || v.name.toLowerCase().includes(query) || v.family.toLowerCase().includes(query)));
+  // hair: tags (Textured / Indian) and curl patterns ("4c", "3b") are searchable and filterable
+  const hairMeta = (id: number) => {
+    const hp = isHair ? HAIRSTYLES[id]?.p : undefined;
+    return { tags: hp?.tags ?? [], pattern: hp?.pattern?.toLowerCase() ?? '' };
+  };
+  const matchFam = (v: { id: number; family: string }) =>
+    fam === '♥' ? favs.includes(v.id) : fam === '#textured' ? hairMeta(v.id).tags.includes('textured') : fam === '#indian' ? hairMeta(v.id).tags.includes('indian') : !fam || v.family === fam;
+  const matchQuery = (v: { id: number; name: string; family: string }) => {
+    if (!query) return true;
+    const m = hairMeta(v.id);
+    return v.name.toLowerCase().includes(query) || v.family.toLowerCase().includes(query) || m.tags.some((t) => t.includes(query)) || (!!m.pattern && m.pattern === query);
+  };
+  const shown = list.filter((v) => matchFam(v) && matchQuery(v));
   const color = cat.color ? look.color[cat.color.key] ?? null : null;
   const tip = slot === 'hair' ? look.color.hairTip ?? null : null;
   return (
@@ -280,6 +292,8 @@ function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; l
         <div className="no-scrollbar -mx-3 mb-3 flex gap-1.5 overflow-x-auto px-3">
           <FamilyChip on={!fam} onClick={() => setFam(null)}>All {list.length}</FamilyChip>
           {isHair && <FamilyChip on={fam === '♥'} onClick={() => setFam('♥')}>♥ Favourites {favs.length}</FamilyChip>}
+          {isHair && <FamilyChip on={fam === '#textured'} onClick={() => setFam('#textured')}>Textured</FamilyChip>}
+          {isHair && <FamilyChip on={fam === '#indian'} onClick={() => setFam('#indian')}>Indian</FamilyChip>}
           {families.map((f) => (
             <FamilyChip key={f} on={fam === f} onClick={() => setFam(f)}>{f}</FamilyChip>
           ))}

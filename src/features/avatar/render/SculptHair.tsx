@@ -81,7 +81,7 @@ const MOTION_ROT = `
 #ifdef HAIR_MOTION
 if (hairGrp > -0.5 && uMotion > 0.0) {
   int gi = int(hairGrp + 0.5);
-  float tt = clamp(color.g, 0.0, 1.0);
+  float tt = clamp(HAIR_TT, 0.0, 1.0);
   hRot = mix(uGrpRot[gi], uGrpTip[gi], smoothstep(0.4, 1.0, tt)) * pow(tt, 1.4) * uMotion;
 }
 #endif
@@ -116,7 +116,7 @@ function useHairMaterial(root: string, tip: string | null, hi: string | null, pa
     // strand cards: fine strands cut out of thin strips (alpha test keeps them crisp, no sorting)
     if (card) { m.alphaTest = 0.45; m.side = THREE.DoubleSide; }
     const uniforms = { uRoot: { value: new THREE.Color(root) }, uTip: { value: new THREE.Color(tip ?? root) }, uHi: { value: new THREE.Color(hi ?? '#e8c9a0') }, uPaint: { value: 0 }, uGloss: { value: 0.6 }, uBaked: { value: 0 }, uCard: { value: card ? 1 : 0 }, uSway: sway.current, ...(motion ?? {}) };
-    if (motion) m.defines = { ...m.defines, HAIR_MOTION: '' };
+    if (motion) m.defines = { ...m.defines, HAIR_MOTION: '', HAIR_TT: 'color.g' };
     m.userData.uniforms = uniforms;
     m.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, uniforms);
@@ -272,13 +272,37 @@ diffuseColor.a = clamp(dens * 0.55 + dots * 0.4 * dens, 0.0, 0.92);`,
   return mat;
 }
 
+/**
+ * Style decorations (sumanova-us-109: paranda, gajra, ribbons, beads): plain coloured pieces that
+ * swing with their braid (same motion as the braid's tip).
+ */
+function useDecoMaterial(color: string, mu: MotionUniforms, metal = false) {
+  const mat = useMemo(() => {
+    const m = new THREE.MeshPhysicalMaterial({ roughness: metal ? 0.3 : 0.55, metalness: metal ? 0.7 : 0, sheen: metal ? 0 : 0.6, clearcoat: metal ? 0.4 : 0.1 });
+    m.defines = { HAIR_MOTION: '', HAIR_TT: '1.0' };
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, mu);
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute vec3 hairT;' + MOTION_HEAD.replace('attribute vec3 hairPivot; attribute float hairGrp;', 'attribute vec3 hairPivot; attribute float hairGrp;'))
+        .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n' + MOTION_ROT + '\nobjectNormal = rotV(objectNormal, hRot);')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + MOTION_APPLY);
+    };
+    return m;
+  }, [mu, metal]);
+  useEffect(() => { mat.color.set(color); }, [mat, color]);
+  useEffect(() => () => mat.dispose(), [mat]);
+  return mat;
+}
+/** default decoration colours (when the Decoration colour isn't set) */
+const DECO_DEFAULT: Record<string, string> = { paranda: '#c2185b', ribbon: '#e0306b', beads: '#c9a24a', gajra: '#fbfaf3', none: '#ff6f61' };
+
 /** lighten (k > 0) or darken (k < 0) a colour toward a warm tone */
 function shift(hex: string, k: number) {
   const c = new THREE.Color(hex);
   return '#' + (k > 0 ? c.lerp(new THREE.Color('#f3d7a6'), k) : c.multiplyScalar(1 + k)).getHexString();
 }
 
-export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hatOn, animate = true, bakedId = null }: { h: HeadShape; p: HairP; color: string; tip: string | null; hi?: string | null; gloss?: number; seed: number; hatOn: boolean; animate?: boolean; /** finished offline-sculpted asset for this style (see render/bakedHair) */ bakedId?: number | null }) {
+export function SculptHair({ h, p, color, tip, hi = null, deco = null, gloss = 0.6, seed, hatOn, animate = true, bakedId = null }: { h: HeadShape; p: HairP; color: string; tip: string | null; hi?: string | null; /** decoration colour (paranda, ribbons, beads, hair ties) — sumanova-us-109 */ deco?: string | null; gloss?: number; seed: number; hatOn: boolean; animate?: boolean; /** finished offline-sculpted asset for this style (see render/bakedHair) */ bakedId?: number | null }) {
   const res = useSculpt({ k: 'hair', h, p, seed, hatOn });
   const baked = useBakedHair(bakedId);
   const sway = useRef({ value: new THREE.Vector3() });
@@ -310,10 +334,15 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
     for (let k = 0; k < GROUPS; k++) solver.weights[k] = k <= 4 ? loose : 1;
     solver.weights[0] = Math.max(loose, p.fringe !== 'none' ? Math.min(1, Math.max(0, (p.fringeLen - 0.3) / 0.6)) : 0);
   }, [p, solver]);
-  const mat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, null, false, mu);
-  const baseMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway);
+  // sleek / oiled / pressed styles shine more
+  const shine = p.sleek ? Math.min(1, gloss + 0.35 * p.sleek) : gloss;
+  const mat = useHairMaterial(color, tip, hi, p.paint, shine, sway, null, false, mu);
+  const decoMat = useDecoMaterial(deco ?? DECO_DEFAULT[p.deco ?? 'none'], mu, p.deco === 'beads');
+  const budMat = useDecoMaterial('#fbfaf3', mu);
+  const budCentreMat = useDecoMaterial('#efe2b8', mu);
+  const baseMat = useHairMaterial(color, tip, hi, p.paint, shine, sway);
   const bakedMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, baked?.normalMap ?? null);
-  const cardMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, null, true, mu);
+  const cardMat = useHairMaterial(color, tip, hi, p.paint, shine, sway, null, true, mu);
   // the asset was sculpted on the reference head: fit it to this head's proportions
   const fit = useMemo(() => {
     const r = bakeHead();
@@ -376,7 +405,7 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
   });
 
   if (!res) return null;
-  const g = { cards: res.find((x) => x.role === 'cards')?.geo, geo: res.find((x) => x.role === 'main')?.geo, base: res.find((x) => x.role === 'base')?.geo, fade: res.find((x) => x.role === 'fade')?.geo, band: res.find((x) => x.role === 'band')?.geo };
+  const g = { cards: res.find((x) => x.role === 'cards')?.geo, geo: res.find((x) => x.role === 'main')?.geo, base: res.find((x) => x.role === 'base')?.geo, fade: res.find((x) => x.role === 'fade')?.geo, band: res.find((x) => x.role === 'band')?.geo, deco: res.find((x) => x.role === 'deco')?.geo, decoW: res.find((x) => x.role === 'decoW')?.geo, decoC: res.find((x) => x.role === 'decoC')?.geo };
   return (
     <group ref={group}>
       {baked ? (
@@ -391,9 +420,12 @@ export function SculptHair({ h, p, color, tip, hi = null, gloss = 0.6, seed, hat
       {g.fade && <mesh geometry={g.fade} material={stubble} />}
       {g.band && (
         <mesh geometry={g.band}>
-          <meshStandardMaterial color="#ff6f61" roughness={0.55} />
+          <meshStandardMaterial color={deco ?? '#ff6f61'} roughness={0.55} />
         </mesh>
       )}
+      {g.deco && <mesh geometry={g.deco} material={decoMat} castShadow />}
+      {g.decoW && <mesh geometry={g.decoW} material={budMat} />}
+      {g.decoC && <mesh geometry={g.decoC} material={budCentreMat} />}
     </group>
   );
 }

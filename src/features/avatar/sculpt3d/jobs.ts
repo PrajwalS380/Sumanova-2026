@@ -22,7 +22,7 @@ export type Job =
   | { k: 'head'; h: HeadShape; nose: NoseP | null; ears: EarP };
 
 /** Bump when any sculpt builder changes its output (invalidates the on-device cache). */
-export const SCULPT_VERSION = 101;
+export const SCULPT_VERSION = 107;
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 export function jobKey(j: Job): string {
@@ -44,7 +44,7 @@ export function jobKey(j: Job): string {
 }
 
 /** Result: named geometries (main, trims…, fade, band) with an optional tone per piece. */
-export interface Piece { geo: THREE.BufferGeometry; tone?: Tone; role: 'main' | 'trim' | 'fade' | 'band' | 'base' | 'cards' }
+export interface Piece { geo: THREE.BufferGeometry; tone?: Tone; role: 'main' | 'trim' | 'fade' | 'band' | 'base' | 'cards' | 'deco' | 'decoW' | 'decoC' }
 export type Result = Piece[];
 
 const fromGarment = (g: GarmentGeo): Result => [...(g.main ? [{ geo: g.main, role: 'main' as const }] : []), ...g.trims.map((t) => ({ geo: t.geo, tone: t.tone, role: 'trim' as const }))];
@@ -68,6 +68,9 @@ export function runJob(j: Job): Result {
       if (o.base) out.push({ geo: o.base, role: 'base' });
       if (o.fade) out.push({ geo: o.fade, role: 'fade' });
       if (o.band) out.push({ geo: o.band, role: 'band' });
+      if (o.deco) out.push({ geo: o.deco, role: 'deco' });
+      if (o.decoW) out.push({ geo: o.decoW, role: 'decoW' });
+      if (o.decoC) out.push({ geo: o.decoC, role: 'decoC' });
       return out;
     }
   }

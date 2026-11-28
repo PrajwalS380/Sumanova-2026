@@ -42,6 +42,11 @@ describe('sculpted meshes are watertight (no see-through holes)', () => {
     // the scalp layer under the strands must be closed (no scalp showing through)
     ['scalp layer: long wavy', () => groomHair(h, HAIRSTYLES[hairId('Long wavy')].p, 1, false).base!],
     ['scalp layer: rounded afro', () => groomHair(h, HAIRSTYLES[hairId('Rounded afro')].p, 1, false).base!],
+    // sumanova-us-109 structures
+    ['scalp layer: bantu knots', () => groomHair(h, HAIRSTYLES[hairId('Bantu knots')].p, 1, false).base!],
+    ['scalp layer: sisterlocks', () => groomHair(h, HAIRSTYLES[hairId('Sisterlocks')].p, 1, false).base!],
+    ['scalp layer: bubble ponytail', () => groomHair(h, HAIRSTYLES[hairId('Bubble ponytail')].p, 1, false).base!],
+    ['decoration: gajra buds', () => groomHair(h, HAIRSTYLES[hairId('Jooda with gajra')].p, 1, false).decoW!],
     ['head with nose + ears', () => headGeometry(h, NOSES[0].p, EARS[0].p)],
   ];
   for (const [name, make] of cases) it(name, () => expect(holes(make())).toBe(0));

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Heart, Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { Look } from '../look/config';
-import { HAIRSTYLES, HAIR_OPTIONS, hairControls, type EdgeT, type FringeT, type HairTex, type HairTune, type PaintT, type PartT } from '../look/hair';
+import { CURL_PATTERNS, HAIRSTYLES, HAIR_OPTIONS, PATTERN_HINT, PATTERN_SPEC, hairControls, type CurlPattern, type EdgeT, type FringeT, type HairTex, type HairTune, type PaintT, type PartT } from '../look/hair';
 import { HAIR } from '../look/palettes';
 
 /**
@@ -14,9 +14,12 @@ const TEX_LABEL: Record<HairTex, string> = { straight: 'Straight', wavy: 'Wavy',
 const PART_LABEL: Record<PartT, string> = { none: 'None', left: 'Left', right: 'Right', middle: 'Middle', zigzag: 'Zigzag' };
 const FRINGE_LABEL: Record<FringeT, string> = { none: 'None', straight: 'Straight', curtain: 'Curtain', side: 'Side', wispy: 'Wispy', textured: 'Textured' };
 const EDGE_LABEL: Record<EdgeT, string> = { clean: 'Clean', soft: 'Soft', laid: 'Laid' };
+/** decoration colours: silk reds / pinks / marigold, gold and silver for beads, a few brights */
+const DECO_COLOURS = ['#c2185b', '#e0306b', '#d32f2f', '#f57c00', '#ffb300', '#c9a24a', '#b0b7bf', '#2e7d32', '#1565c0', '#6a1b9a', '#ffffff', '#111111'];
+const PATTERN_LABEL = Object.fromEntries(CURL_PATTERNS.map((k) => [k, k])) as Record<CurlPattern, string>;
 const PAINT_LABEL: Record<PaintT, string> = { none: 'Solid', twotone: 'Two-tone', ombre: 'Ombré', highlights: 'Highlights', streaks: 'Streaks', split: 'Split dye', lowlights: 'Lowlights' };
 
-export function HairControls({ look, onHair, onHi }: { look: Look; onHair: (t: HairTune) => void; onHi: (c: string | null) => void }) {
+export function HairControls({ look, onHair, onHi, onDeco }: { look: Look; onHair: (t: HairTune) => void; onHi: (c: string | null) => void; /** decoration colour (paranda, ribbons, beads) */ onDeco?: (c: string | null) => void }) {
   const id = look.pick.hair;
   if (id == null) return null;
   const style = HAIRSTYLES[id];
@@ -25,6 +28,10 @@ export function HairControls({ look, onHair, onHi }: { look: Look; onHair: (t: H
   const t = look.hair ?? {};
   const set = (patch: Partial<HairTune>) => onHair({ ...t, ...patch });
   const paint = t.paint ?? p.paint;
+  // curl pattern chips for the chosen texture family (wavy → 2A–2C, curly → 3A–3C, coily → 4A–4C)
+  const texNow = t.pattern ? PATTERN_SPEC[t.pattern].tex : t.tex ?? p.tex;
+  const patterns = CURL_PATTERNS.filter((k) => k !== '1' && PATTERN_SPEC[k].tex === texNow);
+  const patNow: CurlPattern = t.pattern ?? (p.pattern && PATTERN_SPEC[p.pattern].tex === texNow ? p.pattern : patterns.includes((texNow === 'wavy' ? '2B' : texNow === 'curly' ? '3B' : '4A') as CurlPattern) ? ((texNow === 'wavy' ? '2B' : texNow === 'curly' ? '3B' : '4A') as CurlPattern) : '1');
   return (
     <div className="space-y-3 rounded-tile bg-ink/[0.035] p-3">
       <div className="flex items-center justify-between gap-2">
@@ -41,11 +48,28 @@ export function HairControls({ look, onHair, onHi }: { look: Look; onHair: (t: H
       </div>
       {c.length && <Slider label="Length" value={t.length ?? 0} min={-1} onChange={(v) => set({ length: v })} />}
       {c.volume && <Slider label="Volume" value={t.volume ?? 0} min={-1} onChange={(v) => set({ volume: v })} />}
-      {c.tex && <Chips label="Texture" options={HAIR_OPTIONS.tex} labels={TEX_LABEL} value={t.tex ?? p.tex} onPick={(v) => set({ tex: v })} />}
+      {c.tex && <Chips label="Texture" options={HAIR_OPTIONS.tex} labels={TEX_LABEL} value={texNow} onPick={(v) => set({ tex: v, pattern: undefined })} />}
+      {c.tex && patterns.length > 0 && (
+        <div>
+          <Chips label="Curl pattern" options={patterns} labels={PATTERN_LABEL} value={patNow} onPick={(v) => set({ pattern: v, tex: PATTERN_SPEC[v].tex })} />
+          <p className="mt-1 text-[11px] font-semibold text-ink-mute">{PATTERN_HINT[patNow]}</p>
+        </div>
+      )}
       {c.part && <Chips label="Parting" options={HAIR_OPTIONS.part} labels={PART_LABEL} value={t.part ?? p.part} onPick={(v) => set({ part: v })} />}
       {c.line && <Slider label="Hairline" value={t.line ?? 0} min={-1} onChange={(v) => set({ line: v })} />}
       {c.edges && <Chips label="Edges" options={HAIR_OPTIONS.edges} labels={EDGE_LABEL} value={t.edges ?? p.edges} onPick={(v) => set({ edges: v })} />}
       {c.fringe && <Chips label="Fringe" options={HAIR_OPTIONS.fringe} labels={FRINGE_LABEL} value={t.fringe ?? p.fringe} onPick={(v) => set({ fringe: v })} />}
+      {p.deco && p.deco !== 'none' && p.deco !== 'gajra' && onDeco && (
+        <div>
+          <p className="eyebrow mb-1.5">Decoration</p>
+          <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+            <button onClick={() => onDeco(null)} aria-label="Automatic" className={cn('h-8 shrink-0 rounded-2xl bg-ink/[0.06] px-2.5 text-[11px] font-bold ring-2', look.color.hairDeco == null ? 'ring-ember-amber' : 'ring-ink/10')}>Auto</button>
+            {DECO_COLOURS.map((h) => (
+              <button key={h} onClick={() => onDeco(h)} aria-label={h} className={cn('h-8 w-8 shrink-0 rounded-2xl ring-2', look.color.hairDeco === h ? 'ring-ember-amber' : 'ring-ink/10')} style={{ background: h }} />
+            ))}
+          </div>
+        </div>
+      )}
       {c.paint && <Chips label="Colour effect" options={HAIR_OPTIONS.paint} labels={PAINT_LABEL} value={paint} onPick={(v) => set({ paint: v })} />}
       {(paint === 'highlights' || paint === 'streaks' || paint === 'lowlights') && (
         <div>
@@ -135,7 +159,7 @@ export function HairSearch({ value, onChange }: { value: string; onChange: (v: s
   return (
     <label className="mb-2 flex items-center gap-2 rounded-2xl bg-ink/[0.05] px-3 py-2">
       <Search className="h-4 w-4 shrink-0 text-ink-mute" />
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search 110 hairstyles" className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-faint" />
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={`Search ${HAIRSTYLES.length} hairstyles`} className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-faint" />
       {value && (
         <button onClick={() => onChange('')} aria-label="Clear search" className="text-ink-mute">
           <X className="h-4 w-4" />

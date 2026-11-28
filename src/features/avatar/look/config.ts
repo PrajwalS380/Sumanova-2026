@@ -22,7 +22,7 @@ export type Slot = keyof typeof SLOTS;
 export type SlotParams<S extends Slot> = (typeof SLOTS)[S][number]['p'];
 
 /** Colour keys a user can change. */
-export const COLOR_KEYS = ['hair', 'hairTip', 'hairHi', 'eyes', 'brows', 'beard', 'lips', 'shadow', 'blush', 'liner', 'top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat'] as const;
+export const COLOR_KEYS = ['hair', 'hairTip', 'hairHi', 'hairDeco', 'eyes', 'brows', 'beard', 'lips', 'shadow', 'blush', 'liner', 'top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat'] as const;
 export type ColorKey = (typeof COLOR_KEYS)[number];
 
 export interface Look {
