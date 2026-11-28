@@ -1,31 +1,191 @@
-SUMANOVA — AVATAR USER STORY (prompt-style)
-PART 2 — FACE SHAPE & BONE STRUCTURE
-Baseline: build-103
+SUMANOVA — AVATAR USER STORY (detailed prompt)
+PART 2 — FACE SHAPE & BONE STRUCTURE (2/5)
+Baseline: build-103 (code as of SUM-202601 @ df857dc: SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (face): us-111 → us-112 → us-113 → us-114 → us-115.
+  Depends on: us-111 (bone-structure params in HeadP/HeadShape, the shared `faceRelief`
+  surface, `fem` in headFromParams). If us-111 is not built yet: build the face-shape and
+  placement sliders first and add the "Structure" group later — do NOT add the structure
+  params yourself (us-111 owns them).
+  Provides for later stories: one feature-layout function `faceLayout()` (step 2) and the
+  extensible `tune` record. These stories ADD their own sliders to it instead of
+  duplicating placement maths:
+    us-116 (eye proportions/rebalance), us-119 (brow shape + brow height + gap),
+    us-120 (lid / under-eye shape), us-121 (nose shape: bridge, hump, tip, nostrils),
+    us-123 (ears: size, height, angle, lobe, point), us-126/us-128 (lip shape & fullness).
+  This story therefore does NOT add brow, ear, nose-shape or lip-shape sliders.
 
-sumanova-us-112 · FACE 2/5 · Face sliders
-STORY:  As a user, I want fine sliders for my face, so I can match my real face exactly.
-TODAY:  Only face size, eye size and eye spacing sliders.
-PROMPT: Add tune keys (−1…1, normalised in normalizeLook): face width, face length, jaw width,
-        jaw angle, chin length, chin width, cheekbone height, cheek fullness, forehead height,
-        eye height, eye tilt, nose height/width/length, mouth height/width, lip fullness,
-        ear height/size. Group them under each category (Face, Eyes, Nose, Mouth, Ears) as
-        sliders; add "symmetric / free" for eye tilt and brows. Head-mesh changes go through
-        the worker with a 120 ms debounce.
-ACCEPT: - Each slider makes a visible change at ±1 and nothing breaks at the extremes.
-        - Undo/redo covers slider moves; saved looks restore the exact values.
-WIN:    Slider-level precision that Bitmoji's pick-a-shape flow doesn't give.
+=========================================================================================
+sumanova-us-112 · Face sliders — shape, structure and feature placement, precisely mine
+=========================================================================================
 
-RULES (apply to this story):
+USER STORY
+  As a SUMANOVA user, I want simple, precise sliders to make the face exactly like mine —
+  wider or narrower, longer or shorter, jaw, chin, forehead and cheeks, my cheekbones and
+  jaw angle, and where my eyes, nose and mouth sit — with an instant preview, easy reset and
+  undo, so I can get a true likeness that a pick-a-shape avatar (Bitmoji) can't give.
+
+WHY (what build-103 has today)
+  - Only three sliders: Face size (tune.face), Eye size (tune.eyeSize), Eye spacing
+    (tune.eyeGap) — Look.tune is a fixed { eyeSize, eyeGap, face } object.
+  - Feature positions are hard-coded in render/Face.tsx (ex, ey, er, noseY, mouthY) and
+    copied in render/Figure.tsx eyeMetrics() (for glasses) and sculpt3d/head.ts noseYFor()
+    (sculpted nose). Three copies of the same maths: any new slider would drift.
+  - Every slider tick calls commit() → one undo step per pixel of drag.
+  - The selfie flow (selfie/analyze.ts) measures face ratio and jaw but only fills
+    eyeSize / eyeGap.
+
+-----------------------------------------------------------------------------------------
+PROMPT (paste this to Claude)
+-----------------------------------------------------------------------------------------
+Implement sumanova-us-112 in the SUMANOVA repo (branch SUM-202601). Read CLAUDE.md first.
+Scope: look/config.ts (Look.tune + normalizeLook), sculptV2.ts (headFromParams), a new
+render/faceLayout.ts, render/Face.tsx, render/Figure.tsx, render/Accessories.tsx,
+render/Jewelry.tsx, sculpt3d/head.ts, render/lookParts.ts, editor/categories.ts,
+AvatarStudio.tsx (slider panel + undo), selfie/generate.ts (+ analyze.ts if needed),
+the harness, tests, i18n. Do not change catalogues, ids or any other part.
+
+1) TUNE DATA — look/config.ts
+   a. Turn Look.tune into an extensible record of numbers −1 … 1 (default 0). Keep the
+      three existing keys with identical meaning. New keys (this story):
+        Face shape  : faceWidth, faceLength, jawWidth, chinLength, foreheadHeight,
+                      cheekFull
+        Structure   : browRidge, cheekbone, cheekHeight, temple, underCheek, jawAngle,
+                      chinPad, chinWidth, chinCleft, smileFold   (offsets on us-111 params)
+        Placement   : eyeHeight, eyeTilt, eyeSizeL/eyeSizeR asymmetry (see 1c),
+                      noseHeight, noseSize, mouthHeight, mouthWidth, mouthSize
+   b. Export TUNE_KEYS (the list) and a TuneKey type; normalizeLook() keeps only known
+      keys, clamps to −1 … 1, fills missing with 0. Later stories append keys to the same
+      list (ears, brows, nose shape, lips) — keep it one list.
+   c. Asymmetry (realism, default off): eyeSizeAsym and eyeHeightAsym (−1 … 1 = left
+      smaller/lower … right smaller/lower, max effect 6 %). Hidden behind a
+      "Fine-tune asymmetry" toggle in the UI.
+   d. RULE: with every key = 0 the face must be pixel-identical to the face before this
+      story (post-us-111). Old saved avatars therefore don't change.
+
+2) ONE LAYOUT FUNCTION — new render/faceLayout.ts
+   a. `faceLayout(look, h)` returns everything that positions features:
+        ex, ey, er (+ per-side er/ey for asymmetry), eyeTilt, noseY, noseScale, mouthY,
+        mouthW, mouthScale.
+      Move the maths from Face.tsx (ex/ey/er/noseY/mouthY), Figure.tsx eyeMetrics() and
+      head.ts noseYFor() into it; all three call faceLayout (head.ts receives the needed
+      numbers through the head job so the worker stays pure — add them to the 'head' Job
+      and its jobKey).
+   b. Glasses (Accessories.tsx) and jewellery (Jewelry.tsx: nose, brow, lip anchors) read
+      the same layout so they follow eye height, nose height and mouth height.
+   c. Ranges (start values; tune by screenshot, keep the face cartoon-friendly):
+        faceWidth  rx × (1 ± 0.08)        faceLength ry × (1 ± 0.07)
+        jawWidth   jawN − 0.12 … + 0.12   chinLength chinLow ± 0.06
+        foreheadHeight  top of skull ry above the brow ± 6 % (hairline follows: groom
+                        lineAt reads the head shape, check A4)
+        cheekFull  h.cheeks ± 0.35
+        structure keys  us-111 param + 0.5 × tune, clamped to the param's range
+        eyeHeight  ey ± 0.03     eyeTilt ± 0.12 rad (adds to the variant's tilt)
+        noseHeight noseY ± 0.025 noseSize scale 1 ± 0.15
+        mouthHeight mouthY ± 0.03  mouthWidth w × (1 ± 0.15)  mouthSize scale 1 ± 0.12
+      Guard rails: eyes never overlap the brows or the nose bridge, the nose never
+      overlaps the mouth, the mouth stays above the chin — clamp in faceLayout (e.g. min
+      gaps) instead of letting extreme combinations collide.
+   d. Which keys need a re-sculpt: shape + structure keys change HeadShape → head job,
+      hair groom, beard/hat shells (all keyed by HeadShape). Placement keys that move the
+      sculpted nose (noseHeight, noseSize) → head job only. Eye/mouth placement keys →
+      no worker job at all (pure render).
+
+3) LIVE, SMOOTH EDITING — AvatarStudio.tsx
+   a. While dragging: render-only keys update every frame; re-sculpt keys update a
+      preview value immediately and send the job with a 150 ms debounce; the previous mesh
+      stays on screen until the new one is ready (no blank / flash).
+   b. Undo/redo: one history entry per drag (commit on pointer-up / change end), not per
+      tick.
+   c. Camera: while a depth slider is dragged (browRidge, cheekbone, chinPad, jawAngle,
+      temple, underCheek, smileFold, chinLength) the stage eases to a 3/4 view, then back.
+   d. Reset: double-tap a slider → 0; "Reset face" button per group (Shape / Structure /
+      Placement) with undo.
+   e. Grid thumbnails stay on the neutral mannequin (AvatarStudio mannequin()) — tune
+      values must NOT enter thumbnail keys or the thumb cache.
+
+4) UI LAYOUT — editor/categories.ts + slider panel
+   - Face category ("Face"): groups "Shape" (Face size, Width, Length, Jaw width, Chin
+     length, Forehead, Cheek fullness) and "Structure" (Brow ridge, Cheekbones, Cheekbone
+     height, Temples, Under-cheek, Jaw angle, Chin forward, Chin width, Chin cleft,
+     Smile fold) — collapsible, Shape open by default.
+   - Eyes category: Eye size, Eye spacing (existing), Eye height, Eye tilt, + asymmetry
+     toggle.
+   - Nose category: Nose height, Nose size (shape sliders come in us-121).
+   - Mouth category: Mouth height, Mouth width, Mouth size (lip shape in us-126/us-128).
+   - Slider type in categories.ts becomes `{ key: TuneKey; label; group? }`; values show
+     −100 … +100 like today; one-handed use on a 360 px wide phone.
+
+5) SELFIE → SLIDERS — selfie/generate.ts (+ analyze.ts)
+   From the landmarks already measured (face ratio, jaw width, eye height/spacing, nose
+   and mouth position/width), set faceWidth, faceLength, jawWidth, eyeHeight, noseHeight,
+   mouthHeight, mouthWidth (each clamped to ±0.6 so a bad photo can't produce extremes).
+   All on-device, ₹0; the six generated Looks keep using them.
+
+6) I18N — tools/i18n/*.tsv → node tools/i18n/build.cjs
+   Every new label (group names, slider names, "Fine-tune asymmetry", "Reset face") in
+   en, hi, kn, ta, te.
+
+7) HARNESS — e2e/avatar-harness/main.tsx
+   - Reuse &htune / &skin / &hc and us-111's &hp / &fem if present (add only if missing);
+     add &tune=<json> (look.tune) — e.g. &tune={"faceWidth":1,"jawAngle":-1}.
+   - Review sheets: each slider at −1 / 0 / +1 on the Oval head (front, and 3/4 for depth
+     keys); 6 extreme combinations to prove the guard rails; 6 selfie-generated faces
+     next to their source photos (photos stay local, git-ignored like lens-harness).
+
+8) CACHES
+   - Bump SCULPT_VERSION by one from its CURRENT value (was 80 when written) — the head
+     job gains layout inputs.
+   - snv-thumbs: no bump needed (thumbnails use the neutral mannequin) unless a still image
+     of a default face changes; starter pictures must be pixel-identical (A1).
+
+-----------------------------------------------------------------------------------------
+ACCEPTANCE CRITERIA (attach review sheets)
+-----------------------------------------------------------------------------------------
+ A1 Zero = unchanged: all tune keys at 0 → the 12 starter pictures and a 20-look sample
+    are pixel-identical to before this story; old saved avatars load unchanged.
+ A2 Every slider makes a clearly visible change at ±1 and nothing breaks at the
+    extremes: no feature overlap, no holes, no sinking/floating features, glasses and
+    jewellery follow.
+ A3 Live editing: render-only sliders update at 60 fps; re-sculpt sliders show the new
+    face ≤ 400 ms after release on a mid-range phone, with no blank frame.
+ A4 Hair, beards and hats follow face width / length / forehead / jaw changes (12 test
+    hairstyles, 4 beards, 4 hats) without gaps or poke-through.
+ A5 Undo/redo: one step per drag; Reset per group and double-tap reset work and are
+    undoable.
+ A6 Selfie: generated looks use the new sliders; values within ±0.6; the owner judges the
+    6 test faces as closer likenesses than before.
+ A7 Grid thumbnails are unaffected by the user's tune values (neutral mannequin).
+ A8 Quality gates: npm run typecheck, npm test, npm run build green; all new text
+    translated in 5 languages.
+
+-----------------------------------------------------------------------------------------
+TESTS TO ADD
+-----------------------------------------------------------------------------------------
+ - look/config: normalizeLook keeps known tune keys, clamps, drops unknown, fills 0; old
+   { eyeSize, eyeGap, face } looks round-trip unchanged.
+ - render/faceLayout: zero tune = the old constants (ex, ey, er, noseY, mouthY equal the
+   pre-story formulas); guard rails keep minimum gaps for random extreme tunes (fuzz 500
+   random tunes); asymmetry ≤ 6 %.
+ - head job key changes for shape/structure/nose keys and NOT for eye/mouth keys.
+
+-----------------------------------------------------------------------------------------
+OUT OF SCOPE (other stories)
+-----------------------------------------------------------------------------------------
+ - Bone-structure modelling itself (us-111); skin tone & marks (us-113); dimples, age and
+   lines (us-114); makeup (us-115); eye look & lids (us-116, us-120); brow shape and brow
+   position (us-119); nose shape (us-121); ears (us-123); lip shape and smiles (us-126,
+   us-127, us-128); body sliders (us-137); expressions rig (us-181).
+
+-----------------------------------------------------------------------------------------
+RULES
+-----------------------------------------------------------------------------------------
  - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
- - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
- - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
-   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
-   respected; ≤ 8 canvases per harness page.
- - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
-   new field; old looks get sensible defaults.
- - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
-   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
-   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - ₹0: procedural, on-device; no paid services; selfie photos never leave the phone.
+ - Smooth on a mid-range Android phone; geometry built in the worker (sculpt3d/async.ts);
+   ≤ 8 canvases per harness page.
+ - Never shift ids; old looks must keep working (zero tune = unchanged face).
  - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
-   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
- - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).
+   before claiming done; restart the harness if a change doesn't show.
+ - Commit as PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com> on SUM-202601,
+   no model names in commits; after pushing, share the Android SUMANOVA.apk and iPhone
+   SUMANOVA-unsigned.ipa links from the new build-N release.

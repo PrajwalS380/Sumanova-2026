@@ -9,7 +9,7 @@ Build order (face): us-111 → us-112 → us-113 → us-114 → us-115.
       this story adds the params, family defaults and harness controls only — NO studio UI.
     - us-114 (age, dimples, character lines) and us-115 (makeup contour) read the same
       `faceRelief` function to place lines / contour on the true surface.
-    - us-118 (deep-set eyes), us-121 (nose), us-128 (sculpted lips), us-131 (beards) and
+    - us-120 (lids / deep-set eyes), us-121 (nose), us-126 (sculpted lips), us-131 (beards) and
       us-181 (facial rig) must use the shared surface functions from step 2 — never their
       own copy of the face shape.
 
