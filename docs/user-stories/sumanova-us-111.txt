@@ -1,32 +1,179 @@
-SUMANOVA — AVATAR USER STORY (prompt-style)
-PART 2 — FACE SHAPE & BONE STRUCTURE
-Baseline: build-103
+SUMANOVA — AVATAR USER STORY (detailed prompt)
+PART 2 — FACE SHAPE & BONE STRUCTURE (1/5)
+Baseline: build-103 (code as of SUM-202601 @ 5b59776: SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (face): us-111 → us-112 → us-113 → us-114 → us-115.
+  Depends on: nothing. Hair stories (us-106…110) are independent of this one, but the hair
+  groom reads the head surface, so this story must keep hair fitting (see step 3).
+  Provides for later stories:
+    - us-112 (face sliders) exposes the new bone-structure params added here as sliders;
+      this story adds the params, family defaults and harness controls only — NO studio UI.
+    - us-114 (age, dimples, character lines) and us-115 (makeup contour) read the same
+      `faceRelief` function to place lines / contour on the true surface.
+    - us-118 (deep-set eyes), us-121 (nose), us-128 (sculpted lips), us-131 (beards) and
+      us-181 (facial rig) must use the shared surface functions from step 2 — never their
+      own copy of the face shape.
 
-sumanova-us-111 · FACE 1/5 · A sculpted face, not a ball
-STORY:  As a user, I want visible cheekbones, a brow ridge, temples, a defined jaw and chin,
-        so my face has character instead of looking like a smooth ball.
-TODAY:  sculpt3d/head.ts adds only faint cheek fullness; faces look flat and round.
-PROMPT: Extend head.ts with inset landmark volumes: brow ridge, zygomatic arches, temple
-        hollows, jaw angle (gonial), chin pad, under-cheek plane, nasolabial fold — each driven
-        by HeadP params (new optional fields) and kept inset so the k/4 smooth-union bulge
-        never pushes the eyes/mouth off the analytic surface (surfaceZ). Masculine/feminine
-        defaults follow body.fem.
-ACCEPT: - Profile and 3/4 views of the 10 head families show distinct bone structure.
-        - Eyes, brows and lips still sit on the skin (no sinking/floating) for all 100 heads.
-        - watertight.test.ts still passes.
-WIN:    Real facial structure with cartoon charm — beyond Bitmoji's flat faces.
+=========================================================================================
+sumanova-us-111 · A sculpted face, not a ball — real bone structure with cartoon charm
+=========================================================================================
 
-RULES (apply to this story):
+USER STORY
+  As a SUMANOVA user, I want my avatar's face to have real structure — cheekbones, a brow
+  ridge, soft temples, a jaw angle, a chin, the plane under the cheekbones and a gentle
+  smile fold — so that faces look distinct and characterful from every angle instead of
+  like a smooth ball with features drawn on, while staying friendly and cartoon-cute.
+
+WHY (what build-103 has today)
+  - The face is an analytic deformed sphere (sculpt.ts: deform / kxAt / skullDist /
+    surfaceZ) with only width, height, depth, jaw taper (jawN, jawExp), cheek width
+    (cheeks), chin drop (chinLow) and top width (topWide). sculpt3d/head.ts adds only two
+    faint cheek "apples" kept deliberately inset — so every face reads round and flat,
+    especially in profile and 3/4.
+  - Why it was kept flat: eyes, brows, mouth, blush, nose shading, beards, glasses, hats,
+    jewellery and the hair groom are all placed on the ANALYTIC surface (surfaceZ /
+    shellGeometry / deform / skullDist — used in render/Face.tsx, render/Accessories.tsx,
+    render/Jewelry.tsx, sculpt3d/groom.ts, sculpt3d/head.ts). Any bump added only to the
+    sculpted head mesh makes those features sink in or float off. This story fixes that at
+    the root instead of avoiding structure.
+
+-----------------------------------------------------------------------------------------
+PROMPT (paste this to Claude)
+-----------------------------------------------------------------------------------------
+Implement sumanova-us-111 in the SUMANOVA repo (branch SUM-202601). Read CLAUDE.md first.
+Scope: src/features/avatar/sculpt.ts, src/features/avatar/sculptV2.ts,
+src/features/avatar/look/face.ts (HeadP + head catalogue), src/features/avatar/sculpt3d/head.ts,
+src/features/avatar/render/Figure.tsx + render/lookParts.ts (pass body femininity),
+the harness and tests. Face features, hair, beards, hats and glasses must keep fitting —
+they do so automatically through step 2, not by per-feature fixes.
+
+1) NEW BONE-STRUCTURE PARAMS — look/face.ts (HeadP, all optional, 0 … 1 unless noted)
+     browRidge     prominence of the brow bone over the eyes
+     cheekbone     prominence of the cheekbones (zygomatic arch)
+     cheekHeight   −1 … 1 (low … high cheekbones)
+     temple        softness of the temple hollow (0 full … 1 hollow)
+     underCheek    the plane / soft hollow under the cheekbone
+     jawAngle      definition and flare of the jaw corner (gonial angle)
+     chinPad       forward projection of the chin
+     chinWidth     −1 … 1 (pointed … broad chin)
+     chinCleft     0 … 1 (none … visible cleft) — subtle
+     smileFold     the soft fold from nose wing toward the mouth corner (nasolabial)
+   a. Give each of the 10 head families (Oval, Round, Square, Heart, Long, Diamond, Pear,
+      Soft, Wide, Narrow) a characteristic default set (e.g. Square: strong jawAngle and
+      chinWidth; Heart: high cheekbones, narrow chin; Diamond: prominent cheekbones,
+      narrow temples and chin; Soft/Round: low values everywhere) and let HEAD_STEP vary
+      them a little per step so the 10 steps inside a family differ in structure too.
+      Ids and family order never change.
+   b. sculptV2.ts headFromParams(p, faceTune, fem = 0): add `fem` (0 masculine … 1 feminine,
+      from the body variant's BodyP.fem). Masculine: stronger brow ridge, jaw angle and
+      chin; feminine: higher, softer cheekbones, softer jaw, smaller brow ridge. Blend,
+      don't switch. Figure.tsx and lookParts.ts pass variant(look,'body').p.fem. The
+      HeadShape carries the final values (they are part of the head job key).
+
+2) ONE SHARED FACE SURFACE — sculpt.ts  (the key change)
+   a. Add `faceRelief(h, x, y, z?) → dz`: a small, smooth radial offset (head-local units)
+      built from 8–10 soft gaussian/ellipsoidal lobes driven by the params above:
+        brow ridge (positive band over the eyes), temples (negative, beside the eyes, under
+        the hairline), cheekbones (positive ridge from below the outer eye toward the ear),
+        under-cheek (negative plane below it), jaw angle (positive at the jaw corners),
+        chin pad (positive, forward), chin cleft (narrow negative line), smile fold (a soft
+        step along the nose-wing → mouth-corner curve).
+      Limits: |dz| ≤ 0.014 at the strongest setting; gradient small enough that the
+      skull field stays ≈ 1-Lipschitz (no mesher holes).
+      Keep-out zones (relief fades to 0): the eye sockets' openings (eyes sit on them), a
+      0.08-wide ellipse around the mouth (lips/teeth are drawn on the surface; anything
+      bulging there hides them — see the comment in head.ts), the nose root, the ears.
+   b. Use faceRelief EVERYWHERE the head surface is defined, so all callers agree:
+        deform()      — radial multiplier includes relief (shellGeometry → beards, hats)
+        skullDist()   — distance includes relief (sculpted head, hair groom, hair cap)
+        surfaceZ()    — returned depth includes relief (eyes, brows, mouth, blush, nose
+                        shading, glasses, jewellery)
+      This guarantees features, beards, hats, glasses and hair follow the new structure.
+      Remove the two ad-hoc cheek "soft" ellipsoids in head.ts (their role moves into the
+      cheekbone lobe) unless they still help the cartoon look — decide by screenshot.
+   c. Performance: faceRelief is evaluated very often (mesher, groom). Precompute the lobe
+      centres/radii once per HeadShape (memoise by object identity / key) and early-out
+      for points far behind the face (z < −0.2·rz) and above the hairline zone.
+
+3) KEEP EVERYTHING ELSE FITTING
+   - Beards (Face.tsx Beard / shellGeometry): jaw angle and chin now push the beard shell
+     outward automatically through deform(); check stubble density still reads.
+   - Hair (groom.ts uses skullDist / scalp / deform): temples and brow ridge must not make
+     the hair cap or baby hairs (us-107) poke into the forehead; keepOff margins unchanged.
+   - Glasses (Accessories.tsx): lenses use surfaceZ — check they don't clip into a strong
+     brow ridge or cheekbones; adjust the frame z-offset by the relief at the eye if needed.
+   - Ears / nose / earrings: placed relative to h.rx and surfaceZ — check jaw flare
+     doesn't swallow the ear root or earrings.
+   - DeepSet eye shadow decal (Face.tsx) should now sit naturally under the brow ridge;
+     keep it, reduce its opacity if double-darkening.
+
+4) HARNESS — e2e/avatar-harness/main.tsx
+   - Reuse &htune / &skin / &hc if present (from us-107); add &hp=<json> to override
+     HeadP fields (e.g. {"cheekbone":1,"jawAngle":0.8}), &fem=0|1 to force the body
+     femininity, and a profile/3-4 camera preset (&turns=0,0.6,1.57 already exists).
+   - Review sheets: one representative head per family (ids 2, 12, 22 … 92) × front / 3/4
+     / profile, masculine and feminine; plus each new param at 0 / 0.5 / 1 on the Oval head.
+
+5) CACHES & ASSETS
+   - Bump SCULPT_VERSION by one from its CURRENT value (was 80 when written): head, hair,
+     beard and hat outputs change.
+   - Bump the snv-thumbs-vN store by one from its CURRENT value (was v37). Never reuse a
+     number another story used.
+   - Re-render the 12 starter pictures (e2e/preset-images.e2e.cjs → public/presets) and
+     review them with the owner (all faces change slightly — that's the point).
+
+-----------------------------------------------------------------------------------------
+ACCEPTANCE CRITERIA (attach review sheets)
+-----------------------------------------------------------------------------------------
+ A1 Structure: in profile and 3/4, the 10 family representatives show clearly different
+    bone structure (brow, cheekbones, jaw corner, chin), and masculine vs feminine
+    versions of the same head differ in the expected way; faces still look friendly
+    cartoon, not realistic or harsh (owner sign-off on the sheet).
+ A2 Features attached: for all 100 heads × fem 0/1, eyes, brows, lips, teeth, blush, nose
+    shading, beards (all 8 families), glasses (all 10 frames) and earrings sit on the skin —
+    no sinking, floating or z-fighting (automated check A6 + visual sheet).
+ A3 Hair: 12 test hairstyles (short, fringe, long, curly, afro, ponytail, cornrows, buzz)
+    show no gaps at the temples and no cap edge poking into the forehead.
+ A4 Mouth & eyes keep-out: open mouths (laughing, surprised, tongue) and closed smiles
+    render exactly as before around the lips; eyes are not covered by the brow ridge at
+    the maximum setting.
+ A5 Watertight: sculpt3d/watertight.test.ts passes, extended with the head at all params
+    = 1 and = 0.
+ A6 Automated surface agreement test: for 30 sample points on the face (eye centres, brow
+    line, mouth corners, cheek, chin, jaw corner) on 10 heads, the sculpted head field
+    evaluated at (x, y, surfaceZ(h, x, y)) is within ±0.002 of the surface.
+ A7 Performance: head job time on a mid-range phone grows ≤ 20 %; hair groom time grows
+    ≤ 10 %; triangle count of the head mesh unchanged (same cell size).
+ A8 Saved avatars load with the same picks; they look the same person, just with more
+    structure. Quality gates: npm run typecheck, npm test, npm run build green.
+
+-----------------------------------------------------------------------------------------
+TESTS TO ADD
+-----------------------------------------------------------------------------------------
+ - sculpt.test (or extend sculpt3d/sculpt.test.ts): faceRelief is 0 in the keep-out
+   zones; |dz| ≤ 0.014; deform / skullDist / surfaceZ agree (A6).
+ - look/face: every HEADS variant has the new params in range; ids and names unchanged
+   (snapshot of the 100 names); headFromParams with fem 0 vs 1 differs in jawAngle /
+   cheekHeight as specified.
+ - watertight: extremes of the new params.
+
+-----------------------------------------------------------------------------------------
+OUT OF SCOPE (other stories)
+-----------------------------------------------------------------------------------------
+ - Studio sliders for these params and the other face sliders (us-112); skin tone /
+   undertone / marks (us-113); dimples, age and lines (us-114); makeup & contour (us-115);
+   eye, nose, ear, mouth, lip and beard redesigns (us-116 … us-135); facial expressions
+   rig (us-181).
+
+-----------------------------------------------------------------------------------------
+RULES
+-----------------------------------------------------------------------------------------
  - Original only: no Snapchat/Bitmoji assets, names, layouts, logos or yellow; no brands.
- - ₹0: free / open-source only; everything procedural or made in-house; no paid assets.
- - Smooth on a mid-range Android phone: geometry built in the worker (sculpt3d/async.ts),
-   cached; keep per-avatar triangles within the agreed budget; reduce-motion and data saver
-   respected; ≤ 8 canvases per harness page.
- - Saved avatars must keep working: never shift variant ids; extend normalizeLook() for any
-   new field; old looks get sensible defaults.
- - Bump SCULPT_VERSION (sculpt3d/jobs.ts) when a builder output changes and snv-thumbs-vN
-   (editor/thumbs.tsx) when the rendered look changes; re-render starter pictures
-   (e2e/preset-images.e2e.cjs); re-run the duplicate checker (?dupes=<slot>) for new catalogues.
+ - ₹0: procedural only, no paid assets or services.
+ - Smooth on a mid-range Android phone; geometry built in the worker (sculpt3d/async.ts);
+   ≤ 8 canvases per harness page.
+ - Never shift head ids or rename families; old looks must keep working.
  - Verify visually in the harness (npx vite --config vite.avatar-test.config.ts, port 5199)
-   with before/after screenshots; npm run typecheck, npm test, npm run build stay green.
- - New UI text → tools/i18n TSV line + rebuild (en/hi/kn/ta/te).
+   before claiming done; restart the harness if a change doesn't show.
+ - Commit as PrajwalS380 <181549311+PrajwalS380@users.noreply.github.com> on SUM-202601,
+   no model names in commits; after pushing, share the Android SUMANOVA.apk and iPhone
+   SUMANOVA-unsigned.ipa links from the new build-N release.
