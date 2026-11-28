@@ -1,6 +1,10 @@
 SUMANOVA — AVATAR USER STORY (detailed prompt)
 PART 1 — HAIR (2/5)
 Baseline: build-103 (code as of SUM-202601 @ 1cb657d: SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (hair): us-106 → us-107 → us-108 → us-109 → us-110.
+  Depends on: nothing (us-106 may be done before or after; neither changes the other's code
+  paths). Provides for later stories: HairP.edges + baby hairs (us-108 puts them in the
+  fringe motion group), and the harness params &htune / &skin / &hc (us-108…110 reuse them).
 
 =========================================================================================
 sumanova-us-107 · Natural hairline, visible partings, baby hairs & laid edges
@@ -134,13 +138,15 @@ the avatar harness, and i18n. Do not change faces, bodies, clothes or other part
    ("Soft" and "Parting" already exist — reuse them.)
 
 8) CACHES & ASSETS
-   - Bump SCULPT_VERSION in sculpt3d/jobs.ts (80 → 81; HairP gains a key, so every hair
-     job key changes anyway).
-   - Bump snv-thumbs-v37 → v38 in editor/thumbs.tsx.
+   - Bump SCULPT_VERSION in sculpt3d/jobs.ts by one from its CURRENT value (it was 80 when
+     this story was written; HairP gains a key, so every hair job key changes anyway).
+   - Bump the snv-thumbs-vN store name in editor/thumbs.tsx by one from its CURRENT value
+     (was v37). Never reuse a number another story already used.
    - Re-render the starter pictures (e2e/preset-images.e2e.cjs → public/presets/*.webp).
 
 9) HARNESS SUPPORT — e2e/avatar-harness/main.tsx (slot mode)
-   Add query params: &htune=<json> (sets look.hair, e.g. {"edges":"laid","line":0.5}),
+   Add these query params if they don't exist yet (this story is the first to need them;
+   later stories reuse them): &htune=<json> (sets look.hair, e.g. {"edges":"laid","line":0.5}),
    &skin=<hex>, &hc=<hex> (hair colour), so every acceptance view below is reproducible.
 
 -----------------------------------------------------------------------------------------

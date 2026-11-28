@@ -1,6 +1,16 @@
 SUMANOVA — AVATAR USER STORY (detailed prompt)
 PART 1 — HAIR (5/5)
 Baseline: build-103 (code as of SUM-202601 @ ec7ebfb: SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (hair): us-106 → us-107 → us-108 → us-109 → us-110 (this story is last).
+  Depends on: us-107 (fringe / edges; harness &htune/&skin/&hc), us-108 (hairGrp motion
+  groups — accessories on a tie or braid follow that group's swing), us-109 (decoration
+  builders for gajra / ribbon / beads + 'hairDeco' colour key, and the new styles in the
+  accessory test set).
+  If us-109 is not built yet: create the gajra / ribbon / beads builders here as standalone,
+  reusable functions in one module (e.g. sculpt3d/hairDeco.ts) with the same names and
+  signatures us-109 describes, so us-109 then imports them instead of writing its own —
+  never two copies. If us-108 is not built yet: accessories simply follow the head (no
+  swing); us-108 adds the swing later.
 
 =========================================================================================
 sumanova-us-110 · Total hair control — a hair salon: shape per region, colour placement,
@@ -78,9 +88,12 @@ Never change hairstyle ids or existing recipes; old saved looks must render exac
         halo       = a band of colour at mid-length all round
         tips       = dip-dye on the last placeAmt of every lock (hard by default)
       Masks must not depend on lock random alone (or they look patchy): base them on root
-      position, which needs the lock ROOT per vertex — reuse `hairPivot` from us-108 if it
-      exists; otherwise add attribute hairRoot (vec3) in groom.ts StrandMesh and to ATTRS in
-      jobs.ts (and bump SCULPT_VERSION).
+      position, which needs the lock ROOT per vertex: add attribute hairRoot (vec3) =
+      the point where the lock grows out of the scalp, in groom.ts StrandMesh and to ATTRS
+      in jobs.ts. Do NOT reuse us-108's hairPivot for this: hairPivot is the swing point
+      (the tie / plait top for tails and braids), so placements would land wrongly on
+      ponytails and braids. For locks gathered into a tie, hairRoot is still their scalp
+      root (so a money-piece on a ponytail style stays at the front hairline).
    d. Every colour/placement change is uniforms only: no worker job, applied in the same
       frame (< 16 ms).
    e. Studio UI — a "Colour" sub-panel in HairControls.tsx:
@@ -139,13 +152,16 @@ Never change hairstyle ids or existing recipes; old saved looks must render exac
    anchor hints) in en, hi, kn, ta, te.
 
 6) CACHES & ASSETS
-   - Bump SCULPT_VERSION 80 → 81 if any groom output changes (anchors / root attribute).
-   - Bump snv-thumbs-v37 → v38 (new hair/accessory thumbnails).
+   - Bump SCULPT_VERSION by one from its CURRENT value (was 80 when this story was
+     written) — the groom output changes (anchors + hairRoot attribute).
+   - Bump the snv-thumbs-vN store by one from its CURRENT value (was v37) for the new
+     hair / accessory thumbnails. Never reuse a number another story used.
    - Starter pictures must stay identical (no starter uses the new fields).
    - Run the duplicate checker for the new slot: ?dupes=hairAcc1&frame=head.
 
 7) HARNESS & REVIEW SHEETS — e2e/avatar-harness
-   - &htune=<json>, &hc / &hmid / &htip / &hhi (colours), &acc=<id>[,<id>] to set
+   - Reuse &htune=<json>, &skin and &hc from us-107 (add them only if missing); add
+     &hmid / &htip / &hhi (colours) and &acc=<id>[,<id>] to set
      accessories, &turns= for back views.
    - Sheets to attach: (a) one style with all 7 placements; (b) region sliders at −1 / 0 /
      +1 on 4 styles; (c) every accessory kind on 2 fitting styles, front + back;

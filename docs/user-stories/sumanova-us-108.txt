@@ -1,6 +1,15 @@
 SUMANOVA — AVATAR USER STORY (detailed prompt)
 PART 1 — HAIR (3/5)
 Baseline: build-103 (code as of SUM-202601 @ 1410918: SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (hair): us-106 → us-107 → us-108 → us-109 → us-110.
+  Depends on: us-107 (baby hairs / laid edges go in motion group 0, harness &htune/&skin/
+  &hc). If us-107 is not built yet: still assign fringe locks to group 0 and add the harness
+  params yourself (if missing); us-107 will then put its baby hairs in group 0.
+  Provides for later stories: per-vertex hairPivot (the SWING point — the lock root for
+  loose hair, the tie / plait top for tails and braids) and hairGrp. Later stories must not
+  use hairPivot as "where the lock grows from" (us-110 adds its own hairRoot for that).
+  New locks added by us-109 (new ties/braids) and us-110 (accessories) must be assigned a
+  group here-style: tails 5/6, braids 7, static −1.
 
 =========================================================================================
 sumanova-us-108 · Hair that moves — per-lock secondary motion for hair, ponytails & braids
@@ -61,8 +70,9 @@ identical (thumbnails and starter pictures must not change).
 2) KEEP THE ATTRIBUTES THROUGH WORKER + CACHE — sculpt3d/jobs.ts
    - Add ['hairPivot', 3, 'f'] and ['hairGrp', 1, 'f'] to ATTRS so pack()/unpack() carry
      them through postMessage and Cache Storage (today unknown attributes are dropped).
-   - Bump SCULPT_VERSION 80 → 81 (the hair job output changes).
-   - Do NOT bump snv-thumbs-v37 unless a still image changes (it must not).
+   - Bump SCULPT_VERSION by one from its CURRENT value (it was 80 when this story was
+     written; the hair job output changes). Never reuse a number another story used.
+   - Do NOT bump the snv-thumbs-vN store unless a still image changes (it must not).
 
 3) THE MOTION SOLVER — new render/hairMotion.ts (pure TypeScript, unit-testable)
    a. export class HairMotion { step(dt, headPose): void; offsets: Float32Array }
@@ -127,6 +137,7 @@ identical (thumbnails and starter pictures must not change).
      pictures and published body images must not catch the hair mid-swing.
 
 7) HARNESS — e2e/avatar-harness/main.tsx
+   - Reuse &htune / &skin / &hc from us-107 (add them only if they are missing).
    - &anim=1 keeps the figures animating (pose from &pose=walking|dancing|waving…).
    - &shake=yaw|nod|tilt plays a scripted head motion (e.g. yaw ±0.6 rad over 0.6 s, then
      hold 2 s) so the lag and settling can be filmed.

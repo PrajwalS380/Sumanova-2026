@@ -2,6 +2,15 @@ SUMANOVA — AVATAR USER STORY (detailed prompt)
 PART 1 — HAIR (4/5)
 Baseline: build-103 (code as of SUM-202601 @ a21060a: 110 hairstyles, ids 0–109,
 SCULPT_VERSION 80, snv-thumbs-v37)
+Build order (hair): us-106 → us-107 → us-108 → us-109 → us-110.
+  Depends on: us-107 (new styles get the default soft edges; Pineapple puff uses edges
+  'laid'), us-108 (every new tail / braid / loc must get a motion group: tails 5/6,
+  braids and the side plait 7, knots / buns / bantu knots / flat twists / cornrows −1).
+  If an earlier story is not built yet: skip only the part that needs it (e.g. leave the
+  laid edges to us-107, the groups to us-108) and note it in the commit message — do not
+  build those features here.
+  Provides for later stories: the decoration builders (paranda, gajra, ribbon, beads) as
+  reusable functions + the 'hairDeco' colour key (us-110 reuses them for accessories).
 
 =========================================================================================
 sumanova-us-109 · Every hair type, done right — curl patterns 1–4C + 30 new styles
@@ -157,14 +166,17 @@ Never change or reorder the existing 110 recipes (ids 0–109 are saved in avata
    (Bantu, Fulani) stay as they are; describe-words get translated.
 
 6) CACHES, ASSETS, DUPLICATES
-   - Bump SCULPT_VERSION 80 → 81 (HairP gains keys → hair job keys change anyway).
-   - Bump snv-thumbs-v37 → v38 (new thumbnails). Starter pictures must stay identical
+   - Bump SCULPT_VERSION by one from its CURRENT value (was 80 when this story was
+     written; HairP gains keys → hair job keys change anyway).
+   - Bump the snv-thumbs-vN store by one from its CURRENT value (was v37) for the new
+     thumbnails. Never reuse a number another story used. Starter pictures must stay identical
      (none of the 12 starters changes); re-render only if a test shows a difference.
    - Run the duplicate checker `?dupes=hair&frame=head` (and with &color=0f0b0a for dark
      hair). Any look-alike among the new 30 is fixed in its recipe (not hidden).
 
 7) HARNESS & REVIEW SHEETS — e2e/avatar-harness
-   - Add &htune=<json> (look.hair) so patterns can be reviewed: e.g.
+   - Reuse &htune=<json> / &skin / &hc from us-107 (add them only if missing) so patterns
+     can be reviewed: e.g.
      ?slot=hair&frame=head&ids=37,37,37,37,37,37,37,37&htune=... — or add a mode
      ?patterns=<hairId> that renders one style in all 10 patterns (2 pages of ≤ 8 canvases).
    - Review sheets to attach: (1) 10 patterns on 'Loose curls' and 'Long curly';
