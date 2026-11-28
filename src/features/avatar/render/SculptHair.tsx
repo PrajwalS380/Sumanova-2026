@@ -4,8 +4,9 @@ import { saveData } from '@/lib/display';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { HeadShape } from '../sculpt';
-import type { HairP, PaintT } from '../look/hair';
+import type { HairP, HairTune, PaintT } from '../look/hair';
 import { useSculpt } from '../sculpt3d/async';
+import { HairAccessories, type WornAcc } from './HairAccessories';
 import { useBakedHair } from './bakedHair';
 import { HEADS } from '../look/face';
 import { headFromParams } from '../sculptV2';
@@ -28,7 +29,9 @@ const PAINT: Record<PaintT, number> = { none: 0, twotone: 1, ombre: 2, highlight
 
 const HAIR_HEAD = `
 uniform vec3 uRoot; uniform vec3 uTip; uniform vec3 uHi; uniform float uPaint; uniform float uGloss; uniform float uBaked; uniform float uCard;
-varying vec3 vHairT; varying vec3 vHairPos; varying vec2 vHUv;
+// salon colour (sumanova-us-110): 0 = the classic root → tip path (old looks unchanged)
+uniform float uSalon; uniform vec3 uMid; uniform float uPlace; uniform float uPlaceAmt; uniform float uBlend; uniform float uRootLen; uniform float uGrey; uniform float uHR;
+varying vec3 vHairT; varying vec3 vHairPos; varying vec2 vHUv; varying vec3 vHairRootP;
 float hHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float hNoise(vec2 p) {
   vec2 i = floor(p), f = fract(p);
@@ -37,7 +40,30 @@ float hNoise(vec2 p) {
 }
 float hiBand = 1.0;
 float streakBand = 1.0;
+vec3 salon(float t, float rnd, vec3 pos) {
+  // three stops: roots → lengths → tips; Blend softens the lines, Shadow root pushes the root colour down
+  float soft = mix(0.02, 0.32, uBlend);
+  float rootEnd = 0.12 + 0.5 * uRootLen;
+  vec3 c = mix(uRoot, uMid, smoothstep(rootEnd - soft, rootEnd + soft, t));
+  c = mix(c, uTip, smoothstep(0.78 - soft, 0.78 + soft, t));
+  // salt & pepper: whole silver locks plus a little silver everywhere (roots + lengths)
+  float frac = uGrey < 0.8 ? uGrey * 0.75 : mix(0.6, 1.0, (uGrey - 0.8) / 0.2);
+  float g = (0.12 * uGrey + (1.0 - 0.12 * uGrey) * step(rnd, frac)) * (1.0 - 0.5 * smoothstep(0.8, 1.0, t));
+  c = mix(c, vec3(0.74, 0.74, 0.77) * (0.88 + 0.24 * fract(rnd * 7.31)), g);
+  // placement of the accent colour, by where the lock grows (its scalp root), not lock-random
+  vec3 r = vHairRootP / uHR;
+  float a = uPlaceAmt;
+  float m = 0.0;
+  if (uPlace > 0.5 && uPlace < 1.5) m = smoothstep(0.18 + 0.3 * a, 0.12 + 0.3 * a, abs(r.x)) * smoothstep(0.35, 0.55, r.z) * step(-0.1, r.y);                 // money-piece
+  else if (uPlace > 1.5 && uPlace < 2.5) m = smoothstep(0.05 + 0.25 * a, -0.05 + 0.25 * a, r.y) * smoothstep(0.3, 0.1, r.z);                              // peekaboo under-layer
+  else if (uPlace > 2.5 && uPlace < 3.5) m = smoothstep(0.0, 0.15, r.z) * smoothstep(0.35 - 0.15 * a, 0.5 - 0.15 * a, abs(r.x)) * step(r.y, 0.75);     // face-framing
+  else if (uPlace > 3.5 && uPlace < 4.5) m = smoothstep(0.08 + 0.14 * a, 0.03 + 0.14 * a, abs(r.x - 0.32)) * step(0.0, r.z);                              // streak
+  else if (uPlace > 4.5 && uPlace < 5.5) m = smoothstep(0.42 - 0.14 * a - soft * 0.5, 0.42 - 0.14 * a, t) * smoothstep(0.64 + 0.14 * a + soft * 0.5, 0.64 + 0.14 * a, t); // halo
+  else if (uPlace > 5.5) m = smoothstep(0.95 - 0.4 * a - soft * 0.3, 0.95 - 0.4 * a, t);                                                                    // dip-dye
+  return mix(c, uHi, m);
+}
 vec3 hairBase(float t, float rnd, vec3 pos) {
+  if (uSalon > 0.5) return salon(t, rnd, pos) * (0.9 + 0.2 * rnd);
   vec3 c = mix(uRoot, uTip, smoothstep(0.3, 1.0, t));
   if (uPaint > 0.5 && uPaint < 1.5) c = mix(uRoot, uTip, smoothstep(-0.02, -0.12, pos.y));            // two-tone: under-layer
   else if (uPaint > 1.5 && uPaint < 2.5) c = mix(uRoot, uTip, smoothstep(0.15, 0.85, t));             // ombré
@@ -50,7 +76,7 @@ vec3 hairBase(float t, float rnd, vec3 pos) {
 `;
 
 /** Uniforms shared by every hair material of one SculptHair (the motion solver writes them). */
-interface MotionUniforms {
+export interface MotionUniforms {
   uGrpRot: { value: Float32Array };
   uGrpTip: { value: Float32Array };
   uMotion: { value: number };
@@ -64,7 +90,7 @@ interface MotionUniforms {
  * its group's mid → tip rotation (more toward the tip), then is pushed out of the neck / shoulders
  * and never toward the face.
  */
-const MOTION_HEAD = `
+export const MOTION_HEAD = `
 attribute vec3 hairPivot; attribute float hairGrp;
 uniform vec3 uGrpRot[${GROUPS}]; uniform vec3 uGrpTip[${GROUPS}];
 uniform float uMotion; uniform vec4 uNeck; uniform vec4 uShoulder; uniform float uBrow;
@@ -77,7 +103,7 @@ vec3 rotV(vec3 v, vec3 r) {
   return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c);
 }
 `;
-const MOTION_ROT = `
+export const MOTION_ROT = `
 #ifdef HAIR_MOTION
 if (hairGrp > -0.5 && uMotion > 0.0) {
   int gi = int(hairGrp + 0.5);
@@ -86,7 +112,7 @@ if (hairGrp > -0.5 && uMotion > 0.0) {
 }
 #endif
 `;
-const MOTION_APPLY = `
+export const MOTION_APPLY = `
 #ifdef HAIR_MOTION
 if (hairGrp > -0.5 && uMotion > 0.0) {
   vec3 rest = transformed;
@@ -110,23 +136,37 @@ if (hairGrp > -0.5 && uMotion > 0.0) {
 #endif
 `;
 
-function useHairMaterial(root: string, tip: string | null, hi: string | null, paint: PaintT, gloss: number, sway: React.MutableRefObject<{ value: THREE.Vector3 }>, normalMap: THREE.Texture | null = null, card = false, motion: MotionUniforms | null = null) {
+/** salon colour uniforms shared by the hair materials of one SculptHair (sumanova-us-110) */
+interface SalonUniforms {
+  uSalon: { value: number }; uMid: { value: THREE.Color }; uPlace: { value: number }; uPlaceAmt: { value: number };
+  uBlend: { value: number }; uRootLen: { value: number }; uGrey: { value: number }; uHR: { value: number };
+}
+const PLACE_IDX: Record<string, number> = { none: 0, moneypiece: 1, peekaboo: 2, framing: 3, streak: 4, halo: 5, tips: 6 };
+/** a fresh (inactive) salon uniform set, for materials that don't use it */
+const noSalon = (): SalonUniforms => ({ uSalon: { value: 0 }, uMid: { value: new THREE.Color() }, uPlace: { value: 0 }, uPlaceAmt: { value: 0.5 }, uBlend: { value: 0.5 }, uRootLen: { value: 0 }, uGrey: { value: 0 }, uHR: { value: 0.32 } });
+
+function useHairMaterial(root: string, tip: string | null, hi: string | null, paint: PaintT, gloss: number, sway: React.MutableRefObject<{ value: THREE.Vector3 }>, normalMap: THREE.Texture | null = null, card = false, motion: MotionUniforms | null = null, salonU: SalonUniforms | null = null) {
   const mat = useMemo(() => {
     const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0, envMapIntensity: 0.3 });
     // strand cards: fine strands cut out of thin strips (alpha test keeps them crisp, no sorting)
     if (card) { m.alphaTest = 0.45; m.side = THREE.DoubleSide; }
-    const uniforms = { uRoot: { value: new THREE.Color(root) }, uTip: { value: new THREE.Color(tip ?? root) }, uHi: { value: new THREE.Color(hi ?? '#e8c9a0') }, uPaint: { value: 0 }, uGloss: { value: 0.6 }, uBaked: { value: 0 }, uCard: { value: card ? 1 : 0 }, uSway: sway.current, ...(motion ?? {}) };
+    const uniforms = { uRoot: { value: new THREE.Color(root) }, uTip: { value: new THREE.Color(tip ?? root) }, uHi: { value: new THREE.Color(hi ?? '#e8c9a0') }, uPaint: { value: 0 }, uGloss: { value: 0.6 }, uBaked: { value: 0 }, uCard: { value: card ? 1 : 0 }, uSway: sway.current, ...(motion ?? {}), ...(salonU ?? noSalon()) };
     if (motion) m.defines = { ...m.defines, HAIR_MOTION: '', HAIR_TT: 'color.g' };
     m.userData.uniforms = uniforms;
     m.onBeforeCompile = (sh) => {
       Object.assign(sh.uniforms, uniforms);
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute vec3 hairT;\nuniform vec3 uSway;\nvarying vec3 vHairT; varying vec3 vHairPos; varying vec2 vHUv;' + (motion ? MOTION_HEAD : ''))
+        .replace('#include <common>', '#include <common>\nattribute vec3 hairT;\nuniform vec3 uSway;\nvarying vec3 vHairT; varying vec3 vHairPos; varying vec2 vHUv; varying vec3 vHairRootP;' + (motion ? '\nattribute vec3 hairRoot;' + MOTION_HEAD : ''))
         .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n' + (motion ? MOTION_ROT + '\n#ifdef HAIR_MOTION\nobjectNormal = rotV(objectNormal, hRot);\n#endif' : ''))
         .replace(
           '#include <begin_vertex>',
           `#include <begin_vertex>
 vHairPos = position; vHUv = uv;
+#ifdef HAIR_MOTION
+vHairRootP = hairRoot;
+#else
+vHairRootP = position;
+#endif
 #ifndef HAIR_MOTION
 #ifdef USE_COLOR
   // baked assets: one spring for the whole style (tips lag behind the head, roots stay put)
@@ -224,7 +264,7 @@ if (uBaked < 0.5) {
     };
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card, motion]);
+  }, [card, motion, salonU]);
   useEffect(() => {
     const u = mat.userData.uniforms as { uRoot: { value: THREE.Color }; uTip: { value: THREE.Color }; uHi: { value: THREE.Color }; uPaint: { value: number }; uGloss: { value: number } };
     u.uRoot.value.set(root);
@@ -302,7 +342,7 @@ function shift(hex: string, k: number) {
   return '#' + (k > 0 ? c.lerp(new THREE.Color('#f3d7a6'), k) : c.multiplyScalar(1 + k)).getHexString();
 }
 
-export function SculptHair({ h, p, color, tip, hi = null, deco = null, gloss = 0.6, seed, hatOn, animate = true, bakedId = null }: { h: HeadShape; p: HairP; color: string; tip: string | null; hi?: string | null; /** decoration colour (paranda, ribbons, beads, hair ties) — sumanova-us-109 */ deco?: string | null; gloss?: number; seed: number; hatOn: boolean; animate?: boolean; /** finished offline-sculpted asset for this style (see render/bakedHair) */ bakedId?: number | null }) {
+export function SculptHair({ h, p, color, tip, hi = null, mid = null, salon = null, deco = null, acc = null, gloss = 0.6, seed, hatOn, animate = true, bakedId = null }: { h: HeadShape; p: HairP; color: string; tip: string | null; hi?: string | null; /** lengths colour (sumanova-us-110) */ mid?: string | null; /** salon colour settings (place, amount, blend, shadow root, grey) */ salon?: HairTune | null; /** decoration colour (paranda, ribbons, beads, hair ties) — sumanova-us-109 */ deco?: string | null; /** worn hair accessories (sumanova-us-110) */ acc?: WornAcc[] | null; gloss?: number; seed: number; hatOn: boolean; animate?: boolean; /** finished offline-sculpted asset for this style (see render/bakedHair) */ bakedId?: number | null }) {
   const res = useSculpt({ k: 'hair', h, p, seed, hatOn });
   const baked = useBakedHair(bakedId);
   const sway = useRef({ value: new THREE.Vector3() });
@@ -336,13 +376,26 @@ export function SculptHair({ h, p, color, tip, hi = null, deco = null, gloss = 0
   }, [p, solver]);
   // sleek / oiled / pressed styles shine more
   const shine = p.sleek ? Math.min(1, gloss + 0.35 * p.sleek) : gloss;
-  const mat = useHairMaterial(color, tip, hi, p.paint, shine, sway, null, false, mu);
+  // salon colour: uniforms only (instant, no regrow); off = the classic root → tip colour
+  const su = useMemo<SalonUniforms>(() => noSalon(), []);
+  {
+    const on = mid != null || (salon?.place ?? 'none') !== 'none' || salon?.blend != null || !!salon?.rootLen || !!salon?.grey;
+    su.uSalon.value = on ? 1 : 0;
+    su.uMid.value.set(mid ?? color);
+    su.uPlace.value = PLACE_IDX[salon?.place ?? 'none'] ?? 0;
+    su.uPlaceAmt.value = salon?.placeAmt ?? 0.5;
+    su.uBlend.value = salon?.blend ?? 0.5;
+    su.uRootLen.value = salon?.rootLen ?? 0;
+    su.uGrey.value = salon?.grey ?? 0;
+    su.uHR.value = h.rx;
+  }
+  const mat = useHairMaterial(color, tip, hi, p.paint, shine, sway, null, false, mu, su);
   const decoMat = useDecoMaterial(deco ?? DECO_DEFAULT[p.deco ?? 'none'], mu, p.deco === 'beads');
   const budMat = useDecoMaterial('#fbfaf3', mu);
   const budCentreMat = useDecoMaterial('#efe2b8', mu);
-  const baseMat = useHairMaterial(color, tip, hi, p.paint, shine, sway);
+  const baseMat = useHairMaterial(color, tip, hi, p.paint, shine, sway, null, false, null, su);
   const bakedMat = useHairMaterial(color, tip, hi, p.paint, gloss, sway, baked?.normalMap ?? null);
-  const cardMat = useHairMaterial(color, tip, hi, p.paint, shine, sway, null, true, mu);
+  const cardMat = useHairMaterial(color, tip, hi, p.paint, shine, sway, null, true, mu, su);
   // the asset was sculpted on the reference head: fit it to this head's proportions
   const fit = useMemo(() => {
     const r = bakeHead();
@@ -405,7 +458,7 @@ export function SculptHair({ h, p, color, tip, hi = null, deco = null, gloss = 0
   });
 
   if (!res) return null;
-  const g = { cards: res.find((x) => x.role === 'cards')?.geo, geo: res.find((x) => x.role === 'main')?.geo, base: res.find((x) => x.role === 'base')?.geo, fade: res.find((x) => x.role === 'fade')?.geo, band: res.find((x) => x.role === 'band')?.geo, deco: res.find((x) => x.role === 'deco')?.geo, decoW: res.find((x) => x.role === 'decoW')?.geo, decoC: res.find((x) => x.role === 'decoC')?.geo };
+  const g = { cards: res.find((x) => x.role === 'cards')?.geo, geo: res.find((x) => x.role === 'main')?.geo, base: res.find((x) => x.role === 'base')?.geo, fade: res.find((x) => x.role === 'fade')?.geo, band: res.find((x) => x.role === 'band')?.geo, deco: res.find((x) => x.role === 'deco')?.geo, decoW: res.find((x) => x.role === 'decoW')?.geo, decoC: res.find((x) => x.role === 'decoC')?.geo, anchors: res.find((x) => x.role === 'anchors')?.geo };
   return (
     <group ref={group}>
       {baked ? (
@@ -426,6 +479,7 @@ export function SculptHair({ h, p, color, tip, hi = null, deco = null, gloss = 0
       {g.deco && <mesh geometry={g.deco} material={decoMat} castShadow />}
       {g.decoW && <mesh geometry={g.decoW} material={budMat} />}
       {g.decoC && <mesh geometry={g.decoC} material={budCentreMat} />}
+      {!!acc?.length && <HairAccessories anchors={g.anchors} worn={acc} hatOn={hatOn} R={h.rx} headY={h.ry} mu={mu} />}
     </group>
   );
 }

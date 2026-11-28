@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Heart, Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { Look } from '../look/config';
-import { CURL_PATTERNS, HAIRSTYLES, HAIR_OPTIONS, PATTERN_HINT, PATTERN_SPEC, hairControls, type CurlPattern, type EdgeT, type FringeT, type HairTex, type HairTune, type PaintT, type PartT } from '../look/hair';
+import { CURL_PATTERNS, HAIRSTYLES, PLACES, type PlaceT, HAIR_OPTIONS, PATTERN_HINT, PATTERN_SPEC, hairControls, type CurlPattern, type EdgeT, type FringeT, type HairTex, type HairTune, type PaintT, type PartT } from '../look/hair';
 import { HAIR } from '../look/palettes';
 
 /**
@@ -19,7 +19,7 @@ const DECO_COLOURS = ['#c2185b', '#e0306b', '#d32f2f', '#f57c00', '#ffb300', '#c
 const PATTERN_LABEL = Object.fromEntries(CURL_PATTERNS.map((k) => [k, k])) as Record<CurlPattern, string>;
 const PAINT_LABEL: Record<PaintT, string> = { none: 'Solid', twotone: 'Two-tone', ombre: 'Ombré', highlights: 'Highlights', streaks: 'Streaks', split: 'Split dye', lowlights: 'Lowlights' };
 
-export function HairControls({ look, onHair, onHi, onDeco }: { look: Look; onHair: (t: HairTune) => void; onHi: (c: string | null) => void; /** decoration colour (paranda, ribbons, beads) */ onDeco?: (c: string | null) => void }) {
+export function HairControls({ look, onHair, onHi, onDeco, onColor }: { look: Look; onHair: (t: HairTune) => void; onHi: (c: string | null) => void; /** decoration colour (paranda, ribbons, beads) */ onDeco?: (c: string | null) => void; /** roots / lengths / tips colours (sumanova-us-110) */ onColor?: (key: 'hair' | 'hairMid' | 'hairTip', c: string | null) => void }) {
   const id = look.pick.hair;
   if (id == null) return null;
   const style = HAIRSTYLES[id];
@@ -46,8 +46,15 @@ export function HairControls({ look, onHair, onHi, onDeco }: { look: Look; onHai
           )}
         </div>
       </div>
-      {c.length && <Slider label="Length" value={t.length ?? 0} min={-1} onChange={(v) => set({ length: v })} />}
-      {c.volume && <Slider label="Volume" value={t.volume ?? 0} min={-1} onChange={(v) => set({ volume: v })} />}
+      {c.length && <Slider label="Length" value={t.length ?? 0} min={-1} debounce onChange={(v) => set({ length: v })} />}
+      {c.volume && <Slider label="Volume" value={t.volume ?? 0} min={-1} debounce onChange={(v) => set({ volume: v })} />}
+      {/* salon: shape each region on its own (regrows the groom; 150 ms debounce) */}
+      {c.top && <Slider label="Top" value={t.top ?? 0} min={-1} debounce onChange={(v) => set({ top: v })} />}
+      {c.sides && <Slider label="Sides" value={t.sides ?? 0} min={-1} debounce onChange={(v) => set({ sides: v })} />}
+      {c.back && <Slider label="Back" value={t.back ?? 0} min={-1} debounce onChange={(v) => set({ back: v })} />}
+      {c.fringeLen && (t.fringe ?? p.fringe) !== 'none' && <Slider label="Fringe length" value={t.fringeLen ?? 0} min={-1} debounce onChange={(v) => set({ fringeLen: v })} />}
+      {c.messy && <Slider label="Messy" value={t.messy ?? 0} min={-1} debounce onChange={(v) => set({ messy: v })} />}
+      {c.layers && <Slider label="Layers" value={t.layers ?? 0} min={-1} debounce onChange={(v) => set({ layers: v })} />}
       {c.tex && <Chips label="Texture" options={HAIR_OPTIONS.tex} labels={TEX_LABEL} value={texNow} onPick={(v) => set({ tex: v, pattern: undefined })} />}
       {c.tex && patterns.length > 0 && (
         <div>
@@ -82,19 +89,94 @@ export function HairControls({ look, onHair, onHi, onDeco }: { look: Look; onHai
           </div>
         </div>
       )}
+      {c.paint && onColor && <ColourPanel look={look} t={t} set={set} onColor={onColor} onHi={onHi} />}
       <Slider label="Shine" value={t.gloss ?? 0.6} min={0} onChange={(v) => set({ gloss: v })} />
     </div>
   );
 }
 
-function Slider({ label, value, min, onChange }: { label: string; value: number; min: number; onChange: (v: number) => void }) {
+const PLACE_LABEL: Record<PlaceT, string> = { none: 'None', moneypiece: 'Money-piece', peekaboo: 'Peekaboo', framing: 'Face-framing', streak: 'Streak', halo: 'Halo', tips: 'Dip-dye' };
+/** natural hair colours (the first 19 of the rail) vs fun colours (the rest) */
+const NATURAL = HAIR.slice(0, 19), FUN = HAIR.slice(19);
+
+/**
+ * Salon colour (sumanova-us-110): roots / lengths / tips with blend and shadow root, an accent
+ * placed where you want it, and a grey blend. All GPU uniforms — instant, no regrow.
+ */
+function ColourPanel({ look, t, set, onColor, onHi }: { look: Look; t: HairTune; set: (p: Partial<HairTune>) => void; onColor: (key: 'hair' | 'hairMid' | 'hairTip', c: string | null) => void; onHi: (c: string | null) => void }) {
+  const [stop, setStop] = useState<'hair' | 'hairMid' | 'hairTip'>('hair');
+  const [fun, setFun] = useState(() => !NATURAL.includes(look.color.hair ?? NATURAL[3]));
+  const rail = fun ? FUN : NATURAL;
+  const cur = stop === 'hair' ? look.color.hair : stop === 'hairMid' ? look.color.hairMid : look.color.hairTip;
+  const place = t.place ?? 'none';
+  const swatch = (k: 'hair' | 'hairMid' | 'hairTip', label: string) => {
+    const col = (k === 'hair' ? look.color.hair : k === 'hairMid' ? look.color.hairMid : look.color.hairTip) ?? look.color.hair ?? '#3b2618';
+    return (
+      <button onClick={() => setStop(k)} aria-pressed={stop === k} className={cn('flex flex-1 items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-bold ring-2 active:scale-95', stop === k ? 'bg-white ring-ember-amber' : 'bg-white ring-ink/[0.06]')}>
+        <span className="h-5 w-5 shrink-0 rounded-lg ring-1 ring-ink/10" style={{ background: col }} />
+        {label}
+      </button>
+    );
+  };
+  return (
+    <div className="space-y-3 rounded-2xl bg-white/60 p-2.5 ring-1 ring-ink/[0.05]">
+      <p className="eyebrow">Colour</p>
+      <div className="flex gap-1.5">
+        {swatch('hair', 'Roots')}
+        {swatch('hairMid', 'Lengths')}
+        {swatch('hairTip', 'Tips')}
+      </div>
+      <div className="flex gap-1.5">
+        <button onClick={() => setFun(false)} aria-pressed={!fun} className={cn('rounded-xl px-3 py-1 text-[11px] font-bold', !fun ? 'bg-ember-cream text-noir' : 'bg-white text-ink-mute ring-1 ring-ink/[0.06]')}>Natural colours</button>
+        <button onClick={() => setFun(true)} aria-pressed={fun} className={cn('rounded-xl px-3 py-1 text-[11px] font-bold', fun ? 'bg-ember-cream text-noir' : 'bg-white text-ink-mute ring-1 ring-ink/[0.06]')}>Fun colours</button>
+      </div>
+      <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+        {stop !== 'hair' && (
+          <button onClick={() => onColor(stop, null)} className={cn('h-8 shrink-0 rounded-2xl bg-ink/[0.06] px-2.5 text-[11px] font-bold ring-2', cur == null ? 'ring-ember-amber' : 'ring-ink/10')}>Same as roots</button>
+        )}
+        {rail.map((h) => (
+          <button key={h} onClick={() => onColor(stop, h)} aria-label={h} className={cn('h-8 w-8 shrink-0 rounded-2xl ring-2', cur === h ? 'ring-ember-amber' : 'ring-ink/10')} style={{ background: h }} />
+        ))}
+      </div>
+      <Slider label="Blend" value={t.blend ?? 0.5} min={0} onChange={(v) => set({ blend: v })} />
+      <Slider label="Shadow root" value={t.rootLen ?? 0} min={0} onChange={(v) => set({ rootLen: v })} />
+      <Slider label="Grey blend" value={t.grey ?? 0} min={0} onChange={(v) => set({ grey: v })} />
+      <Chips label="Placement" options={PLACES} labels={PLACE_LABEL} value={place} onPick={(v) => set({ place: v })} />
+      {place !== 'none' && (
+        <>
+          <Slider label="Amount" value={t.placeAmt ?? 0.5} min={0} onChange={(v) => set({ placeAmt: v })} />
+          <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+            {(fun ? FUN : HAIR).map((h) => (
+              <button key={h} onClick={() => onHi(h)} aria-label={h} className={cn('h-8 w-8 shrink-0 rounded-2xl ring-2', look.color.hairHi === h ? 'ring-ember-amber' : 'ring-ink/10')} style={{ background: h }} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** a slider; `debounce`: shape sliders report 150 ms after the last move (each change regrows the hair) */
+function Slider({ label, value, min, onChange, debounce = false }: { label: string; value: number; min: number; onChange: (v: number) => void; debounce?: boolean }) {
+  const [local, setLocal] = useState(value);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => setLocal(value), [value]);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  const change = (v: number) => {
+    setLocal(v);
+    if (!debounce) return onChange(v);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => onChange(v), 150);
+  };
+  value = local;
+  const onChangeLocal = change;
   return (
     <label className="block">
       <span className="eyebrow mb-1 flex justify-between">
         {label}
         <span className="tabular-nums normal-case tracking-normal text-ink-soft">{min < 0 && value > 0 ? '+' : ''}{Math.round(value * 100)}</span>
       </span>
-      <input type="range" min={min} max={1} step={0.05} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full" />
+      <input type="range" min={min} max={1} step={0.05} value={value} onChange={(e) => onChangeLocal(Number(e.target.value))} className="w-full" />
     </label>
   );
 }

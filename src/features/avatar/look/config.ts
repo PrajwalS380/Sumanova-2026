@@ -6,6 +6,7 @@ import { TOPS, OUTERWEAR, BOTTOMS, DRESSES, SHOES, SOCKS, BAGS, HATS, GLASSES } 
 import { EAR_PIERCINGS, NOSE_PIERCINGS, BROW_PIERCINGS, LIP_PIERCINGS, TONGUE_PIERCINGS, HEARING, HEAD_EXTRAS } from './extras';
 import type { Variant } from './face';
 import { isHidden } from './hidden';
+import { HAIR_ACCESSORIES, ANCHOR_KINDS, hairAnchors, accAnchor, type AnchorK } from './hairAcc';
 
 export type Expression = 'neutral' | 'happy' | 'sad' | 'angry' | 'surprised' | 'laughing' | 'crying' | 'winking' | 'blushing' | 'sleeping' | 'tongue';
 export type Pose = 'standing' | 'sitting' | 'dancing' | 'waving' | 'walking' | 'thumbsup' | 'celebrating' | 'pointing' | 'peace' | 'crossed' | 'pockets';
@@ -14,6 +15,8 @@ export type Pose = 'standing' | 'sitting' | 'dancing' | 'waving' | 'walking' | '
 export const SLOTS = {
   head: HEADS, eyes: EYE_SHAPES, lashes: LASHES, brows: BROWS, nose: NOSES, mouth: MOUTHS, ears: EARS, body: BODIES,
   hair: HAIRSTYLES, beard: BEARDS,
+  /** hair accessories (sumanova-us-110): two can be worn at once */
+  hairAcc1: HAIR_ACCESSORIES, hairAcc2: HAIR_ACCESSORIES,
   earL: EAR_PIERCINGS, earR: EAR_PIERCINGS, nosePierce: NOSE_PIERCINGS, browPierce: BROW_PIERCINGS, lipPierce: LIP_PIERCINGS, tonguePierce: TONGUE_PIERCINGS,
   hearingL: HEARING, hearingR: HEARING, headExtra: HEAD_EXTRAS,
   top: TOPS, outer: OUTERWEAR, bottom: BOTTOMS, dress: DRESSES, shoes: SHOES, socks: SOCKS, bag: BAGS, hat: HATS, glasses: GLASSES,
@@ -22,7 +25,7 @@ export type Slot = keyof typeof SLOTS;
 export type SlotParams<S extends Slot> = (typeof SLOTS)[S][number]['p'];
 
 /** Colour keys a user can change. */
-export const COLOR_KEYS = ['hair', 'hairTip', 'hairHi', 'hairDeco', 'eyes', 'brows', 'beard', 'lips', 'shadow', 'blush', 'liner', 'top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat'] as const;
+export const COLOR_KEYS = ['hair', 'hairMid', 'hairTip', 'hairHi', 'hairDeco', 'hairAcc1', 'hairAcc2', 'eyes', 'brows', 'beard', 'lips', 'shadow', 'blush', 'liner', 'top', 'outer', 'bottom', 'dress', 'shoes', 'socks', 'bag', 'hat'] as const;
 export type ColorKey = (typeof COLOR_KEYS)[number];
 
 export interface Look {
@@ -33,12 +36,14 @@ export interface Look {
   tune: { eyeSize: number; eyeGap: number; face: number }; // -1 … 1
   /** per-avatar hair adjustments on top of the chosen style */
   hair?: HairTune;
+  /** where each hair accessory sits, when its kind allows more than one place (sumanova-us-110) */
+  accAt?: { hairAcc1?: AnchorK; hairAcc2?: AnchorK };
   expression: Expression;
   pose: Pose;
 }
 
 /** Optional slots that can be removed with "Deselect". */
-export const OPTIONAL: Slot[] = ['hair', 'beard', 'lashes', 'earL', 'earR', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce', 'hearingL', 'hearingR', 'headExtra', 'top', 'outer', 'bottom', 'dress', 'socks', 'bag', 'hat', 'glasses', 'shoes'];
+export const OPTIONAL: Slot[] = ['hair', 'hairAcc1', 'hairAcc2', 'beard', 'lashes', 'earL', 'earR', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce', 'hearingL', 'hearingR', 'headExtra', 'top', 'outer', 'bottom', 'dress', 'socks', 'bag', 'hat', 'glasses', 'shoes'];
 
 export const DEFAULT_LOOK: Look = {
   v: 2,
@@ -85,9 +90,17 @@ export function normalizeLook(raw: unknown): Look {
     color,
     tune: { eyeSize: num(t.eyeSize), eyeGap: num(t.eyeGap), face: num(t.face) },
     hair: normalizeHairTune(r.hair),
+    ...accAtOf(r.accAt),
     expression: EXPRESSIONS.includes(r.expression as Expression) ? (r.expression as Expression) : 'happy',
     pose: POSES.includes(r.pose as Pose) ? (r.pose as Pose) : 'standing',
   };
+}
+
+function accAtOf(raw: unknown): Pick<Look, 'accAt'> {
+  const a = (raw ?? {}) as Record<string, unknown>;
+  const out: NonNullable<Look['accAt']> = {};
+  for (const k of ['hairAcc1', 'hairAcc2'] as const) if (ANCHOR_KINDS.includes(a[k] as AnchorK)) out[k] = a[k] as AnchorK;
+  return Object.keys(out).length ? { accAt: out } : {};
 }
 
 /** Best-effort conversion of the first-generation avatar format. */
@@ -173,6 +186,12 @@ export function randomLook(): Look {
   l.pick.outer = Math.random() < 0.4 ? plain('outer') : null;
   const glasses = SLOTS.glasses.filter((v) => !isHidden('glasses', v.id));
   l.pick.glasses = Math.random() < 0.25 ? glasses[R(glasses.length)].id : null;
+  // the odd hair accessory (≤ 15 %), only one the hairstyle can hold (sumanova-us-110)
+  if (Math.random() < 0.12) {
+    const at = hairAnchors(HAIRSTYLES[l.pick.hair!]?.p);
+    const fits = HAIR_ACCESSORIES.filter((v) => !isHidden('hairAcc1', v.id) && accAnchor(v.p.kind, at) != null);
+    if (fits.length) l.pick.hairAcc1 = fits[R(fits.length)].id;
+  }
   l.color.hair = HAIR[R(19)];
   l.color.eyes = EYES[R(EYES.length)];
   l.color.brows = l.color.hair;

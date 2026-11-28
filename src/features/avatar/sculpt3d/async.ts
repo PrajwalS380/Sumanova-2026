@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { jobKey, pack, runJob, unpack, SCULPT_VERSION, type Job, type Result } from './jobs';
 
 /**
@@ -122,6 +122,9 @@ export function useSculpt(job: Job | null): Result | null {
   const key = job ? jobKey(job) : '';
   const [, bump] = useState(0);
   const ready = job ? mem.get(key) ?? null : null;
+  // while a new version is being built, keep showing the last one (no blank flash on edits)
+  const last = useRef<Result | null>(null);
+  if (ready) last.current = ready;
   useEffect(() => {
     if (!job || ready) return;
     let alive = true;
@@ -131,5 +134,5 @@ export function useSculpt(job: Job | null): Result | null {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, !!ready]);
-  return ready;
+  return ready ?? (job ? last.current : null);
 }

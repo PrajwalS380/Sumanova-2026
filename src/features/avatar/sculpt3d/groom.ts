@@ -5,6 +5,8 @@ import { rng, hashStr } from '../look/rng';
 import { Field, type Prim } from './sdf';
 import { GeoCache, meshField } from './mesh';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { budPrims, bowPrims, beadPrim } from './hairDeco';
+import { ANCHOR_KINDS, type AnchorK } from '../look/hairAcc';
 
 /**
  * The hair groom: hair is GROWN, not assembled.
@@ -36,6 +38,12 @@ export interface GroomOut {
   deco?: THREE.BufferGeometry | null;
   decoW?: THREE.BufferGeometry | null;
   decoC?: THREE.BufferGeometry | null;
+  /**
+   * where hair accessories can sit (sumanova-us-110): one point per anchor on the hair surface —
+   * position, normal (out of the hair), hairT (comb / tail direction), uv = (ANCHOR_KINDS index,
+   * size), hairPivot / hairGrp (the motion of the hair it sits on)
+   */
+  anchors?: THREE.BufferGeometry | null;
 }
 
 const cache = new GeoCache<GroomOut>(16);
@@ -69,6 +77,8 @@ class StrandMesh {
   col: number[] = [];
   /** motion (sumanova-us-108): the point the lock swings about, and its motion group (−1 = still) */
   piv: number[] = [];
+  /** where the lock grows out of the scalp (colour placement, sumanova-us-110) */
+  root: number[] = [];
   grp: number[] = [];
   idx: number[] = [];
   get count() { return this.pos.length / 3; }
@@ -112,6 +122,7 @@ class StrandMesh {
         this.uv.push(j / R, t);
         this.col.push(sh, t, o.rand);
         this.piv.push(o.mo.pivot.x, o.mo.pivot.y, o.mo.pivot.z);
+        this.root.push(pts[0].x, pts[0].y, pts[0].z);
         this.grp.push(o.mo.staticAbove != null && pts[i].y > o.mo.staticAbove ? -1 : o.mo.grp);
       }
     }
@@ -132,6 +143,7 @@ class StrandMesh {
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
     g.setAttribute('hairPivot', new THREE.Float32BufferAttribute(this.piv, 3));
     g.setAttribute('hairGrp', new THREE.Float32BufferAttribute(this.grp, 1));
+    g.setAttribute('hairRoot', new THREE.Float32BufferAttribute(this.root, 3));
     g.setIndex(this.count > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
     g.computeBoundingSphere();
     return g;
@@ -160,9 +172,11 @@ class CardMesh {
   idx: number[] = [];
   get count() { return this.pos.length / 3; }
   piv: number[] = [];
+  /** where the lock grows out of the scalp (colour placement, sumanova-us-110) */
+  root: number[] = [];
   grp: number[] = [];
   /** a strip through `centres` (one per path point), `across` = half-width direction × width */
-  strip(centres: V[], across: V[], nrm: V[], tan: V[], shade: number[], t0: number, t1: number, rand: number, mo: Motion) {
+  strip(centres: V[], across: V[], nrm: V[], tan: V[], shade: number[], t0: number, t1: number, rand: number, mo: Motion, root: V = centres[0]) {
     const base = this.count;
     const n = centres.length;
     for (let i = 0; i < n; i++) {
@@ -175,6 +189,7 @@ class CardMesh {
         this.uv.push(s < 0 ? 0 : 1, t);
         this.col.push(shade[i], t, rand);
         this.piv.push(mo.pivot.x, mo.pivot.y, mo.pivot.z);
+        this.root.push(root.x, root.y, root.z);
         this.grp.push(mo.staticAbove != null && c.y > mo.staticAbove ? -1 : mo.grp);
       }
     }
@@ -194,6 +209,7 @@ class CardMesh {
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
     g.setAttribute('hairPivot', new THREE.Float32BufferAttribute(this.piv, 3));
     g.setAttribute('hairGrp', new THREE.Float32BufferAttribute(this.grp, 1));
+    g.setAttribute('hairRoot', new THREE.Float32BufferAttribute(this.root, 3));
     g.setIndex(this.count > 65535 ? new THREE.Uint32BufferAttribute(this.idx, 1) : new THREE.Uint16BufferAttribute(this.idx, 1));
     g.computeBoundingSphere();
     return g;
@@ -211,6 +227,8 @@ export class Groomer {
   braidEnds: { at: V; dir: V; w: number; mo: Motion }[] = [];
   buns: { c: V; n: V; r: number }[] = [];
   loops: { at: V; mo: Motion }[] = [];
+  /** the plait wound into a bun (braidbun) — an accessory anchor (sumanova-us-110) */
+  braidBun: { c: V; n: V; r: number } | null = null;
   decos: { prims: Prim[]; role: 'deco' | 'decoW' | 'decoC'; mo: Motion }[] = [];
   /** number of Bantu knots built */
   knots = 0;
@@ -355,7 +373,8 @@ export class Groomer {
     const shells = [fade, edge].filter((g): g is THREE.BufferGeometry => !!g);
     this.decorate();
     const decoGeo = (role: 'deco' | 'decoW' | 'decoC') => this.decoGeometry(role);
-    return { deco: decoGeo('deco'), decoW: decoGeo('decoW'), decoC: decoGeo('decoC'), strands: this.m.geometry(), cards: this.cards.geometry(), base: this.baseCap(), fade: shells.length > 1 ? mergeGeometries(shells) : shells[0] ?? null, band: this.bandGeo() };
+    const strands = this.m.geometry(), cards = this.cards.geometry(), base = this.baseCap();
+    return { deco: decoGeo('deco'), decoW: decoGeo('decoW'), decoC: decoGeo('decoC'), strands, cards, base, fade: shells.length > 1 ? mergeGeometries(shells) : shells[0] ?? null, band: this.bandGeo(), anchors: this.anchorGeometry([strands, cards, base]) };
   }
 
   /**
@@ -898,7 +917,7 @@ export class Groomer {
         tn.push(f.T);
         sh.push(1);
       }
-      this.cards.strip(c, acr, nr, tn, sh, t0, Math.min(1.06, t1 + 0.06), (rand + (side > 0 ? 0.37 : 0.71)) % 1, mo);
+      this.cards.strip(c, acr, nr, tn, sh, t0, Math.min(1.06, t1 + 0.06), (rand + (side > 0 ? 0.37 : 0.71)) % 1, mo, all[0]);
     }
     // a loose flyaway off the silhouette on some locks (outer half only, never over the face)
     if (r() < 0.16 + this.p.messy * 0.2 && pts[0].z < 0.4 * R) {
@@ -913,7 +932,7 @@ export class Groomer {
         tn.push(f.T);
         sh.push(1);
       }
-      if (c.length >= 3) this.cards.strip(c, acr, nr, tn, sh, 0.35, 1.04, (rand + 0.13) % 1, mo);
+      if (c.length >= 3) this.cards.strip(c, acr, nr, tn, sh, 0.35, 1.04, (rand + 0.13) % 1, mo, all[0]);
     }
   }
 
@@ -1443,6 +1462,7 @@ export class Groomer {
         const n = T.clone().normalize();
         const a1 = v3().crossVectors(n, UP).normalize(), a2 = v3().crossVectors(n, a1).normalize();
         const C = T.clone().addScaledVector(n, 0.14 * R);
+        this.braidBun = { c: C.clone(), n: n.clone(), r: 0.28 * R };
         const spiral: V[] = [];
         for (let i = 0; i <= 60; i++) {
           const t = i / 60, th = t * Math.PI * 4.2, rr = 0.28 * R * (1 - t * 0.8);
@@ -1652,6 +1672,100 @@ export class Groomer {
     }
   }
 
+  // ------------------------------------------------------------------ accessory anchors
+  /**
+   * Accessory anchors (sumanova-us-110), all ON the hair surface: ties, bun tops and braid ends come
+   * from the structures; scalp places (part, sides, crown, over the ears, the headband arc) are found
+   * by looking along a direction from the head centre and taking the outer hair surface there
+   * (a high percentile of the hair vertices in a narrow cone, so a stray lock doesn't lift it).
+   */
+  anchorGeometry(geos: (THREE.BufferGeometry | null)[]): THREE.BufferGeometry | null {
+    const { p, R } = this;
+    type A = { k: AnchorK; at: V; n: V; d: V; w: number; mo: Motion };
+    const out: A[] = [];
+    const still = (at: V): Motion => ({ grp: -1, pivot: at.clone() });
+    const BUN = ['bun', 'lowbun', 'messybun', 'spacebuns', 'topknot', 'pineapple', 'halfspace'];
+    if (p.fade !== 'buzz') {
+      if (p.tie !== 'none' && p.tie !== 'bantu' && p.braid !== 'cornrows') {
+        for (const T of this.tiePoints()) {
+          const n = T.clone().normalize(), at = T.clone().addScaledVector(n, 0.03 * R);
+          const isBun = BUN.includes(p.tie);
+          out.push({ k: 'tie', at, n, d: n.clone(), w: 0.085 * R * (isBun ? 1.4 : 1), mo: still(T) });
+        }
+      }
+      for (const b of this.buns) {
+        const at = b.c.clone().addScaledVector(b.n, b.r * 0.92);
+        out.push({ k: 'bunTop', at, n: b.n.clone(), d: UP.clone(), w: b.r, mo: still(at) });
+      }
+      if (this.braidBun) {
+        const b = this.braidBun, at = b.c.clone().addScaledVector(b.n, 0.16 * R);
+        out.push({ k: 'bunTop', at, n: b.n.clone(), d: UP.clone(), w: b.r, mo: still(at) });
+      }
+      for (const e of this.braidEnds.slice(0, 40)) out.push({ k: 'braidEnd', at: e.at.clone(), n: e.dir.clone(), d: e.dir.clone(), w: e.w, mo: e.mo });
+    }
+    // the outer hair surface along a direction (null = no hair there)
+    const pos = geos.filter((g): g is THREE.BufferGeometry => !!g).map((g) => g.getAttribute('position').array as Float32Array);
+    const surface = (u: V, pct: number): number | null => {
+      const n = this.scalp(u).normalize();
+      const vals: number[] = [];
+      for (const a of pos) {
+        for (let i = 0; i < a.length; i += 3) {
+          const x = a[i], y = a[i + 1], z = a[i + 2];
+          const d = x * n.x + y * n.y + z * n.z;
+          if (d <= 0) continue;
+          const l2 = x * x + y * y + z * z;
+          if (d * d < 0.985 * l2) continue; // ≈ 7° cone
+          vals.push(d);
+        }
+      }
+      if (vals.length < 12) return null;
+      vals.sort((a, b) => a - b);
+      return vals[Math.min(vals.length - 1, Math.floor(vals.length * pct))];
+    };
+    const scalpPlace = (k: AnchorK, dir: [number, number, number], needHair: boolean, pct = 0.97) => {
+      const u = v3(...dir).normalize();
+      const base = this.scalp(u), n = base.clone().normalize();
+      const s = surface(u, pct);
+      if (s == null && needHair) return;
+      const r = Math.max(base.length() + this.cap, s ?? 0);
+      const at = n.clone().multiplyScalar(r);
+      // comb direction: down the head, toward the back
+      const d = v3(0, -1, -0.4).addScaledVector(n, -v3(0, -1, -0.4).dot(n)).normalize();
+      out.push({ k, at, n, d, w: 0.1 * R, mo: still(at) });
+    };
+    const scalpOk = p.fade !== 'buzz' && p.braid !== 'cornrows' && p.braid !== 'flattwist' && p.braid !== 'fulani' && p.tie !== 'bantu';
+    if (scalpOk) {
+      scalpPlace('crownBack', [0, 0.45, -0.89], true);
+      if (p.afro === 0) {
+        scalpPlace('partFront', [0.32, 0.72, 0.62], true);
+        scalpPlace('sideLeft', [0.8, 0.45, 0.22], true);
+        scalpPlace('sideRight', [-0.8, 0.45, 0.22], true);
+        scalpPlace('overEarL', [0.88, 0.24, -0.2], true);
+        scalpPlace('overEarR', [-0.88, 0.24, -0.2], true);
+      }
+    }
+    // the headband arc: ear to ear over the front of the crown (sits snug: a lower percentile)
+    for (let i = 0; i <= 10; i++) {
+      const th = -1.3 + (i / 10) * 2.6;
+      scalpPlace('headbandArc', [Math.sin(th), Math.cos(th), 0.42 * Math.cos(th) + 0.08], false, 0.93);
+    }
+    if (!out.length) return null;
+    const n = out.length;
+    const P = new Float32Array(n * 3), N = new Float32Array(n * 3), D = new Float32Array(n * 3), U = new Float32Array(n * 2), PV = new Float32Array(n * 3), G = new Float32Array(n);
+    out.forEach((a, i) => {
+      a.at.toArray(P, i * 3); a.n.toArray(N, i * 3); a.d.toArray(D, i * 3); a.mo.pivot.toArray(PV, i * 3);
+      U[i * 2] = ANCHOR_KINDS.indexOf(a.k); U[i * 2 + 1] = a.w; G[i] = a.mo.grp;
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(P, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+    g.setAttribute('hairT', new THREE.BufferAttribute(D, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(U, 2));
+    g.setAttribute('hairPivot', new THREE.BufferAttribute(PV, 3));
+    g.setAttribute('hairGrp', new THREE.BufferAttribute(G, 1));
+    return g;
+  }
+
   // ------------------------------------------------------------------ decorations
   /** style decorations as separate small sculpted pieces (they follow their braid's motion) */
   decorate() {
@@ -1690,31 +1804,22 @@ export class Groomer {
           // a garland wound round the bun's widest part, buds standing off its surface
           const c = b.c.clone().addScaledVector(dir, b.r * 1.02).addScaledVector(b.n, -b.r * 0.15);
           const out = dir.clone().addScaledVector(b.n, 0.3).normalize();
-          const tip = c.clone().addScaledVector(out, 0.11 * R);
-          add([{ t: 'cone', a: [c.x, c.y, c.z], b: [tip.x, tip.y, tip.z], ra: 0.07 * R, rb: 0.045 * R, bone: 0 }], 'decoW', { grp: -1, pivot: c });
-          const cc = tip.clone().addScaledVector(out, 0.012 * R);
-          add([{ t: 'sphere', c: [cc.x, cc.y, cc.z], r: 0.032 * R, bone: 0 }], 'decoC', { grp: -1, pivot: c });
+          const bud = budPrims(c, out, R);
+          add([bud.white], 'decoW', { grp: -1, pivot: c });
+          add([bud.centre], 'decoC', { grp: -1, pivot: c });
         }
       }
     }
     if (deco === 'ribbon') {
       // a bow at each loop
       for (const l of this.loops) {
-        const c = l.at;
-        add([
-          { t: 'ellipsoid', c: [c.x - 0.11 * R, c.y + 0.01 * R, c.z], r: [0.12 * R, 0.08 * R, 0.03 * R], rot: [0, 0, 0.35], bone: 0 },
-          { t: 'ellipsoid', c: [c.x + 0.11 * R, c.y + 0.01 * R, c.z], r: [0.12 * R, 0.08 * R, 0.03 * R], rot: [0, 0, -0.35], bone: 0 },
-          { t: 'sphere', c: [c.x, c.y, c.z], r: 0.045 * R, bone: 0 },
-          { t: 'box', c: [c.x - 0.05 * R, c.y - 0.16 * R, c.z], s: [0.03 * R, 0.12 * R, 0.01 * R], rot: [0, 0, 0.25], round: 0.004 * R, bone: 0 },
-          { t: 'box', c: [c.x + 0.05 * R, c.y - 0.16 * R, c.z], s: [0.03 * R, 0.12 * R, 0.01 * R], rot: [0, 0, -0.25], round: 0.004 * R, bone: 0 },
-        ], 'deco', l.mo);
+        add(bowPrims(l.at, R), 'deco', l.mo);
       }
     }
     if (deco === 'beads') {
       // cylinder beads on the braid ends (at most 40)
       for (const e of this.braidEnds.slice(0, 40)) {
-        const a = e.at.clone().addScaledVector(e.dir, -0.02 * R), b = e.at.clone().addScaledVector(e.dir, 0.05 * R);
-        add([{ t: 'cone', a: [a.x, a.y, a.z], b: [b.x, b.y, b.z], ra: e.w * 0.85, rb: e.w * 0.85, bone: 0 }], 'deco', e.mo);
+        add([beadPrim(e.at, e.dir, e.w, R)], 'deco', e.mo);
       }
     }
   }

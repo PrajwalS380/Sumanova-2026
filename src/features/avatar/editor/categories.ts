@@ -43,6 +43,9 @@ export const CATEGORIES: Category[] = [
   // ---------------- Face & body
   { id: 'hair', mode: 'face', label: 'Hair', icon: Scissors, slot: 'hair', color: { key: 'hair', palette: HAIR }, color2: { key: 'hairTip', palette: HAIR, allowNone: true, label: 'Tips' }, thumb: 'head', stage: 'head' },
   { id: 'skin', mode: 'face', label: 'Skin', icon: Hand, swatches: { key: 'skin', palette: SKIN }, thumb: 'head', stage: 'head' },
+  // hair accessories (sumanova-us-110): two at once
+  { id: 'hairAcc1', mode: 'face', label: 'Hair accessories', icon: Flower2, slot: 'hairAcc1', color: { key: 'hairAcc1', palette: CLOTH, allowNone: true }, thumb: 'head', stage: 'head' },
+  { id: 'hairAcc2', mode: 'face', label: 'Second accessory', icon: Flower2, slot: 'hairAcc2', color: { key: 'hairAcc2', palette: CLOTH, allowNone: true }, thumb: 'head', stage: 'head' },
   { id: 'head', mode: 'face', label: 'Face', icon: Smile, slot: 'head', sliders: [{ key: 'face', label: 'Face size' }], thumb: 'head', stage: 'head' },
   { id: 'eyes', mode: 'face', label: 'Eyes', icon: Eye, slot: 'eyes', color: { key: 'eyes', palette: EYES }, sliders: [{ key: 'eyeSize', label: 'Eye size' }, { key: 'eyeGap', label: 'Eye spacing' }], thumb: 'face', stage: 'head' },
   { id: 'lashes', mode: 'face', label: 'Lashes', icon: Sparkles, slot: 'lashes', color: { key: 'liner', palette: ['#1a1110', '#3a2620', '#5a3a2a', '#1f3f8a', '#4a2a6e', '#2f5d3a', '#7a1424'], allowNone: true, label: 'Liner' }, thumb: 'eyes', stage: 'head' },

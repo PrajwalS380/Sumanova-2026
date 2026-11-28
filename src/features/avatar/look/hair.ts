@@ -335,7 +335,31 @@ export interface HairTune {
   edges?: EdgeT;
   /** hair-type scale (sumanova-us-109) */
   pattern?: CurlPattern;
+  // ---- salon (sumanova-us-110), all −1 … 1
+  /** length per region (on top of the master `length`) */
+  top?: number;
+  sides?: number;
+  back?: number;
+  /** fringe length (−1 … 1) */
+  fringeLen?: number;
+  /** neater (−1) … messier (+1) */
+  messy?: number;
+  /** blunt (−1) … heavily layered (+1) */
+  layers?: number;
+  // ---- colour placement (GPU only; colours: hair = roots, hairMid = lengths, hairTip = tips, hairHi = accent)
+  place?: PlaceT;
+  /** 0 … 1 how much / how wide */
+  placeAmt?: number;
+  /** 0 … 1 hard line … soft melt between roots, lengths and tips */
+  blend?: number;
+  /** 0 … 1 how far the root colour reaches (shadow root) */
+  rootLen?: number;
+  /** 0 … 1 silver mixed into roots + lengths (salt & pepper) */
+  grey?: number;
 }
+/** Where the accent colour goes (sumanova-us-110). */
+export type PlaceT = 'none' | 'moneypiece' | 'peekaboo' | 'framing' | 'streak' | 'halo' | 'tips';
+export const PLACES: PlaceT[] = ['none', 'moneypiece', 'peekaboo', 'framing', 'streak', 'halo', 'tips'];
 
 /** Which controls make sense for a style (e.g. no parting on a buzz cut, no fringe on cornrows). */
 export function hairControls(p: HairP) {
@@ -349,6 +373,13 @@ export function hairControls(p: HairP) {
     fringe: !shaved && !structured && p.flow !== 'hawk',
     paint: !shaved,
     line: !shaved,
+    // salon (sumanova-us-110)
+    top: !shaved && p.afro === 0,
+    sides: !shaved && p.braid !== 'cornrows' && p.braid !== 'box' && p.loc === 'none',
+    back: !shaved && p.braid !== 'cornrows' && p.braid !== 'box' && p.loc === 'none',
+    fringeLen: !shaved,
+    messy: !shaved && !structured && p.tie === 'none',
+    layers: !shaved && !structured && p.tie === 'none',
     // laid edges are common on afros, puffs, coils and cornrows too
     edges: !shaved,
   };
@@ -363,6 +394,20 @@ export function tuneHair(p: HairP, t: HairTune | null | undefined): HairP {
     const k = Math.max(0.35, 1 + t.length * (p.side > 1 ? 0.35 : 0.5));
     q.top *= k; q.side *= k; q.back *= k; q.tail *= k;
   }
+  // salon: each region on its own (long regions change less per step)
+  const region = (v: number | undefined, base: number) => (v ? Math.max(0.35, 1 + v * (base > 1 ? 0.35 : 0.5)) : 1);
+  if (c.top && t.top) q.top *= region(t.top, p.top);
+  if (c.sides && t.sides) q.side *= region(t.sides, p.side);
+  if (c.back && t.back) {
+    const k = region(t.back, p.back);
+    q.back *= k;
+    q.tail *= k;
+  }
+  if (c.messy && t.messy) {
+    q.messy = Math.max(0, Math.min(1, p.messy + 0.5 * t.messy));
+    q.tips = Math.max(0, Math.min(1, p.tips + 0.3 * t.messy));
+  }
+  if (c.layers && t.layers) q.layers = Math.max(0, Math.min(1, p.layers + 0.5 * t.layers));
   if (c.volume && t.volume) {
     q.vol = Math.max(0, p.vol + t.volume * 0.5);
     q.afro = p.afro > 0 ? Math.max(0.3, p.afro + t.volume * 0.3) : 0;
@@ -383,6 +428,8 @@ export function tuneHair(p: HairP, t: HairTune | null | undefined): HairP {
     q.fringe = t.fringe;
     if (t.fringe !== 'none' && p.fringe === 'none') q.fringeLen = t.fringe === 'curtain' ? 0.6 : t.fringe === 'side' ? 0.6 : 0.42;
   }
+  // fringe length works on the recipe's fringe or one turned on with the Fringe chips
+  if (c.fringeLen && t.fringeLen && q.fringe !== 'none') q.fringeLen *= Math.max(0.35, 1 + t.fringeLen * 0.5);
   if (c.paint && t.paint) q.paint = t.paint;
   if (c.line && t.line) q.line = Math.max(-1, Math.min(1.2, p.line + t.line));
   if (c.edges && t.edges) q.edges = t.edges;
@@ -402,7 +449,9 @@ export function normalizeHairTune(raw: unknown): HairTune | undefined {
   const r = raw as Record<string, unknown>;
   const num = (v: unknown, lo: number, hi: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : undefined);
   const pick = <T extends string>(v: unknown, list: T[]) => (list.includes(v as T) ? (v as T) : undefined);
-  const t: HairTune = { length: num(r.length, -1, 1), volume: num(r.volume, -1, 1), tex: pick(r.tex, TEXES), part: pick(r.part, PARTS), fringe: pick(r.fringe, FRINGES), paint: pick(r.paint, PAINTS), gloss: num(r.gloss, 0, 1), line: num(r.line, -1, 1), edges: pick(r.edges, EDGES), pattern: pick(r.pattern, CURL_PATTERNS) };
+  const t: HairTune = { length: num(r.length, -1, 1), volume: num(r.volume, -1, 1), tex: pick(r.tex, TEXES), part: pick(r.part, PARTS), fringe: pick(r.fringe, FRINGES), paint: pick(r.paint, PAINTS), gloss: num(r.gloss, 0, 1), line: num(r.line, -1, 1), edges: pick(r.edges, EDGES), pattern: pick(r.pattern, CURL_PATTERNS),
+    top: num(r.top, -1, 1), sides: num(r.sides, -1, 1), back: num(r.back, -1, 1), fringeLen: num(r.fringeLen, -1, 1), messy: num(r.messy, -1, 1), layers: num(r.layers, -1, 1),
+    place: pick(r.place, PLACES), placeAmt: num(r.placeAmt, 0, 1), blend: num(r.blend, 0, 1), rootLen: num(r.rootLen, 0, 1), grey: num(r.grey, 0, 1) };
   for (const k of Object.keys(t) as (keyof HairTune)[]) if (t[k] === undefined) delete t[k];
   return Object.keys(t).length ? t : undefined;
 }

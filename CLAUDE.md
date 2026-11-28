@@ -196,6 +196,15 @@ zig-zag in `Groomer.texture`); no pattern = the old code path, byte-identical (h
 recipe flags: sleek, bevel, looped, knotless, goddess, puff, deco (paranda / gajra / ribbon / beads → `GroomOut.deco/
 decoW/decoC`, colour key `hairDeco`), tags (indian / textured / braids / short / long → studio filter chips). New ties
 topknot / bantu / pineapple / bubble / halfspace, braids sideplait / flattwist / fulani, locs micro.
+Salon (us-110): HairTune regions top/sides/back/fringeLen + messy/layers (150 ms debounced; `useSculpt` keeps the old
+result while regrowing); colour = hair (roots) / `hairMid` / hairTip + `place` (moneypiece, peekaboo, framing, streak,
+halo, tips) / placeAmt / blend / rootLen / grey — uniforms only (`salon()` in SculptHair, gated by `uSalon` so old looks
+are unchanged), placements keyed on the per-vertex `hairRoot` (lock's scalp root, not hairPivot). Hair accessories: slots
+`hairAcc1`/`hairAcc2` (`look/hairAcc.ts`, 10 kinds × 10 colourways, ids fixed), `look.accAt` = chosen anchor. The groom
+exports anchors as a tiny `anchors` geometry piece (uv.x = ANCHOR_KINDS index); `hairAnchors(p)` is the static mirror
+(test keeps them in step). Pieces are built in the worker (job `hairAcc`, `sculpt3d/hairAccGeo.ts`, shared prims in
+`sculpt3d/hairDeco.ts`) as ONE mesh, colours by `accSlot` uniforms; ≤ 3.2k triangles per accessory (test).
+Harness `&acc=<id>[,<id>]`, `&accs=a|b`, `&accat=<anchor>[,<anchor>]`.
 
 ## Sandbox limits (this cloud environment)
 Outbound network to supabase.co / vercel.app is blocked from the shell; use Supabase MCP (`execute_sql`) and Vercel

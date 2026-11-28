@@ -6,6 +6,7 @@ import { rng } from '@/features/avatar/look/rng';
 import { HAIR, SKIN, LIPS } from '@/features/avatar/look/palettes';
 import { PRESETS } from '@/features/avatar/look/presets';
 import { normalizeHairTune } from '@/features/avatar/look/hair';
+import type { AnchorK } from '@/features/avatar/look/hairAcc';
 import { liveHairMotion } from '@/features/avatar/render/hairMotion';
 (window as unknown as { __hairMotion: () => number[] }).__hairMotion = liveHairMotion;
 
@@ -50,6 +51,22 @@ if (q.get('presets')) {
     if (tune) l.hair = normalizeHairTune(JSON.parse(tune));
     if (q.get('skin')) l.skin = '#' + q.get('skin');
     if (q.get('hc')) l.color.hair = l.color.brows = '#' + q.get('hc');
+    // salon colours (sumanova-us-110): &hmid / &htip / &hhi
+    if (q.get('hmid')) l.color.hairMid = '#' + q.get('hmid');
+    if (q.get('htip')) l.color.hairTip = '#' + q.get('htip');
+    if (q.get('hhi')) l.color.hairHi = '#' + q.get('hhi');
+    // hair accessories (sumanova-us-110): &acc=<id>[,<id>] (or &accs=<ids>|<ids>|… per figure), &accat=<anchor>[,<anchor>]
+    const accs = q.get('accs')?.split('|');
+    const acc = accs ? accs[looks.length % accs.length] : q.get('acc');
+    if (acc) {
+      const [a1, a2] = acc.split(',').map((s) => (s === '' || s === '-' ? null : +s));
+      l.pick.hairAcc1 = a1 ?? null;
+      l.pick.hairAcc2 = a2 ?? null;
+    }
+    if (q.get('accat')) {
+      const [w1, w2] = q.get('accat')!.split(',') as AnchorK[];
+      l.accAt = { ...(w1 ? { hairAcc1: w1 } : {}), ...(w2 ? { hairAcc2: w2 } : {}) };
+    }
     looks.push(l);
   }
 } else {

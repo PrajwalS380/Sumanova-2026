@@ -18,7 +18,16 @@ import { prepareLook } from './render/lookParts';
 import { CATEGORIES, EXPRESSIONS, POSES, type Category, type Mode } from './editor/categories';
 import { mannequin, useThumb } from './editor/thumbs';
 import { HairControls, HairSearch, useFavs } from './editor/HairControls';
-import { HAIRSTYLES, type HairTune } from './look/hair';
+import { HAIRSTYLES, tuneHair, type HairTune } from './look/hair';
+import { ACC_ANCHORS, ACC_HINT, ANCHOR_LABEL, HAIR_ACCESSORIES, accAnchor, hairAnchors, type AccKind, type AnchorK } from './look/hairAcc';
+
+/** hair accessories (sumanova-us-110): the style each kind is previewed on, and from which side */
+const ACC_THUMB: Record<AccKind, { hair: string; back: boolean }> = {
+  claw: { hair: 'Long straight', back: true }, snap: { hair: 'Curtains', back: false }, barrette: { hair: 'Long straight', back: false },
+  scrunchie: { hair: 'High ponytail', back: true }, headband: { hair: 'Long straight', back: false }, bow: { hair: 'High ponytail', back: true },
+  flower: { hair: 'Long straight', back: false }, gajra: { hair: 'Messy bun', back: true }, pins: { hair: 'Messy bun', back: true }, beads: { hair: 'Box braids', back: true },
+};
+const isAccSlot = (s: Slot): s is 'hairAcc1' | 'hairAcc2' => s === 'hairAcc1' || s === 'hairAcc2';
 
 const FACE_SLOTS: Slot[] = ['head', 'eyes', 'lashes', 'brows', 'nose', 'mouth', 'nosePierce', 'browPierce', 'lipPierce', 'tonguePierce'];
 
@@ -220,7 +229,7 @@ export default function AvatarStudio() {
                   gl={gl}
                 />
               ) : (
-                <CategoryPanel cat={cat} look={look} onPick={pick} onColor={setColor} onTune={(k, v) => commit((l) => ({ ...l, tune: { ...l.tune, [k]: v } }))} onSpecial={(k, v) => commit((l) => ({ ...l, [k]: v }))} onHair={(t) => commit((l) => ({ ...l, hair: Object.keys(t).length ? t : undefined }))} />
+                <CategoryPanel cat={cat} look={look} onPick={pick} onColor={setColor} onTune={(k, v) => commit((l) => ({ ...l, tune: { ...l.tune, [k]: v } }))} onSpecial={(k, v) => commit((l) => ({ ...l, [k]: v }))} onHair={(t) => commit((l) => ({ ...l, hair: Object.keys(t).length ? t : undefined }))} onAccAt={(k, a) => commit((l) => ({ ...l, accAt: { ...l.accAt, [k]: a } }))} />
               )}
             </motion.div>
           </AnimatePresence>
@@ -234,7 +243,7 @@ const STUDIO_BTN = 'grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-wh
 
 /* ------------------------------------------------------------------ panels */
 
-function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial, onHair }: { cat: Category; look: Look; onPick: (s: Slot, id: number | null) => void; onColor: (k: ColorKey | 'skin', v: string | null) => void; onTune: (k: 'eyeSize' | 'eyeGap' | 'face', v: number) => void; onSpecial: (k: 'expression' | 'pose', v: string) => void; onHair: (t: HairTune) => void }) {
+function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial, onHair, onAccAt }: { cat: Category; look: Look; onPick: (s: Slot, id: number | null) => void; onColor: (k: ColorKey | 'skin', v: string | null) => void; onTune: (k: 'eyeSize' | 'eyeGap' | 'face', v: number) => void; onSpecial: (k: 'expression' | 'pose', v: string) => void; onHair: (t: HairTune) => void; onAccAt: (k: 'hairAcc1' | 'hairAcc2', a: AnchorK) => void }) {
   if (cat.special) {
     const list = cat.special === 'expression' ? EXPRESSIONS : POSES;
     const cur = cat.special === 'expression' ? look.expression : look.pose;
@@ -252,15 +261,49 @@ function CategoryPanel({ cat, look, onPick, onColor, onTune, onSpecial, onHair }
   return (
     <div className="space-y-4">
       {cat.sliders?.map((s) => <TuneSlider key={s.key} label={s.label} value={look.tune[s.key]} onChange={(v) => onTune(s.key, v)} />)}
-      {cat.id === 'hair' && <HairControls look={look} onHair={onHair} onHi={(c) => onColor('hairHi', c)} onDeco={(c) => onColor('hairDeco', c)} />}
+      {cat.id === 'hair' && <HairControls look={look} onHair={onHair} onHi={(c) => onColor('hairHi', c)} onDeco={(c) => onColor('hairDeco', c)} onColor={(k, c) => onColor(k, c)} />}
       {cat.swatches && <SwatchGrid palette={cat.swatches.palette} value={cat.swatches.key === 'skin' ? look.skin : look.color[cat.swatches.key] ?? null} allowNone={cat.swatches.allowNone} onPick={(c) => onColor(cat.swatches!.key, c)} />}
+      {cat.slot && isAccSlot(cat.slot) && <AccPlace slot={cat.slot} look={look} onAccAt={onAccAt} />}
       {cat.slot && <VariantGrid cat={cat} slot={cat.slot} look={look} onPick={(id) => onPick(cat.slot!, id)} />}
     </div>
   );
 }
 
+/** where the worn accessory sits (only when its kind fits more than one place on this hairstyle) */
+function AccPlace({ slot, look, onAccAt }: { slot: 'hairAcc1' | 'hairAcc2'; look: Look; onAccAt: (k: 'hairAcc1' | 'hairAcc2', a: AnchorK) => void }) {
+  const id = look.pick[slot];
+  const avail = useLookAnchors(look);
+  if (id == null) return null;
+  const kind = HAIR_ACCESSORIES[id]?.p.kind;
+  if (!kind) return null;
+  const places = ACC_ANCHORS[kind].filter((a) => avail.has(a));
+  const cur = accAnchor(kind, avail, look.accAt?.[slot]);
+  if (!cur) return <p className="mb-3 rounded-2xl bg-ink/[0.04] px-4 py-3 text-xs font-semibold text-ink-mute">{ACC_HINT[kind]}</p>;
+  if (places.length < 2) return null;
+  return (
+    <div className="mb-3 flex flex-wrap gap-1.5">
+      {places.map((a) => (
+        <FamilyChip key={a} on={a === cur} onClick={() => onAccAt(slot, a)}>{ANCHOR_LABEL[a]}</FamilyChip>
+      ))}
+    </div>
+  );
+}
+
+/** the accessory places the look's current (tuned) hairstyle offers */
+function useLookAnchors(look: Look) {
+  const id = look.pick.hair;
+  const tune = look.hair;
+  return useMemo(() => hairAnchors(id != null && HAIRSTYLES[id] ? tuneHair(HAIRSTYLES[id].p, tune) : null), [id, tune]);
+}
+
 function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; look: Look; onPick: (id: number | null) => void }) {
   const current = look.pick[slot] ?? null;
+  const accAvail = useLookAnchors(look);
+  const accHint = (id: number) => {
+    if (!isAccSlot(slot)) return undefined;
+    const kind = HAIR_ACCESSORIES[id]?.p.kind;
+    return kind && !accAnchor(kind, accAvail) ? ACC_HINT[kind] : undefined;
+  };
   // Look-alike items are left out (the one you're wearing always stays visible).
   const all = SLOTS[slot] as readonly { id: number; name: string; family: string }[];
   const list = useMemo(() => all.filter((v) => !isHidden(slot, v.id) || v.id === current), [all, slot, current]);
@@ -306,7 +349,7 @@ function VariantGrid({ cat, slot, look, onPick }: { cat: Category; slot: Slot; l
           </button>
         )}
         {shown.map((v) => (
-          <VariantCard key={v.id} slot={slot} id={v.id} name={v.name} frame={cat.thumb} color={color} tip={tip} active={current === v.id} onClick={() => onPick(v.id)} />
+          <VariantCard key={v.id} slot={slot} id={v.id} name={v.name} frame={isAccSlot(slot) && ACC_THUMB[HAIR_ACCESSORIES[v.id].p.kind].back ? 'headback' : cat.thumb} color={color} tip={tip} active={current === v.id} hint={accHint(v.id)} onClick={() => onPick(v.id)} />
         ))}
       </div>
     </div>
@@ -321,7 +364,7 @@ function FamilyChip({ on, onClick, children }: { on: boolean; onClick: () => voi
   );
 }
 
-const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, tip, active, onClick }: { slot: Slot; id: number; name: string; frame: Category['thumb']; color: string | null; tip: string | null; active: boolean; onClick: () => void }) {
+const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, tip, active, hint, onClick }: { slot: Slot; id: number; name: string; frame: Category['thumb']; color: string | null; tip: string | null; active: boolean; /** why it can't be worn with the current hair (shown, not hidden) */ hint?: string; onClick: () => void }) {
   const ref = useRef<HTMLButtonElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -343,6 +386,11 @@ const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, ti
       if (slot === 'lashes') l.color.liner = color;
       if (slot === 'hair' || slot === 'beard') l.color[slot] = color ?? '#3b2618';
       if (slot === 'hair') l.color.hairTip = tip;
+      if (isAccSlot(slot)) {
+        l.pick.hair = HAIRSTYLES.findIndex((v) => v.name === ACC_THUMB[HAIR_ACCESSORIES[id].p.kind].hair);
+        l.color.hair = '#3b2618';
+        l.color[slot] = color;
+      }
       if (slot === 'eyes') l.color.eyes = color ?? '#5a3a22';
       if (slot === 'brows') l.color.brows = color ?? '#2a1d16';
       if (slot === 'mouth') l.color.lips = color ?? '#b8676a';
@@ -355,9 +403,10 @@ const VariantCard = memo(function VariantCard({ slot, id, name, frame, color, ti
     !FACE_SLOTS.includes(slot),
   );
   return (
-    <button ref={ref} onClick={onClick} aria-pressed={active} aria-label={name} title={name} className={cn('relative aspect-square overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_32%,#ffffff,#e3e8f6)] ring-1 transition-all active:scale-95', active ? 'ring-2 ring-ember-amber' : 'ring-ink/[0.06]')}>
+    <button ref={ref} onClick={onClick} aria-pressed={active} aria-label={hint ? `${name} — ${hint}` : name} title={hint ?? name} className={cn(hint && !active && 'opacity-45 grayscale', 'relative aspect-square overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_50%_32%,#ffffff,#e3e8f6)] ring-1 transition-all active:scale-95', active ? 'ring-2 ring-ember-amber' : 'ring-ink/[0.06]')}>
       {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} /> : <span className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)] bg-[length:200%_100%]" />}
       {active && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-ember-amber text-noir"><Check className="h-3.5 w-3.5" /></span>}
+      {hint && <span className="absolute inset-x-0 bottom-0 bg-white/90 px-1 py-1 text-center text-[8.5px] font-bold leading-tight text-ink">{hint}</span>}
       {slot === 'hair' && <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-white/95 to-white/0 px-1 pb-1 pt-3 text-center text-[9.5px] font-bold leading-tight text-ink">{name}</span>}
     </button>
   );

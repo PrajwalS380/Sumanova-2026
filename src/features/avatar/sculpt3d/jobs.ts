@@ -6,6 +6,7 @@ import { bodyGeometry, feetGeometry, handsGeometry, nailsGeometry } from './rig'
 import { bottomGeometry, dressGeometry, shoeGeometry, sockGeometry, topGeometry, type GarmentGeo, type Tone } from './garments';
 import { groomHair } from './groom';
 import { headGeometry } from './head';
+import { hairAccGeometry, type AccItemIn } from './hairAccGeo';
 import type { EarP, NoseP } from '../look/face';
 
 /** Every sculpted piece is described by a small, serialisable job (so it can run in a worker). */
@@ -19,10 +20,12 @@ export type Job =
   | { k: 'socks'; bp: BodyP; cut: string }
   | { k: 'shoes'; bp: BodyP; cut: string }
   | { k: 'hair'; h: HeadShape; p: HairP; seed: number; hatOn: boolean }
-  | { k: 'head'; h: HeadShape; nose: NoseP | null; ears: EarP };
+  | { k: 'head'; h: HeadShape; nose: NoseP | null; ears: EarP }
+  /** hair accessories on the groom's anchors (sumanova-us-110) */
+  | { k: 'hairAcc'; items: AccItemIn[]; R: number };
 
 /** Bump when any sculpt builder changes its output (invalidates the on-device cache). */
-export const SCULPT_VERSION = 107;
+export const SCULPT_VERSION = 108;
 
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 export function jobKey(j: Job): string {
@@ -36,6 +39,8 @@ export function jobKey(j: Job): string {
       return `top|${bp}|${j.cut}|${j.layer}|${j.under ?? ''}`;
     case 'head':
       return `head|${JSON.stringify(j.h)}|${JSON.stringify(j.nose)}|${JSON.stringify(j.ears)}`;
+    case 'hairAcc':
+      return `hairAcc|${r3(j.R)}|${JSON.stringify(j.items)}`;
     case 'hair':
       return `hair|${JSON.stringify(j.h)}|${JSON.stringify(j.p)}|${j.seed}|${j.hatOn ? 1 : 0}`;
     default:
@@ -44,7 +49,7 @@ export function jobKey(j: Job): string {
 }
 
 /** Result: named geometries (main, trims…, fade, band) with an optional tone per piece. */
-export interface Piece { geo: THREE.BufferGeometry; tone?: Tone; role: 'main' | 'trim' | 'fade' | 'band' | 'base' | 'cards' | 'deco' | 'decoW' | 'decoC' }
+export interface Piece { geo: THREE.BufferGeometry; tone?: Tone; role: 'main' | 'trim' | 'fade' | 'band' | 'base' | 'cards' | 'deco' | 'decoW' | 'decoC' | 'anchors' }
 export type Result = Piece[];
 
 const fromGarment = (g: GarmentGeo): Result => [...(g.main ? [{ geo: g.main, role: 'main' as const }] : []), ...g.trims.map((t) => ({ geo: t.geo, tone: t.tone, role: 'trim' as const }))];
@@ -71,14 +76,19 @@ export function runJob(j: Job): Result {
       if (o.deco) out.push({ geo: o.deco, role: 'deco' });
       if (o.decoW) out.push({ geo: o.decoW, role: 'decoW' });
       if (o.decoC) out.push({ geo: o.decoC, role: 'decoC' });
+      if (o.anchors) out.push({ geo: o.anchors, role: 'anchors' });
       return out;
+    }
+    case 'hairAcc': {
+      const g = hairAccGeometry(j.items, j.R);
+      return g ? [{ geo: g, role: 'main' }] : [];
     }
   }
 }
 
 // ---------------------------------------------------------------------------- (de)serialise
 
-const ATTRS: [string, number, 'f' | 'u16'][] = [['position', 3, 'f'], ['normal', 3, 'f'], ['uv', 2, 'f'], ['color', 3, 'f'], ['skinIndex', 4, 'u16'], ['skinWeight', 4, 'f'], ['hairT', 3, 'f'], ['hairPivot', 3, 'f'], ['hairGrp', 1, 'f']];
+const ATTRS: [string, number, 'f' | 'u16'][] = [['position', 3, 'f'], ['normal', 3, 'f'], ['uv', 2, 'f'], ['color', 3, 'f'], ['skinIndex', 4, 'u16'], ['skinWeight', 4, 'f'], ['hairT', 3, 'f'], ['hairPivot', 3, 'f'], ['hairGrp', 1, 'f'], ['hairRoot', 3, 'f'], ['accSlot', 1, 'f']];
 
 /** Pack a result into one ArrayBuffer (header JSON + raw arrays) — for postMessage and Cache Storage. */
 export function pack(res: Result): ArrayBuffer {

@@ -13,6 +13,7 @@ import { tuneHair } from '../look/hair';
 import { bakedHairId } from './bakedHair';
 import { outfit } from './lookParts';
 import { skirtClearance } from '../sculpt3d/garments';
+import { wornAcc } from './HairAccessories';
 
 /** Head centre when only the head is drawn (head thumbnails, Avatar Cam). */
 const HEAD_ONLY_Y = 1.98;
@@ -56,7 +57,7 @@ export const Figure = memo(function Figure({ look, animate = true, poseOverride,
         piercings={{ earL: variant(look, 'earL')?.p ?? null, earR: variant(look, 'earR')?.p ?? null, nose: variant(look, 'nosePierce')?.p ?? null, brow: variant(look, 'browPierce')?.p ?? null, lip: variant(look, 'lipPierce')?.p ?? null, tongue: variant(look, 'tonguePierce')?.p ?? null }}
         hearing={{ L: variant(look, 'hearingL')?.p ?? null, R: variant(look, 'hearingR')?.p ?? null }}
       />
-      {look.pick.hair != null && <SculptHair h={h} p={tuneHair(variant(look, 'hair')!.p, look.hair)} color={look.color.hair ?? '#2a1d16'} tip={look.color.hairTip ?? null} hi={look.color.hairHi ?? null} deco={look.color.hairDeco ?? null} gloss={look.hair?.gloss ?? 0.6} seed={look.pick.hair} hatOn={!!o.hat} animate={animate} bakedId={bakedHairId(look.pick.hair, look.hair, !!o.hat)} />}
+      {look.pick.hair != null && <SculptHair h={h} p={tuneHair(variant(look, 'hair')!.p, look.hair)} color={look.color.hair ?? '#2a1d16'} tip={look.color.hairTip ?? null} hi={look.color.hairHi ?? null} mid={look.color.hairMid ?? null} salon={look.hair ?? null} deco={look.color.hairDeco ?? null} acc={wornAcc(look)} gloss={look.hair?.gloss ?? 0.6} seed={look.pick.hair} hatOn={!!o.hat} animate={animate} bakedId={bakedHairId(look.pick.hair, look.hair, !!o.hat)} />}
       {o.hat && <Hat w={o.hat} h={h} />}
       {o.glasses && <Glasses w={o.glasses} h={h} {...em} />}
       {look.pick.headExtra != null && <HeadExtra p={variant(look, 'headExtra')!.p} h={h} />}
