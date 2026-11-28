@@ -63,10 +63,10 @@ export function deform(h: HeadShape, ux: number, uy: number, uz: number, out: TH
  * the coordinates hairlines and other scalp regions are defined in. (x/|p| differs from it on the
  * elongated, deformed head: on the forehead by several centimetres.)
  */
-export function skullDir(h: HeadShape, x: number, y: number, z: number): [number, number, number] {
+export function skullDir(h: HeadShape, x: number, y: number, z: number, iters = 4): [number, number, number] {
   const r = Math.sqrt(x * x + y * y + z * z) || 1e-6;
   let ux = x / r, uy = y / r, uz = z / r;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < iters; i++) {
     const sx = h.rx * kxAt(h, uy, uz);
     const sy = h.ry * (y < 0 ? h.chinLow : 1);
     const sz = h.rz * (uy < 0 ? 1 - 0.1 * uy * uy : 1) * (uz < 0 ? 1.07 : 1);
@@ -75,6 +75,23 @@ export function skullDir(h: HeadShape, x: number, y: number, z: number): [number
     ux = qx / L; uy = qy / L; uz = qz / L;
   }
   return [ux, uy, uz];
+}
+
+/** skullDist and skullDir in one pass (out = [dist, ux, uy, uz]) — for hot SDF loops. */
+export function skullDistDir(h: HeadShape, x: number, y: number, z: number, out: number[]) {
+  const r = Math.sqrt(x * x + y * y + z * z) || 1e-6;
+  let ux = x / r, uy = y / r, uz = z / r, L = 1, sx = h.rx, sy = h.ry, sz = h.rz;
+  for (let i = 0; i < 4; i++) {
+    sx = h.rx * kxAt(h, uy, uz);
+    sy = h.ry * (y < 0 ? h.chinLow : 1);
+    sz = h.rz * (uy < 0 ? 1 - 0.1 * uy * uy : 1) * (uz < 0 ? 1.07 : 1);
+    const qx = x / sx, qy = y / sy, qz = z / sz;
+    L = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-6;
+    ux = qx / L; uy = qy / L; uz = qz / L;
+  }
+  out[0] = (L - 1) * Math.sqrt((ux * sx) ** 2 + (uy * sy) ** 2 + (uz * sz) ** 2);
+  out[1] = ux; out[2] = uy; out[3] = uz;
+  return out;
 }
 
 export function skullDist(h: HeadShape, x: number, y: number, z: number) {

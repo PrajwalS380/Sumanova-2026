@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { deform, skullDir, skullDist, smooth, wobble, type HeadShape } from '../sculpt';
+import { deform, skullDir, skullDist, skullDistDir, smooth, wobble, type HeadShape } from '../sculpt';
 import type { HairP } from '../look/hair';
 import { rng, hashStr } from '../look/rng';
 import { Field, type Prim } from './sdf';
@@ -289,8 +289,8 @@ export class Groomer {
       if (p.braid !== 'none' && p.braid !== 'box' && p.braid !== 'cornrows') this.braids();
     }
     if (p.fade !== 'buzz' && !this.hatOn) this.edges();
-    const fade = this.fadeShell(), edge = this.hatOn ? null : this.edgeShell(), part = this.hatOn || p.fade === 'buzz' ? null : this.partShell();
-    const shells = [fade, edge, part].filter((g): g is THREE.BufferGeometry => !!g);
+    const fade = this.fadeShell(), edge = this.hatOn ? null : this.edgeShell();
+    const shells = [fade, edge].filter((g): g is THREE.BufferGeometry => !!g);
     return { strands: this.m.geometry(), cards: this.cards.geometry(), base: this.baseCap(), fade: shells.length > 1 ? mergeGeometries(shells) : shells[0] ?? null, band: this.bandGeo() };
   }
 
@@ -346,11 +346,18 @@ export class Groomer {
     const edgeBand = p.edges === 'clean' ? 0.05 : 0.1;
     const taper = (uy: number, az: number) => 0.2 + 0.8 * smooth(this.lineAt(az), this.lineAt(az) + edgeBand, uy);
     const thick = (uy: number, az = 0) => taper(uy, az) * (shell(uy, az) + this.cap * (p.braid === 'cornrows' ? 0.2 : p.tie !== 'none' || p.braid !== 'none' ? 0.6 + 1.6 * smooth(this.lineAt(az), this.lineAt(az) + 0.3, uy) : textured ? 1 + 1.2 * smooth(this.lineAt(az), this.lineAt(az) + 0.25, uy) : 1)) + (afro > 0 ? afro * R * (0.5 + 0.35 * Math.max(0, uy)) * smooth(this.lineAt(az), this.lineAt(az) + 0.45, uy) : 0);
+    const tmp4 = [0, 0, 0, 0];
     const prim: Prim = {
       t: 'fn', c: [0, h.ry * 0.2, -h.rz * 0.05], ext: [R * (1.3 + afro * 0.9), h.ry * (1.3 + afro * 0.9), h.rz * (1.4 + afro * 0.9)], bone: 0, k: 0,
       f: (x, y, z) => {
-        const [dx, uy, dz] = skullDir(h, x, y, z), az = Math.atan2(dx, dz);
-        let d = skullDist(h, x, y, z) - thick(uy, az);
+        const sdd = skullDistDir(h, x, y, z, tmp4);
+        const sd = sdd[0];
+        // far from the scalp layer: the exact head-space direction doesn't matter (saves most evaluations)
+        if (afro === 0 && sd > 0.12 * R) return sd - this.cap;
+        const dx = sdd[1], uy = sdd[2], dz = sdd[3], az = Math.atan2(dx, dz);
+        // inside the skull the layer is hidden: only the cut below the hairline matters
+        if (afro === 0 && sd < -0.025 * R) return Math.max(sd - this.cap, (this.lineAt(az) - uy) * h.ry * 0.9);
+        let d = sd - thick(uy, az);
         if (afro > 0) {
           // a rounder silhouette than the skull: blend toward a sphere over the crown
           const sph = Math.hypot(x, y - h.ry * 0.18, z + h.rz * 0.08) - R * (1.05 + afro * 0.62);
@@ -427,29 +434,29 @@ export class Groomer {
     const { h, p, R } = this;
     if (p.fade === 'buzz') return null;
     const [w, maxDens] = p.edges === 'clean' ? [0.025, 0.9] : p.edges === 'laid' ? [0.05, 0.8] : [0.06, 0.7];
+    const tmp4 = [0, 0, 0, 0];
+    const partOn = this.partGap(this.partX(0) || 0, 0.6, 0) !== -1;
     const f = new Field([{ prims: [{ t: 'fn', c: [0, 0, 0], ext: [R * 1.2, h.ry * 1.2, h.rz * 1.3], bone: 0, k: 0, f: (x, y, z) => {
-      const [dx, uy, dz] = skullDir(h, x, y, z), az = Math.atan2(dx, dz);
+      const sdd = skullDistDir(h, x, y, z, tmp4);
+      const sd = sdd[0] - 0.004 * R;
+      // away from the thin shell: outside (the field only needs to be right near the surface)
+      if (Math.abs(sd) > 0.05 * R) return Math.abs(sd);
+      const uy = sdd[2], az = Math.atan2(sdd[1], sdd[3]);
       const line = this.lineAt(az);
       const skip = this.faded(uy, az) || (p.flow === 'hawk' && Math.abs(x) > 0.2 * R);
-      return Math.max(skullDist(h, x, y, z) - 0.004 * R, (line - w - uy) * h.ry, (uy - line - 0.03) * h.ry, skip ? 1 : -1);
+      const band = Math.max(sd, (line - w - uy) * h.ry, (uy - line - 0.03) * h.ry, skip ? 1 : -1);
+      // + a faint strip of fine hair along the parting (scalp between hair, not a bare stripe)
+      if (!partOn) return band;
+      const g = this.partGap(x, y / h.ry, z);
+      if (g === -1) return band;
+      return Math.min(band, Math.max(sdd[0] - 0.003 * R, -g - 0.002 * R, (line + 0.01 - uy) * h.ry));
     } }] }], 0.02 * R, 0.1 * R);
-    return meshField(f, { cell: 0.008 * (R / 0.35), color: (x, y, z) => {
-      const [dx, uy, dz] = skullDir(h, x, y, z), az = Math.atan2(dx, dz);
+    return meshField(f, { cell: 0.009 * (R / 0.35), color: (x, y, z) => {
+      const [dx, uy, dz] = skullDir(h, x, y, z, 2), az = Math.atan2(dx, dz);
       const line = this.lineAt(az);
+      if (partOn && uy > line + 0.02 && this.partGap(x, y / h.ry, z) > -0.004 * R) return [0.3, 0, 0];
       return [smooth(line - w, line, uy) * maxDens, 0, 0];
     } });
-  }
-
-  /** a faint strip of fine hair along the parting, so it reads as scalp between hair, not a bare stripe */
-  partShell() {
-    const { h, R } = this;
-    if (this.partGap(0, 0.5, 0) === -1 && this.partGap(this.partX(0), 0.5, 0) === -1) return null;
-    const f = new Field([{ prims: [{ t: 'fn', c: [0, 0, 0], ext: [R * 1.2, h.ry * 1.2, h.rz * 1.3], bone: 0, k: 0, f: (x, y, z) => {
-      const g = this.partGap(x, y / h.ry, z);
-      const [dx, uy, dz] = skullDir(h, x, y, z);
-      return Math.max(skullDist(h, x, y, z) - 0.003 * R, g === -1 ? 1 : -g - 0.002 * R, (this.lineAt(Math.atan2(dx, dz)) + 0.01 - uy) * h.ry);
-    } }] }], 0.02 * R, 0.1 * R);
-    return meshField(f, { cell: 0.006 * (R / 0.35), color: () => [0.3, 0, 0] });
   }
 
   /** unit scalp direction from azimuth + unit height */
@@ -531,13 +538,13 @@ export class Groomer {
     const { h, p, R } = this;
     if (p.fade === 'none' && p.flow !== 'hawk') return null;
     const f = new Field([{ prims: [{ t: 'fn', c: [0, 0, 0], ext: [R * 1.2, h.ry * 1.2, h.rz * 1.3], bone: 0, k: 0, f: (x, y, z) => {
-      const [dx, uy, dz] = skullDir(h, x, y, z), az = Math.atan2(dx, dz);
+      const [dx, uy, dz] = skullDir(h, x, y, z, 2), az = Math.atan2(dx, dz);
       const shaved = this.faded(uy, az) || (p.flow === 'hawk' && Math.abs(x) > 0.2 * R);
       return Math.max(skullDist(h, x, y, z) - 0.005 * R, (this.lineAt(az) - 0.02 - uy) * h.ry, shaved ? -1 : 1);
     } }] }], 0.02 * R, 0.1 * R);
     const lvl = { none: 0, taper: -0.55, low: -0.3, mid: -0.05, high: 0.2, skin: 0.22, undercut: 0.3, sides: 0.3, buzz: 1 }[p.fade];
     return meshField(f, { cell: 0.009 * (R / 0.35), color: (x, y, z) => {
-      const uy = skullDir(h, x, y, z)[1];
+      const uy = skullDir(h, x, y, z, 2)[1];
       // density: full stubble near the hair, fading to skin at the bottom (skin fades go all the way)
       const dens = p.fade === 'buzz' ? 0.85 : p.fade === 'undercut' || p.fade === 'sides' ? 0.6 : smooth(lvl - (p.fade === 'skin' ? 0.35 : 0.6), lvl, uy);
       return [dens, 0, 0];

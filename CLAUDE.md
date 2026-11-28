@@ -177,6 +177,14 @@ activity-aliases + `AppIconPlugin`). Only open item: closed-app Android push (ow
 - plpgsql gotcha: wrap `case … then … end` in parentheses inside `if … then`; avoid the `?` jsonb operator in MCP
   migrations; never count the same table inside its own RLS policy (use a trigger).
 
+## User stories (owner, 2026-11-28)
+From build-106 on, work follows the avatar user stories in `docs/user-stories/sumanova-us-NNN.txt` (one file per story,
+index in README.txt), in order. Put the story id (`sumanova-us-NNN`) in the commit message: the release workflow names
+each download after the newest story id in non-docs commits ("SUMANOVA us-NNN · build-N"). Docs-only pushes don't build.
+Use `[skip ci]` for in-progress pushes. Hair edges/parting (us-107): `HairP.edges`, `HairTune.line/edges`; hairline
+regions are found in head space with `skullDir`/`skullDistDir` (x/|p| is centimetres off on the forehead).
+Harness: `&htune=<json>` / `&htunes=<json>|<json>` / `&skin=<hex>` / `&hc=<hex>`.
+
 ## Sandbox limits (this cloud environment)
 Outbound network to supabase.co / vercel.app is blocked from the shell; use Supabase MCP (`execute_sql`) and Vercel
 MCP (`web_fetch_vercel_url`) to verify. No Android SDK locally — Android builds run on GitHub Actions.
